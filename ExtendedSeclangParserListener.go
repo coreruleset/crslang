@@ -126,17 +126,8 @@ func (l *ExtendedSeclangParserListener) EnterAction_value(ctx *parsing.Action_va
 	} */
 }
 
-func (l *ExtendedSeclangParserListener) EnterVariable_name(ctx *parsing.Variable_nameContext) {
-	l.currentParameter = ctx.GetText()
-}
-
-// How do we want to store the variable?
-func (l *ExtendedSeclangParserListener) EnterCollection_element_or_regexp(ctx *parsing.Collection_element_or_regexpContext) {
-	l.currentParameter += ":" + ctx.GetText()
-}
-
-func (l *ExtendedSeclangParserListener) ExitVar_stmt(ctx *parsing.Var_stmtContext) {
-	l.currentDirective.AddVariable(l.currentParameter)
+func (l *ExtendedSeclangParserListener) EnterVar_stmt(ctx *parsing.Var_stmtContext) {
+	l.currentDirective.AddVariable(ctx.GetText())
 }
 
 func (l *ExtendedSeclangParserListener) EnterOperator_name(ctx *parsing.Operator_nameContext) {
