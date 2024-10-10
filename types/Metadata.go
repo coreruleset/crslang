@@ -5,15 +5,49 @@ import (
 )
 
 type SecRuleMetada struct {
-	EmptyMetadata	`yaml:"-"`
+	OnlyPhaseMetadata	`yaml:"-"`
 	Id       int    `yaml:"id,omitempty"`
-	Phase    string `yaml:"phase,omitempty"`
 	Msg      string `yaml:"message,omitempty"`
 	Maturity string `yaml:"maturity,omitempty"`
 	Rev      string `yaml:"revision,omitempty"`
 	Severity string `yaml:"severity,omitempty"`
 	Ver      string `yaml:"version,omitempty"`
 }
+
+type OnlyPhaseMetadata struct{
+	Phase             string `yaml:"phase"`
+}
+
+
+func (m *OnlyPhaseMetadata) SetId(value string) {
+	// Do nothing
+}
+
+func (m *OnlyPhaseMetadata) SetPhase(value string) {
+	m.Phase = value
+}
+
+func (m *OnlyPhaseMetadata) SetMsg(value string) {
+	// Do nothing
+}
+
+func (m *OnlyPhaseMetadata) SetMaturity(value string) {
+	// Do nothing
+}
+
+func (m *OnlyPhaseMetadata) SetRev(value string) {
+	// Do nothing
+}
+
+func (m *OnlyPhaseMetadata) SetSeverity(value string) {
+	// Do nothing
+}
+
+func (m *OnlyPhaseMetadata) SetVer(value string) {
+	// Do nothing
+}
+
+
 
 func (s *SecRuleMetada) String() string {
 	return "Id: " + strconv.Itoa(s.Id) + ", Phase: " + s.Phase + ", Msg: " + s.Msg + ", Maturity: " + s.Maturity + ", Rev: " + s.Rev + ", Severity: " + s.Severity + ", Ver: " + s.Ver

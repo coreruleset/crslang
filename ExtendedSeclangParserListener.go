@@ -5,11 +5,32 @@ import (
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 )
 
+type SeclangDirective interface {
+	SetId(value string)
+	SetPhase(value string)
+	SetMsg(value string)
+	SetMaturity(value string)
+	SetRev(value string)
+	SetSeverity(value string)
+	SetVer(value string)
+	SetDisruptiveActionWithParam(action, value string)
+	SetDisruptiveActionOnly(action string)
+	AddNonDisruptiveActionWithParam(action, param string)
+	AddNonDisruptiveActionOnly(action string)
+	AddFlowActionWithParam(action, param string)
+	AddFlowActionOnly(action string)
+	AddDataActionWithParams(action, param string)
+	AddTransformation(transformation string)
+	AddVariable(variable string)
+	SetOperatorName(name string)
+	SetOperatorValue(value string)
+}
+
 type ExtendedSeclangParserListener struct {
 	*parsing.BaseSecLangParserListener
 	currentFunctionToSetParam func(value string)
 	currentFunctionToAppendDirective func()
-	currentDirective          types.SeclangDirective
+	currentDirective          SeclangDirective
 	currentParameter 		 string
 	Configuration             types.Configuration
 }
