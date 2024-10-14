@@ -105,6 +105,7 @@ func (l *ExtendedSeclangParserListener) EnterNon_disruptive_action_only(ctx *par
 	l.currentDirective.AddNonDisruptiveActionOnly(ctx.GetText())
 }
 
+// Event for chain action, the only flow action with no parameters is Chain
 func (l *ExtendedSeclangParserListener) EnterFlow_action_only(ctx *parsing.Flow_action_onlyContext) {
 	l.currentDirective.AddFlowActionOnly(ctx.GetText())
 }
@@ -162,6 +163,12 @@ func (l *ExtendedSeclangParserListener) EnterOperator_value(ctx *parsing.Operato
 
 func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx *parsing.String_engine_config_directiveContext) {
 	// fmt.Println("String engine config directive: ", ctx.GetText())
+	l.currentParameter = ctx.GetText()
+}
+
+// This is the event function for the secmarker directive
+func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parsing.Sec_marker_directiveContext) {
+	// fmt.Println("Sec marker directive: ", ctx.GetText())
 	l.currentParameter = ctx.GetText()
 }
 
