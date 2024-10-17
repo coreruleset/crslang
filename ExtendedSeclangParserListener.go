@@ -31,30 +31,65 @@ type ExtendedSeclangParserListener struct {
 	currentFunctionToSetParam func(value string)
 	currentFunctionToAppendDirective func()
 	currentDirective          SeclangDirective
-	currentParameter 		 string
+	currentParameter 		  string
 	Configuration             types.Configuration
 }
+
+func doNothingFunc(){}
+
+func doNothingFuncString(value string) {}
 
 func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parsing.ConfigurationContext) {
 	l.Configuration = types.Configuration{
 		ConfigDirectives: make(map[string]string),
 	}
-	l.currentFunctionToSetParam = nil
-	l.currentFunctionToAppendDirective = func() {}
+	l.currentFunctionToSetParam = doNothingFuncString
+	l.currentFunctionToAppendDirective = doNothingFunc
 }
 
-func (l *ExtendedSeclangParserListener) EnterCONFIG_DIR_SEC_DEFAULT_ACTION(ctx *parsing.CONFIG_DIR_SEC_DEFAULT_ACTIONContext) {
+func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_default_action(ctx *parsing.Config_dir_sec_default_actionContext) {
 	l.currentDirective = new(types.SecDefaultAction)
 	l.currentFunctionToAppendDirective = func() {
 		l.Configuration.DefaultActions = append(l.Configuration.DefaultActions, *l.currentDirective.(*types.SecDefaultAction))
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterCONFIG_DIR_SEC_ACTION(ctx *parsing.CONFIG_DIR_SEC_ACTIONContext) {
+func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_action(ctx *parsing.Config_dir_sec_actionContext) {
 	l.currentDirective = new(types.SecAction)
 	l.currentFunctionToAppendDirective = func() {
 		l.Configuration.SecActions = append(l.Configuration.SecActions, *l.currentDirective.(*types.SecAction))
 	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_only_param(ctx *parsing.Engine_config_directive_only_paramContext) {
+	// fmt.Println("String engine config directive: ", ctx.GetText())
+	l.currentParameter = ctx.GetText()
+	l.currentFunctionToSetParam = func(value string) {
+		l.Configuration.ConfigDirectives[l.currentParameter] = value
+		l.currentParameter = ""
+		l.currentFunctionToSetParam = doNothingFuncString
+	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterValues(ctx *parsing.ValuesContext) {
+	// fmt.Println("Config value types: ", ctx.GetText())
+	l.currentFunctionToSetParam(ctx.GetText())
+}
+
+func (l *ExtendedSeclangParserListener) EnterEngine_config_sec_cache_transformations(ctx *parsing.Engine_config_sec_cache_transformationsContext) {
+	l.currentParameter = ctx.GetText()
+	l.currentFunctionToSetParam = func(value string) {
+		l.Configuration.ConfigDirectives[l.currentParameter] = value
+		l.currentFunctionToSetParam = func(value2 string) {
+			l.Configuration.ConfigDirectives[l.currentParameter] += " " + value2
+			l.currentParameter = ""
+			l.currentFunctionToSetParam = doNothingFuncString
+		}
+	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterOption_list(ctx *parsing.Option_listContext) {
+	l.currentFunctionToSetParam(ctx.GetText())
 }
 
 func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parsing.Rules_directiveContext) {
@@ -66,7 +101,7 @@ func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parsing.Rules_
 
 func (l *ExtendedSeclangParserListener) ExitStmt(ctx *parsing.StmtContext) {
 	l.currentFunctionToAppendDirective()
-	l.currentFunctionToAppendDirective = func () {}
+	l.currentFunctionToAppendDirective = doNothingFunc
 }
 
 func (l *ExtendedSeclangParserListener) EnterACTION_ID(ctx *parsing.ACTION_IDContext) {
@@ -138,10 +173,20 @@ func (l *ExtendedSeclangParserListener) EnterTransformation_action_value(ctx *pa
 	l.currentDirective.AddTransformation(ctx.GetText())
 }
 
-func (l *ExtendedSeclangParserListener) EnterAction_value(ctx *parsing.Action_valueContext) {
+func (l *ExtendedSeclangParserListener) EnterAction_value_types(ctx *parsing.Action_value_typesContext) {
 	if l.currentFunctionToSetParam != nil {
 		l.currentFunctionToSetParam(ctx.GetText())
-		l.currentFunctionToSetParam = nil
+		l.currentFunctionToSetParam = doNothingFuncString
+	} 
+/* 	else {
+		fmt.Println("No function to set param yet")
+	} */
+}
+
+func (l *ExtendedSeclangParserListener) EnterString_literal(ctx *parsing.String_literalContext) {
+	if l.currentFunctionToSetParam != nil {
+		l.currentFunctionToSetParam(ctx.GetText())
+		l.currentFunctionToSetParam = doNothingFuncString
 	} 
 /* 	else {
 		fmt.Println("No function to set param yet")
@@ -170,14 +215,4 @@ func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx 
 func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parsing.Sec_marker_directiveContext) {
 	// fmt.Println("Sec marker directive: ", ctx.GetText())
 	l.currentParameter = ctx.GetText()
-}
-
-func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_only_param(ctx *parsing.Engine_config_directive_only_paramContext) {
-	// fmt.Println("String engine config directive: ", ctx.GetText())
-	l.currentParameter = ctx.GetText()
-}
-
-func (l *ExtendedSeclangParserListener) EnterConfig_value_types(ctx *parsing.Config_value_typesContext) {
-	// fmt.Println("Config value types: ", ctx.GetText())
-	l.Configuration.ConfigDirectives[l.currentParameter] = ctx.GetText()
 }

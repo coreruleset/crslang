@@ -239,11 +239,15 @@ var genericTests = map[string]struct {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_airween3.conf": {
+	"seclang_parser/testdata/test_directive_unknown.conf": {
 		4,
 		"test should fail with unknown directive",
 	},
 	"seclang_parser/testdata/test_34_xml.conf": {
+		0,
+		"",
+	},
+	"seclang_parser/testdata/test_35_all_directives.conf": {
 		0,
 		"",
 	},
@@ -283,18 +287,20 @@ func TestSecLang(t *testing.T) {
 		// 	fmt.Printf("%s (%q)\n",
 		// 		lexer.SymbolicNames[token.GetTokenType()], token.GetText())
 		// }
-		// if len(lexerErrors.Errors) > 0 {
-		// 	t.Logf("Lexer %d errors found\n", len(lexerErrors.Errors))
-		// 	for _, e := range lexerErrors.Errors {
-		// 		t.Logf("%v\n", e.Error())
-		// 	}
-		// }
-		// if len(parserErrors.Errors) > 0 {
-		// 	t.Logf("Parser %d errors found\n", len(parserErrors.Errors))
-		// 	for _, e := range parserErrors.Errors {
-		// 		t.Logf("%v\n", e.Error())
-		// 	}
-		// }
+		if data.errorCount == 0 && len(lexerErrors.Errors) > 0 {
+			t.Logf("Lexer %d errors found\n", len(lexerErrors.Errors))
+			t.Logf("First error: %v\n", lexerErrors.Errors[0])
+			// for _, e := range lexerErrors.Errors {
+			// 	t.Logf("%v\n", e.Error())
+			// }
+		}
+		if data.errorCount == 0 && len(parserErrors.Errors) > 0 {
+			t.Logf("Parser %d errors found\n", len(parserErrors.Errors))
+			t.Logf("First error: %v\n", parserErrors.Errors[0])
+			// for _, e := range parserErrors.Errors {
+			// 	t.Logf("%v\n", e.Error())
+			// }
+		}
 		require.Equalf(t, data.errorCount, (len(lexerErrors.Errors) + len(parserErrors.Errors)), "Error count mismatch for file %s -> we want: %s\n", file, data.comment)
 	}
 }
@@ -330,18 +336,20 @@ func TestCRSLang(t *testing.T) {
 		// 	t.Logf("%s (%q)",
 		// 		lexer.SymbolicNames[token.GetTokenType()], token.GetText())
 		// }
-		// if len(lexerErrors.Errors) > 0 {
-		// 	t.Logf("Lexer %d errors found\n", len(lexerErrors.Errors))
-		// 	for _, e := range lexerErrors.Errors {
-		// 		t.Logf("%v\n", e.Error())
-		// 	}
-		// }
-		// if len(parserErrors.Errors) > 0 {
-		// 	t.Logf("Parser %d errors found\n", len(parserErrors.Errors))
-		// 	for _, e := range parserErrors.Errors {
-		// 		t.Logf("%v\n", e.Error())
-		// 	}
-		// }
+		if len(lexerErrors.Errors) > 0 {
+			t.Logf("Lexer %d errors found\n", len(lexerErrors.Errors))
+			t.Logf("First error: %v\n", lexerErrors.Errors[0])
+			// for _, e := range lexerErrors.Errors {
+			// 	t.Logf("%v\n", e.Error())
+			// }
+		}
+		if len(parserErrors.Errors) > 0 {
+			t.Logf("Parser %d errors found\n", len(parserErrors.Errors))
+			t.Logf("First error: %v\n", parserErrors.Errors[0])
+			// for _, e := range parserErrors.Errors {
+			// 	t.Logf("%v\n", e.Error())
+			// }
+		}
 		require.Equalf(t, 0, (len(lexerErrors.Errors) + len(parserErrors.Errors)), "Error count mismatch for file %s -> we want no errors\n", file)
 	}
 }

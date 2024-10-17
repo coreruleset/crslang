@@ -77,6 +77,8 @@ var files = []string{
 	"seclang_parser/testdata/test_31_secaction_ctl_07.conf",
 	"seclang_parser/testdata/test_32_secrule_16.conf",
 	"seclang_parser/testdata/test_33_secrule_16.conf",
+	"seclang_parser/testdata/test_34_xml.conf",
+	"seclang_parser/testdata/test_35_all_directives.conf",
 }
 
 func main() {
