@@ -9,12 +9,38 @@ type SeclangActions struct {
 	DataActions          []SeclangAction `yaml:"dataActions,omitempty"`
 }
 
+func (s *SeclangActions) ToSeclang() string {
+	results := []string{}
+	if s.DisruptiveAction != nil {
+		results = append(results, s.DisruptiveAction.ToSeclang())
+	}
+	for _, action := range s.NonDisruptiveActions {
+		results = append(results, action.ToSeclang())
+	}
+	for _, action := range s.FlowActions {
+		results = append(results, action.ToSeclang())
+	}
+	for _, action := range s.DataActions {
+		results = append(results, action.ToSeclang())
+	}
+	result := ""
+	for i, value := range results {
+		if i == 0 {
+			result += value 
+		} else {
+			result += ", " + value
+		}
+	}
+	return result
+}
+
 func (s *SeclangActions) String() string {
 	return fmt.Sprintf("Disruptive: %v, NonDisruptive: %v, Flow: %v, Data: %v", s.DisruptiveAction, s.NonDisruptiveActions, s.FlowActions, s.DataActions)
 }
 
 type SeclangAction interface {
 	SetAction(action, param string)
+	ToSeclang() string
 }
 
 type ActionOnly struct {
@@ -25,6 +51,10 @@ func (a *ActionOnly) SetAction(action, param string) {
 	a.Action = action
 }
 
+func (a *ActionOnly) ToSeclang() string {
+	return a.Action
+}
+
 type ActionWithParam struct {
 	Action string
 	Param  string
@@ -33,6 +63,10 @@ type ActionWithParam struct {
 func (a *ActionWithParam) SetAction(action, param string) {
 	a.Action = action
 	a.Param = param
+}
+
+func (a *ActionWithParam) ToSeclang() string {
+	return a.Action + ":" + a.Param
 }
 
 func (s *SeclangActions) SetDisruptiveActionWithParam(action, value string) {

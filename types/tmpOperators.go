@@ -13,6 +13,10 @@ func (o *StringOperator) SetOperatorValue(value string) {
 	o.Value = value
 }
 
+func (o *StringOperator) ToSeclang() string {
+	return "@" + o.Name + " " + o.Value
+}
+
 type EmptyOperator struct {
 }
 
