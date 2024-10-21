@@ -1,5 +1,10 @@
 package types
 
+import (
+	"slices"
+	"strconv"
+)
+
 type SeclangDirective interface {
 	ToSeclang() string
 }
@@ -64,15 +69,144 @@ type SecRule struct {
 	SeclangActions  `yaml:"actions"`
 }
 
+// status
+// capture
+// log
+// nolog
+// auditlog
+// noauditlog
+// logdata
+// sanitiseArg
+// sanitiseRequestHeader
+// sanitiseMatched
+// sanitiseMatchedBytes
+// ctl
+// multiMatch
+// initcol
+// setenv
+// setvar
+// expirevar
+// chain
+// skip
+// skipAfter
+
 func (s SecRule) ToSeclang() string {
+	auxString := ",\\\n\t"
+	endString := ""
+	actions := s.SeclangActions.GetActionKeys()
+	auxSlice := []string{}
 	result := ""
 	result += s.Comment + "SecRule "
 	result += s.Variables.ToString() + " "
 	result += "\"" + s.Operator.ToString() + "\""
-	result += " \"" + s.SecRuleMetadata.ToSeclang() + ", " + s.SeclangActions.ToString()
-	if s.Transformations.ToString() != "" {
-		result += ", " + s.Transformations.ToString()
+	if s.SecRuleMetadata.Id != 0 {
+		auxSlice = append(auxSlice, "id:" + strconv.Itoa(s.SecRuleMetadata.Id))
 	}
-	result += "\"\n"
+	if s.SecRuleMetadata.Phase != "" {
+		auxSlice = append(auxSlice, "phase:" + s.SecRuleMetadata.Phase)
+	}
+	if s.SeclangActions.DisruptiveAction != nil {
+		auxSlice = append(auxSlice, s.SeclangActions.DisruptiveAction.ToString())
+	}
+	if slices.Contains(actions, "status") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("status").ToString())
+	}
+	if slices.Contains(actions, "capture") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("capture").ToString())
+	}
+	for _, t := range s.Transformations.Transformations {
+		auxSlice = append(auxSlice, "t:" + t)
+	}
+	if slices.Contains(actions, "log") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("log").ToString())
+	}
+	if slices.Contains(actions, "nolog") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("nolog").ToString())
+	}
+	if slices.Contains(actions, "auditlog") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("auditlog").ToString())
+	}
+	if slices.Contains(actions, "noauditlog") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("noauditlog").ToString())
+	}
+	if s.SecRuleMetadata.Msg != "" {
+		auxSlice = append(auxSlice, "msg:'" + s.SecRuleMetadata.Msg + "'")
+	}
+	if slices.Contains(actions, "logdata") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("logdata").ToString())
+	}
+	// if s.SecRuleMetadata.Tag != "" {
+	// 	auxSlice = append(auxSlice, "msg:'" + s.SecRuleMetadata.Msg + "'")
+	// }
+	if slices.Contains(actions, "sanitiseArg") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("sanitiseArg").ToString())
+	}
+	if slices.Contains(actions, "sanitiseRequestHeader") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("sanitiseRequestHeader").ToString())
+	}
+	if slices.Contains(actions, "sanitiseMatched") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("sanitiseMatched").ToString())
+	}
+	if slices.Contains(actions, "sanitiseMatchedBytes") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("sanitiseMatchedBytes").ToString())
+	}
+	if slices.Contains(actions, "ctl") {
+		ctlActions := s.SeclangActions.GetActionsByKey("ctl")
+		for _, action := range ctlActions {
+			auxSlice = append(auxSlice, action.ToString())
+		}
+	}
+	if s.SecRuleMetadata.Ver != "" {
+		auxSlice = append(auxSlice, "msg:'" + s.SecRuleMetadata.Ver + "'")
+	}
+	if s.SecRuleMetadata.Severity != "" {
+		auxSlice = append(auxSlice, "severity:'" + s.SecRuleMetadata.Severity + "'")
+	}
+	if slices.Contains(actions, "multiMatch") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("multiMatch").ToString())
+	}
+	if slices.Contains(actions, "initcol") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("initcol").ToString())
+	}
+	if slices.Contains(actions, "setenv") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("setenv").ToString())
+	}
+	if slices.Contains(actions, "setvar") {
+		setvarActions := s.SeclangActions.GetActionsByKey("setvar")
+		for _, action := range setvarActions {
+			auxSlice = append(auxSlice, action.ToString())
+		}
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("setvar").ToString())
+	}
+	if slices.Contains(actions, "expirevar") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("expirevar").ToString())
+	}
+	if slices.Contains(actions, "chain") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("chain").ToString())
+	}
+	if slices.Contains(actions, "skip") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("skip").ToString())
+	}
+	if slices.Contains(actions, "skipAfter") {
+		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("skipAfter").ToString())
+	}
+	for i, action := range auxSlice {
+		if i == 0 {
+			result += " \\\n\t\""
+		} else {
+			result += auxString
+		}
+		result += action
+		if i == len(auxSlice) - 1 {
+			result += "\""
+		} else {
+			result += endString
+		}
+	}
+	// result += " \"" + s.SecRuleMetadata.ToString() + ", " + s.SeclangActions.ToString()
+	// if s.Transformations.ToString() != "" {
+	// 	result += ", " + s.Transformations.ToString()
+	// }
+	result += "\n"
 	return result
 }

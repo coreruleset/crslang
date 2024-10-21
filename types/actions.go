@@ -41,6 +41,7 @@ func (s *SeclangActions) String() string {
 type SeclangAction interface {
 	SetAction(action, param string)
 	ToString() string
+	GetKey() string
 }
 
 type ActionOnly struct {
@@ -52,6 +53,10 @@ func (a *ActionOnly) SetAction(action, param string) {
 }
 
 func (a *ActionOnly) ToString() string {
+	return a.Action
+}
+
+func (a *ActionOnly) GetKey() string {
 	return a.Action
 }
 
@@ -67,6 +72,10 @@ func (a *ActionWithParam) SetAction(action, param string) {
 
 func (a *ActionWithParam) ToString() string {
 	return a.Action + ":" + a.Param
+}
+
+func (a *ActionWithParam) GetKey() string {
+	return a.Action
 }
 
 func (s *SeclangActions) SetDisruptiveActionWithParam(action, value string) {
@@ -95,4 +104,70 @@ func (s *SeclangActions) AddFlowActionOnly(action string) {
 
 func (s *SeclangActions) AddDataActionWithParams(action, param string) {
 	s.DataActions = append(s.DataActions, &ActionWithParam{Action: action, Param: param})
+}
+
+func (s *SeclangActions) GetActionKeys() []string {
+	keys := []string{}
+	// if s.DisruptiveAction != nil {
+	// 	keys = append(keys, s.DisruptiveAction.ToString())
+	// }
+	for _, action := range s.NonDisruptiveActions {
+		keys = append(keys, action.GetKey())
+	}
+	for _, action := range s.FlowActions {
+		keys = append(keys, action.GetKey())
+	}
+	for _, action := range s.DataActions {
+		keys = append(keys, action.GetKey())
+	}
+	return keys
+}
+
+func (s *SeclangActions) GetActionByKey(key string) SeclangAction {
+	// if s.DisruptiveAction != nil {
+	// 	if s.DisruptiveAction.ToString() == key {
+	// 		return s.DisruptiveAction
+	// 	}
+	// }
+	for _, action := range s.NonDisruptiveActions {
+		if action.GetKey() == key {
+			return action
+		}
+	}
+	for _, action := range s.FlowActions {
+		if action.GetKey() == key {
+			return action
+		}
+	}
+	for _, action := range s.DataActions {
+		if action.GetKey() == key {
+			return action
+		}
+	}
+	return nil
+}
+
+func (s *SeclangActions) GetActionsByKey(key string) []SeclangAction {
+	actions := []SeclangAction{}
+	// if s.DisruptiveAction != nil {
+	// 	if s.DisruptiveAction.ToString() == key {
+	// 		actions = append(actions, s.DisruptiveAction)
+	// 	}
+	// }
+	for _, action := range s.NonDisruptiveActions {
+		if action.GetKey() == key {
+			actions = append(actions, action)
+		}
+	}
+	for _, action := range s.FlowActions {
+		if action.GetKey() == key {
+			actions = append(actions, action)
+		}
+	}
+	for _, action := range s.DataActions {
+		if action.GetKey() == key {
+			actions = append(actions, action)
+		}
+	}
+	return actions
 }
