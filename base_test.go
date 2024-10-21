@@ -75,6 +75,15 @@ var crsTestFiles = []string{
 	"seclang_parser/testdata/crs/RESPONSE-980-CORRELATION.conf",
 }
 
+var pluginsTestFiles = []string{
+	"seclang_parser/testdata/plugins/wordpress-rule-exclusions-before.conf",
+	"seclang_parser/testdata/plugins/wordpress-rule-exclusions-config.conf",
+	"seclang_parser/testdata/plugins/drupal-rule-exclusions-before.conf",
+	"seclang_parser/testdata/plugins/drupal-rule-exclusions-config.conf",
+	"seclang_parser/testdata/plugins/google-oauth2-before.conf",
+	"seclang_parser/testdata/plugins/google-oauth2-config.conf",
+}
+
 var genericTests = map[string]struct {
 	errorCount int
 	comment    string
@@ -253,6 +262,55 @@ var genericTests = map[string]struct {
 	},
 }
 
+
+func TestLexerMinimal(t *testing.T) {
+	file := "seclang_parser/testdata/test1.conf"
+	t.Logf("Testing file %s", file)
+	input, err := antlr.NewFileStream(file)
+	if err != nil {
+		t.Errorf("Error reading file %s", file)
+	}
+	lexer := parsing.NewSecLangLexer(input)
+
+	lexerErrors := NewCustomErrorListenerV2()
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrors)
+
+	for {
+		token := lexer.NextToken()
+		if token.GetTokenType() == antlr.TokenEOF {
+			break
+		}
+		fmt.Printf("%s (%q)\n",
+			lexer.SymbolicNames[token.GetTokenType()], token.GetText())
+	}
+}
+
+func TestParserMinimal(t *testing.T) {
+	file := "seclang_parser/testdata/test1.conf"
+	t.Logf("Testing file %s", file)
+	input, err := antlr.NewFileStream(file)
+	if err != nil {
+		t.Errorf("Error reading file %s", file)
+	}
+	lexer := parsing.NewSecLangLexer(input)
+
+	lexerErrors := NewCustomErrorListenerV2()
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrors)
+
+	parserErrors := NewCustomErrorListenerV2()
+	stream := antlr.NewCommonTokenStream(lexer, 0)
+	p := parsing.NewSecLangParser(stream)
+	p.RemoveErrorListeners()
+	p.AddErrorListener(parserErrors)
+
+	p.BuildParseTrees = true
+	tree := p.Configuration()
+
+	antlr.ParseTreeWalkerDefault.Walk(NewTreeShapeListener(), tree)
+}
+
 func TestSecLang(t *testing.T) {
 	for file, data := range genericTests {
 		t.Logf("Testing file %s", file)
@@ -307,6 +365,56 @@ func TestSecLang(t *testing.T) {
 
 func TestCRSLang(t *testing.T) {
 	for _, file := range crsTestFiles {
+		t.Logf("Testing file %s", file)
+		input, err := antlr.NewFileStream(file)
+		if err != nil {
+			t.Fatalf("Error reading file %s", file)
+		}
+		lexer := parsing.NewSecLangLexer(input)
+
+		lexerErrors := NewCustomErrorListenerV2()
+		lexer.RemoveErrorListeners()
+		lexer.AddErrorListener(lexerErrors)
+
+		parserErrors := NewCustomErrorListenerV2()
+		stream := antlr.NewCommonTokenStream(lexer, 0)
+		p := parsing.NewSecLangParser(stream)
+		p.RemoveErrorListeners()
+		p.AddErrorListener(parserErrors)
+		p.BuildParseTrees = true
+		tree := p.Configuration()
+
+		antlr.ParseTreeWalkerDefault.Walk(NewTreeShapeListener(), tree)
+
+		// for {
+		// 	token := lexer.NextToken()
+		// 	if token.GetTokenType() == antlr.TokenEOF {
+		// 		break
+		// 	}
+		// 	t.Logf("%s (%q)",
+		// 		lexer.SymbolicNames[token.GetTokenType()], token.GetText())
+		// }
+		if len(lexerErrors.Errors) > 0 {
+			t.Logf("Lexer %d errors found\n", len(lexerErrors.Errors))
+			t.Logf("First error: %v\n", lexerErrors.Errors[0])
+			// for _, e := range lexerErrors.Errors {
+			// 	t.Logf("%v\n", e.Error())
+			// }
+		}
+		if len(parserErrors.Errors) > 0 {
+			t.Logf("Parser %d errors found\n", len(parserErrors.Errors))
+			t.Logf("First error: %v\n", parserErrors.Errors[0])
+			// for _, e := range parserErrors.Errors {
+			// 	t.Logf("%v\n", e.Error())
+			// }
+		}
+		require.Equalf(t, 0, (len(lexerErrors.Errors) + len(parserErrors.Errors)), "Error count mismatch for file %s -> we want no errors\n", file)
+	}
+}
+
+
+func TestPlugins(t *testing.T) {
+	for _, file := range pluginsTestFiles {
 		t.Logf("Testing file %s", file)
 		input, err := antlr.NewFileStream(file)
 		if err != nil {
