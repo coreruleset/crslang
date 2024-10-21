@@ -35,7 +35,7 @@ var files = []string{
 	"seclang_parser/testdata/crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf",
 	"seclang_parser/testdata/crs/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
 	"seclang_parser/testdata/crs/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf",
-	// "seclang_parser/testdata/crs/REQUEST-944-APPLICATION-ATTACK-JAVA.conf",
+	"seclang_parser/testdata/crs/REQUEST-944-APPLICATION-ATTACK-JAVA.conf",
 	"seclang_parser/testdata/crs/REQUEST-949-BLOCKING-EVALUATION.conf",
 	"seclang_parser/testdata/crs/RESPONSE-950-DATA-LEAKAGES.conf",
 	"seclang_parser/testdata/crs/RESPONSE-951-DATA-LEAKAGES-SQL.conf",
@@ -94,7 +94,7 @@ func main() {
 		start := p.Configuration()
 		var listener ExtendedSeclangParserListener
 		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-		resultConfigs = append(resultConfigs, listener.Configuration)
+		resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
 	}
 	yamlFile, err := yaml.Marshal(resultConfigs)
 	if err != nil {
@@ -113,4 +113,55 @@ func main() {
 		panic(err)
 	}
 
+	// ReadYAML()
+
+	f, err = os.Create("seclang.conf")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, config := range resultConfigs {
+		for _, directive := range config.Directives {
+				_, err = io.WriteString(f, directive.ToSeclang() + "\n")
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+}
+
+// func ReadYAML() {
+// 	yamlFile, err := os.ReadFile("seclang.yaml")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	var configs []types.Configuration
+// 	err = yaml.Unmarshal(yamlFile, &configs)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+
+// 	f, err := os.Create("seclang.conf")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+
+// 	for _, config := range configs {
+// 		for _, directive := range config.Directives {
+// 				_, err = io.WriteString(f, directive.ToSeclang())
+// 			if err != nil {
+// 				panic(err)
+// 			}
+// 		}
+// 	}
+// }
+
+func ToSeclang(configs []types.Configuration) string {
+	result := ""
+	for _, config := range configs {
+		for _, directive := range config.Directives {
+			result += directive.ToSeclang()
+		}
+	}
+	return result
 }
