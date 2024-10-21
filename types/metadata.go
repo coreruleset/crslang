@@ -31,7 +31,7 @@ type OnlyPhaseMetadata struct{
 	Phase             string `yaml:"phase"`
 }
 
-func (m *OnlyPhaseMetadata) ToSeclang() string {
+func (m *OnlyPhaseMetadata) ToString() string {
 	return "phase:" + m.Phase
 }
 
@@ -63,9 +63,9 @@ func (m *OnlyPhaseMetadata) SetVer(value string) {
 	// Do nothing
 }
 
-func (s *SecRuleMetadata) ToSeclang() string {
+func (s *SecRuleMetadata) ToString() string {
 	result := ""
-	result += s.OnlyPhaseMetadata.ToSeclang() + ", id:" + strconv.Itoa(s.Id)
+	result += s.OnlyPhaseMetadata.ToString() + ", id:" + strconv.Itoa(s.Id)
 	if s.Msg != "" {
 		result += ", msg:'" + s.Msg + "'"
 	}
@@ -82,10 +82,6 @@ func (s *SecRuleMetadata) ToSeclang() string {
 		result += ", ver:'" + s.Ver + "'"
 	}
 	return result
-}
-
-func (s *SecRuleMetadata) String() string {
-	return "Id: " + strconv.Itoa(s.Id) + ", Phase: " + s.Phase + ", Msg: " + s.Msg + ", Maturity: " + s.Maturity + ", Rev: " + s.Rev + ", Severity: " + s.Severity + ", Ver: " + s.Ver
 }
 
 func (s *SecRuleMetadata) SetId(value string) {

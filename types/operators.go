@@ -1,27 +1,18 @@
 package types
 
-type StringOperator struct {
+type Operator struct {
 	Name  string
 	Value string `yaml:",omitempty"`
 }
 
-func (o *StringOperator) SetOperatorName(name string) {
+func (o *Operator) SetOperatorName(name string) {
 	o.Name = name
 }
 
-func (o *StringOperator) SetOperatorValue(value string) {
+func (o *Operator) SetOperatorValue(value string) {
 	o.Value = value
 }
 
-func (o *StringOperator) ToSeclang() string {
+func (o *Operator) ToString() string {
 	return "@" + o.Name + " " + o.Value
-}
-
-type EmptyOperator struct {
-}
-
-func (e *EmptyOperator) SetOperatorName(name string) {
-}
-
-func (e *EmptyOperator) SetOperatorValue(value string) {
 }

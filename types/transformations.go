@@ -8,7 +8,7 @@ func (t *Transformations) AddTransformation(transformation string) {
 	t.Transformations = append(t.Transformations, transformation)
 }
 
-func (t *Transformations) ToSeclang() string {
+func (t *Transformations) ToString() string {
 	results := []string{}
 	for _, transformation := range t.Transformations {
 		results = append(results, transformation)

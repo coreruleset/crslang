@@ -4,14 +4,10 @@ type SeclangDirective interface {
 	ToSeclang() string
 }
 
-type ConfigDirective struct {
+type ConfigurationDirective struct {
 	CommentMetadata `yaml:",inline"`
 	DirectiveName   string `yaml:"directiveName"`
 	Parameter       string `yaml:"parameter"`
-}
-
-type ConfigurationDirective struct {
-	ConfigDirective
 }
 
 func (c ConfigurationDirective) ToSeclang() string {
@@ -20,21 +16,15 @@ func (c ConfigurationDirective) ToSeclang() string {
 
 type SecDefaultAction struct {
 	OnlyPhaseMetadata `yaml:"metadata"`
-	EmptyVariables    `yaml:"-"`
 	Transformations   `yaml:",inline"`
-	EmptyOperator     `yaml:"-"`
 	SeclangActions    `yaml:"actions"`
 }
 
-type SecDefaultActionDirective struct {
-	SecDefaultAction
-}
-
-func (s SecDefaultActionDirective) ToSeclang() string {
+func (s SecDefaultAction) ToSeclang() string {
 	result := ""
 	result += s.Comment + "SecDefaultAction \"phase:" + s.Phase
-	actions := s.SeclangActions.ToSeclang()
-	transformations := s.Transformations.ToSeclang()
+	actions := s.SeclangActions.ToString()
+	transformations := s.Transformations.ToString()
 	if actions != "" {
 		result += ", " + actions
 	}
@@ -47,21 +37,15 @@ func (s SecDefaultActionDirective) ToSeclang() string {
 
 type SecAction struct {
 	SecRuleMetadata `yaml:"metadata"`
-	EmptyVariables  `yaml:"-"`
 	Transformations `yaml:",inline"`
-	EmptyOperator   `yaml:"-"`
 	SeclangActions  `yaml:"actions"`
 }
 
-type SecActionDirective struct {
-	SecAction
-}
-
-func (s SecActionDirective) ToSeclang() string {
+func (s SecAction) ToSeclang() string {
 	result := ""
 	result += s.Comment + "SecAction \"phase:" + s.Phase
-	actions := s.SeclangActions.ToSeclang()
-	transformations := s.Transformations.ToSeclang()
+	actions := s.SeclangActions.ToString()
+	transformations := s.Transformations.ToString()
 	if actions != "" {
 		result += ", " + actions
 	}
@@ -76,22 +60,18 @@ type SecRule struct {
 	SecRuleMetadata `yaml:"metadata"`
 	Variables       `yaml:",inline"`
 	Transformations `yaml:",inline"`
-	StringOperator  `yaml:"operator"`
+	Operator        `yaml:"operator"`
 	SeclangActions  `yaml:"actions"`
 }
 
-type SecRuleDirective struct {
-	SecRule
-}
-
-func (s SecRuleDirective) ToSeclang() string {
+func (s SecRule) ToSeclang() string {
 	result := ""
 	result += s.Comment + "SecRule "
-	result += s.Variables.ToSeclang() + " "
-	result += "\"" + s.StringOperator.ToSeclang() + "\""
-	result += " \"" + s.SecRuleMetadata.ToSeclang() + ", " + s.SeclangActions.ToSeclang()
-	if s.Transformations.ToSeclang() != "" {
-		result += ", " + s.Transformations.ToSeclang()
+	result += s.Variables.ToString() + " "
+	result += "\"" + s.Operator.ToString() + "\""
+	result += " \"" + s.SecRuleMetadata.ToSeclang() + ", " + s.SeclangActions.ToString()
+	if s.Transformations.ToString() != "" {
+		result += ", " + s.Transformations.ToString()
 	}
 	result += "\"\n"
 	return result
