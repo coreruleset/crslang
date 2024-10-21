@@ -69,27 +69,6 @@ type SecRule struct {
 	SeclangActions  `yaml:"actions"`
 }
 
-// status
-// capture
-// log
-// nolog
-// auditlog
-// noauditlog
-// logdata
-// sanitiseArg
-// sanitiseRequestHeader
-// sanitiseMatched
-// sanitiseMatchedBytes
-// ctl
-// multiMatch
-// initcol
-// setenv
-// setvar
-// expirevar
-// chain
-// skip
-// skipAfter
-
 func (s SecRule) ToSeclang() string {
 	auxString := ",\\\n\t"
 	endString := ""
@@ -114,8 +93,8 @@ func (s SecRule) ToSeclang() string {
 	if slices.Contains(actions, "capture") {
 		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("capture").ToString())
 	}
-	for _, t := range s.Transformations.Transformations {
-		auxSlice = append(auxSlice, "t:" + t)
+	if len(s.Transformations.Transformations) > 0 {
+		auxSlice = append(auxSlice, s.Transformations.ToString())
 	}
 	if slices.Contains(actions, "log") {
 		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("log").ToString())
@@ -157,7 +136,7 @@ func (s SecRule) ToSeclang() string {
 		}
 	}
 	if s.SecRuleMetadata.Ver != "" {
-		auxSlice = append(auxSlice, "msg:'" + s.SecRuleMetadata.Ver + "'")
+		auxSlice = append(auxSlice, "ver:'" + s.SecRuleMetadata.Ver + "'")
 	}
 	if s.SecRuleMetadata.Severity != "" {
 		auxSlice = append(auxSlice, "severity:'" + s.SecRuleMetadata.Severity + "'")

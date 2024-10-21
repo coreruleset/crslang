@@ -18,7 +18,7 @@ func (t *Transformations) ToString() string {
 		if i == 0 {
 			result += "t:" + value
 		} else {
-			result += ", t:" + value
+			result += ",t:" + value
 		}
 	}
 	return result
