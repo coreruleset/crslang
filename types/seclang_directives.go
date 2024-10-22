@@ -67,15 +67,22 @@ type SecRule struct {
 	Transformations `yaml:",inline"`
 	Operator        `yaml:"operator"`
 	SeclangActions  `yaml:"actions"`
+	ChainedRule    *SecRuleWrapper `yaml:"chainedRule,omitempty"`
 }
 
 func (s SecRule) ToSeclang() string {
-	auxString := ",\\\n\t"
+	return s.ToSeclangWithParam("")
+}
+
+func (s SecRule) ToSeclangWithParam(initialString string) string {
+	auxString := ",\\\n" + initialString + "\t"
 	endString := ""
 	actions := s.SeclangActions.GetActionKeys()
 	auxSlice := []string{}
+	chainedRule := false
+
 	result := ""
-	result += s.Comment + "SecRule "
+	result += s.Comment + initialString + "SecRule "
 	result += s.Variables.ToString() + " "
 	result += "\"" + s.Operator.ToString() + "\""
 	if s.SecRuleMetadata.Id != 0 {
@@ -113,6 +120,9 @@ func (s SecRule) ToSeclang() string {
 	}
 	if slices.Contains(actions, "logdata") {
 		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("logdata").ToString())
+	}
+	for _, tag := range s.SecRuleMetadata.Tags {
+		auxSlice = append(auxSlice, "tag:'" + tag + "'")
 	}
 	// if s.SecRuleMetadata.Tag != "" {
 	// 	auxSlice = append(auxSlice, "msg:'" + s.SecRuleMetadata.Msg + "'")
@@ -161,6 +171,7 @@ func (s SecRule) ToSeclang() string {
 		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("expirevar").ToString())
 	}
 	if slices.Contains(actions, "chain") {
+		chainedRule = true
 		auxSlice = append(auxSlice, s.SeclangActions.GetActionByKey("chain").ToString())
 	}
 	if slices.Contains(actions, "skip") {
@@ -171,7 +182,7 @@ func (s SecRule) ToSeclang() string {
 	}
 	for i, action := range auxSlice {
 		if i == 0 {
-			result += " \\\n\t\""
+			result += " \\\n" + initialString + "\t\""
 		} else {
 			result += auxString
 		}
@@ -182,10 +193,10 @@ func (s SecRule) ToSeclang() string {
 			result += endString
 		}
 	}
-	// result += " \"" + s.SecRuleMetadata.ToString() + ", " + s.SeclangActions.ToString()
-	// if s.Transformations.ToString() != "" {
-	// 	result += ", " + s.Transformations.ToString()
-	// }
 	result += "\n"
+	if chainedRule {
+		result += s.ChainedRule.ToSeclangWithParam(initialString + "\t")
+	}
 	return result
 }
+

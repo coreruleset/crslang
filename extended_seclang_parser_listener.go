@@ -12,6 +12,7 @@ type AuxDirective interface {
 	SetMaturity(value string)
 	SetRev(value string)
 	SetSeverity(value string)
+	AddTag(value string)
 	SetVer(value string)
 	SetDisruptiveActionWithParam(action, value string)
 	SetDisruptiveActionOnly(action string)
@@ -33,6 +34,7 @@ type ExtendedSeclangParserListener struct {
 	currentConfigurationDirective *types.ConfigurationDirectiveWrapper
 	currentDirective          AuxDirective
 	currentParameter 		  string
+	chainedNextRule 		  *types.SecRuleWrapper
 	Configuration 		*types.Configuration
 	ConfigurationList 		types.ConfigurationList
 }
@@ -48,6 +50,7 @@ func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parsing.Configur
 	l.currentFunctionToAppendComment = func (value string) {
 		l.Configuration.Directives = append(l.Configuration.Directives, types.CommentMetadata{Comment: value})
 	}
+	l.chainedNextRule = nil
 }
 
 func (l *ExtendedSeclangParserListener) ExitConfiguration(ctx *parsing.ConfigurationContext) {
@@ -107,9 +110,14 @@ func (l *ExtendedSeclangParserListener) EnterOption_list(ctx *parsing.Option_lis
 }
 
 func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parsing.Rules_directiveContext) {
-	l.currentDirective = new(types.SecRuleWrapper)
-	l.currentFunctionToAppendDirective = func() {
-		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.SecRuleWrapper))
+	if l.chainedNextRule != nil {
+		l.currentDirective = l.chainedNextRule
+		l.chainedNextRule = nil
+	} else {
+		l.currentDirective = new(types.SecRuleWrapper)
+		l.currentFunctionToAppendDirective = func() {
+			l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.SecRuleWrapper))
+		}
 	}
 	l.currentFunctionToAppendComment = l.currentDirective.SetComment
 }
@@ -151,6 +159,12 @@ func (l *ExtendedSeclangParserListener) EnterACTION_SEVERITY(ctx *parsing.ACTION
 	l.currentFunctionToSetParam = l.currentDirective.SetSeverity
 }
 
+func (l *ExtendedSeclangParserListener) EnterACTION_TAG(ctx *parsing.ACTION_TAGContext) {
+	l.currentFunctionToSetParam = func(value string) {
+		l.currentDirective.AddTag(value)
+	}
+}
+
 func (l *ExtendedSeclangParserListener) EnterACTION_VER(ctx *parsing.ACTION_VERContext) {
 	l.currentFunctionToSetParam = l.currentDirective.SetVer
 }
@@ -166,6 +180,8 @@ func (l *ExtendedSeclangParserListener) EnterNon_disruptive_action_only(ctx *par
 // Event for chain action, the only flow action with no parameters is Chain
 func (l *ExtendedSeclangParserListener) EnterFlow_action_only(ctx *parsing.Flow_action_onlyContext) {
 	l.currentDirective.AddFlowActionOnly(ctx.GetText())
+	l.currentDirective.(*types.SecRuleWrapper).ChainedRule = new(types.SecRuleWrapper)
+	l.chainedNextRule = l.currentDirective.(*types.SecRuleWrapper).ChainedRule
 }
 
 func (l *ExtendedSeclangParserListener) EnterDisruptive_action_with_params(ctx *parsing.Disruptive_action_with_paramsContext) {

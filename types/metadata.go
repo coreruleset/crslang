@@ -23,12 +23,13 @@ type SecRuleMetadata struct {
 	Maturity string `yaml:"maturity,omitempty"`
 	Rev      string `yaml:"revision,omitempty"`
 	Severity string `yaml:"severity,omitempty"`
+	Tags 	 []string `yaml:"tags,omitempty"`
 	Ver      string `yaml:"version,omitempty"`
 }
 
 type OnlyPhaseMetadata struct{
 	CommentMetadata `yaml:",inline"`
-	Phase             string `yaml:"phase"`
+	Phase             string `yaml:"phase,omitempty"`
 }
 
 func (m *OnlyPhaseMetadata) ToString() string {
@@ -56,6 +57,10 @@ func (m *OnlyPhaseMetadata) SetRev(value string) {
 }
 
 func (m *OnlyPhaseMetadata) SetSeverity(value string) {
+	// Do nothing
+}
+
+func (m *OnlyPhaseMetadata) AddTag(value string) {
 	// Do nothing
 }
 
@@ -113,6 +118,10 @@ func (s *SecRuleMetadata) SetRev(value string) {
 
 func (s *SecRuleMetadata) SetSeverity(value string) {
 	s.Severity = value
+}
+
+func (s *SecRuleMetadata) AddTag(value string) {
+	s.Tags = append(s.Tags, value)
 }
 
 func (s *SecRuleMetadata) SetVer(value string) {
