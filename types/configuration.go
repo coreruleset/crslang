@@ -13,6 +13,6 @@ type ConfigurationList struct {
 }
 
 type Configuration struct {
-	Marker     ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
+	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 	Directives []SeclangDirective     `yaml:"directives,omitempty"`
 }

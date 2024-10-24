@@ -31,10 +31,10 @@ type ExtendedSeclangParserListener struct {
 	currentFunctionToAppendComment func(value string)
 	currentFunctionToSetParam func(value string)
 	currentFunctionToAppendDirective func()
-	currentConfigurationDirective *types.ConfigurationDirectiveWrapper
+	currentConfigurationDirective *types.ConfigurationDirective
 	currentDirective          AuxDirective
 	currentParameter 		  string
-	chainedNextRule 		  *types.SecRuleWrapper
+	chainedNextRule 		  *types.SecRule
 	Configuration 		*types.Configuration
 	ConfigurationList 		types.ConfigurationList
 }
@@ -58,24 +58,24 @@ func (l *ExtendedSeclangParserListener) ExitConfiguration(ctx *parsing.Configura
 }
 
 func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_default_action(ctx *parsing.Config_dir_sec_default_actionContext) {
-	l.currentDirective = new(types.SecDefaultActionWrapper)
+	l.currentDirective = new(types.SecDefaultAction)
 	l.currentFunctionToAppendDirective = func() {
-		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.SecDefaultActionWrapper))
+		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.SecDefaultAction))
 	}
 	l.currentFunctionToAppendComment = l.currentDirective.SetComment
 }
 
 func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_action(ctx *parsing.Config_dir_sec_actionContext) {
-	l.currentDirective = new(types.SecActionWrapper)
+	l.currentDirective = new(types.SecAction)
 	l.currentFunctionToAppendDirective = func() {
-		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.SecActionWrapper))
+		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.SecAction))
 	}
 	l.currentFunctionToAppendComment = l.currentDirective.SetComment
 }
 
 func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_with_param(ctx *parsing.Engine_config_directive_with_paramContext) {
 	// fmt.Println("String engine config directive: ", ctx.GetText())
-	l.currentConfigurationDirective = new(types.ConfigurationDirectiveWrapper)
+	l.currentConfigurationDirective = new(types.ConfigurationDirective)
 	l.currentConfigurationDirective.DirectiveName = ctx.GetText()
 	l.currentFunctionToAppendComment = l.currentConfigurationDirective.SetComment
 	l.currentFunctionToAppendDirective = func() {
@@ -93,7 +93,7 @@ func (l *ExtendedSeclangParserListener) EnterValues(ctx *parsing.ValuesContext) 
 }
 
 func (l *ExtendedSeclangParserListener) EnterEngine_config_sec_cache_transformations(ctx *parsing.Engine_config_sec_cache_transformationsContext) {
-	l.currentConfigurationDirective = new(types.ConfigurationDirectiveWrapper)
+	l.currentConfigurationDirective = new(types.ConfigurationDirective)
 	l.currentConfigurationDirective.DirectiveName = ctx.GetText()
 	l.currentFunctionToAppendComment = l.currentConfigurationDirective.SetComment
 	l.currentFunctionToSetParam = func(value string) {
@@ -114,9 +114,9 @@ func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parsing.Rules_
 		l.currentDirective = l.chainedNextRule
 		l.chainedNextRule = nil
 	} else {
-		l.currentDirective = new(types.SecRuleWrapper)
+		l.currentDirective = new(types.SecRule)
 		l.currentFunctionToAppendDirective = func() {
-			l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.SecRuleWrapper))
+			l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.SecRule))
 		}
 	}
 	l.currentFunctionToAppendComment = l.currentDirective.SetComment
@@ -180,8 +180,8 @@ func (l *ExtendedSeclangParserListener) EnterNon_disruptive_action_only(ctx *par
 // Event for chain action, the only flow action with no parameters is Chain
 func (l *ExtendedSeclangParserListener) EnterFlow_action_only(ctx *parsing.Flow_action_onlyContext) {
 	l.currentDirective.AddFlowActionOnly(ctx.GetText())
-	l.currentDirective.(*types.SecRuleWrapper).ChainedRule = new(types.SecRuleWrapper)
-	l.chainedNextRule = l.currentDirective.(*types.SecRuleWrapper).ChainedRule
+	l.currentDirective.(*types.SecRule).ChainedRule = new(types.SecRule)
+	l.chainedNextRule = l.currentDirective.(*types.SecRule).ChainedRule
 }
 
 func (l *ExtendedSeclangParserListener) EnterDisruptive_action_with_params(ctx *parsing.Disruptive_action_with_paramsContext) {
@@ -233,16 +233,16 @@ func (l *ExtendedSeclangParserListener) EnterString_literal(ctx *parsing.String_
 }
 
 func (l *ExtendedSeclangParserListener) EnterVar_stmt(ctx *parsing.Var_stmtContext) {
-	l.currentDirective.(*types.SecRuleWrapper).AddVariable(ctx.GetText())
+	l.currentDirective.(*types.SecRule).AddVariable(ctx.GetText())
 }
 
 func (l *ExtendedSeclangParserListener) EnterOperator_name(ctx *parsing.Operator_nameContext) {
-	l.currentDirective.(*types.SecRuleWrapper).SetOperatorName(ctx.GetText())
+	l.currentDirective.(*types.SecRule).SetOperatorName(ctx.GetText())
 }
 
 func (l *ExtendedSeclangParserListener) EnterOperator_value(ctx *parsing.Operator_valueContext) {
 
-	l.currentDirective.(*types.SecRuleWrapper).SetOperatorValue(ctx.GetText())
+	l.currentDirective.(*types.SecRule).SetOperatorValue(ctx.GetText())
 }
 
 func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx *parsing.String_engine_config_directiveContext) {
@@ -254,7 +254,7 @@ func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx 
 func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parsing.Sec_marker_directiveContext) {
 	// fmt.Println("Sec marker directive: ", ctx.GetText())
 	// l.currentParameter = ctx.GetText()
-	l.currentConfigurationDirective = new(types.ConfigurationDirectiveWrapper)
+	l.currentConfigurationDirective = new(types.ConfigurationDirective)
 	l.currentConfigurationDirective.DirectiveName = ctx.GetText()
 	l.currentFunctionToAppendComment = l.currentConfigurationDirective.SetComment
 	l.currentFunctionToSetParam = func(value string) {

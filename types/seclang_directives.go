@@ -62,12 +62,12 @@ func (s SecAction) ToSeclang() string {
 }
 
 type SecRule struct {
-	SecRuleMetadata `yaml:"metadata"`
+	SecRuleMetadata `yaml:"metadata,omitempty"`
 	Variables       `yaml:",inline"`
 	Transformations `yaml:",inline"`
 	Operator        `yaml:"operator"`
 	SeclangActions  `yaml:"actions"`
-	ChainedRule    *SecRuleWrapper `yaml:"chainedRule,omitempty"`
+	ChainedRule    *SecRule `yaml:"chainedRule,omitempty"`
 }
 
 func (s SecRule) ToSeclang() string {

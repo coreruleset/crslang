@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/antlr4-go/antlr/v4"
+	"gitlab.fing.edu.uy/gsi/seclang/crslang/exporters"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 	"gopkg.in/yaml.v3"
@@ -20,7 +21,7 @@ var files = []string{
 	// "seclang_parser/testdata/test7.conf",
 	// "seclang_parser/testdata/crs-setup.conf",
 	// "seclang_parser/testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
-	"seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
+	// "seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
 	// "seclang_parser/testdata/crs/REQUEST-905-COMMON-EXCEPTIONS.conf",
 	// "seclang_parser/testdata/crs/REQUEST-911-METHOD-ENFORCEMENT.conf",
 	// "seclang_parser/testdata/crs/REQUEST-913-SCANNER-DETECTION.conf",
@@ -79,6 +80,7 @@ var files = []string{
 	// "seclang_parser/testdata/test_33_secrule_16.conf",
 	// "seclang_parser/testdata/test_34_xml.conf",
 	// "seclang_parser/testdata/test_35_all_directives.conf",
+	"seclang_parser/testdata/test_36_chain.conf",
 }
 
 func main() {
@@ -96,7 +98,54 @@ func main() {
 		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
 		resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
 	}
-	yamlFile, err := yaml.Marshal(resultConfigs)
+	configList := types.ConfigurationList{Configurations: resultConfigs}
+
+	PrintConcreteRepr1(configList)
+
+	PrintConcreteRepr2(configList)
+
+	PrintConcreteRepr3(configList)
+}
+
+// func ReadYAML() {
+// 	yamlFile, err := os.ReadFile("seclang.yaml")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	var configs []types.Configuration
+// 	err = yaml.Unmarshal(yamlFile, &configs)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	f, err := os.Create("seclang.conf")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	for _, config := range configs {
+// 		for _, directive := range config.Directives {
+// 				_, err = io.WriteString(f, directive.ToSeclang())
+// 			if err != nil {
+// 				panic(err)
+// 			}
+// 		}
+// 	}
+// }
+
+func ToSeclang(configs []exporters.ConfigurationWrapper) string {
+	result := ""
+	for _, config := range configs {
+		for _, directive := range config.Directives {
+			result += directive.ToSeclang()
+		}
+	}
+	return result
+}
+
+// YAML with simple labels
+func PrintConcreteRepr1(configList types.ConfigurationList) {
+	wrappedConfigList := exporters.ToDirectivesWithLabels(configList)
+
+	yamlFile, err := yaml.Marshal(wrappedConfigList.Configurations)
 	if err != nil {
 		panic(err)
 	}
@@ -112,15 +161,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+}
 
-	// ReadYAML()
-
-	f, err = os.Create("seclang.conf")
+// Seclang
+func PrintConcreteRepr2(configList types.ConfigurationList) {
+	f, err := os.Create("seclang.conf")
 	if err != nil {
 		panic(err)
 	}
 
-	for _, config := range resultConfigs {
+
+	for _, config := range configList.Configurations {
 		for _, directive := range config.Directives {
 				_, err = io.WriteString(f, directive.ToSeclang() + "\n")
 			if err != nil {
@@ -130,38 +181,24 @@ func main() {
 	}
 }
 
-// func ReadYAML() {
-// 	yamlFile, err := os.ReadFile("seclang.yaml")
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	var configs []types.Configuration
-// 	err = yaml.Unmarshal(yamlFile, &configs)
-// 	if err != nil {
-// 		panic(err)
-// 	}
+// YAML with conditions
+func PrintConcreteRepr3(configList types.ConfigurationList) {
+	configListWithConditions := exporters.ConcreteRepr2(configList)
 
-// 	f, err := os.Create("seclang.conf")
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	for _, config := range configs {
-// 		for _, directive := range config.Directives {
-// 				_, err = io.WriteString(f, directive.ToSeclang())
-// 			if err != nil {
-// 				panic(err)
-// 			}
-// 		}
-// 	}
-// }
-
-func ToSeclang(configs []types.Configuration) string {
-	result := ""
-	for _, config := range configs {
-		for _, directive := range config.Directives {
-			result += directive.ToSeclang()
-		}
+	yamlFile, err := yaml.Marshal(configListWithConditions.Configurations)
+	if err != nil {
+		panic(err)
 	}
-	return result
+	// fmt.Println("Printing yaml", string(yamlFile))
+
+	f, err := os.Create("crslang.yaml")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	_, err = io.WriteString(f, string(yamlFile))
+	if err != nil {
+		panic(err)
+	}
 }
