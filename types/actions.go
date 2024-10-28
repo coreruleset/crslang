@@ -3,15 +3,15 @@ package types
 import "fmt"
 
 type SeclangActions struct {
-	DisruptiveAction     SeclangAction   `yaml:"disruptiveAction,omitempty"`
-	NonDisruptiveActions []SeclangAction `yaml:"non-disruptiveActions,omitempty"`
-	FlowActions          []SeclangAction `yaml:"flowActions,omitempty"`
-	DataActions          []SeclangAction `yaml:"dataActions,omitempty"`
+	DisruptiveAction     Action   `yaml:"disruptiveAction,omitempty"`
+	NonDisruptiveActions []Action `yaml:"non-disruptiveActions,omitempty"`
+	FlowActions          []Action `yaml:"flowActions,omitempty"`
+	DataActions          []Action `yaml:"dataActions,omitempty"`
 }
 
 func (s *SeclangActions) ToString() string {
 	results := []string{}
-	if s.DisruptiveAction != nil {
+	if s.DisruptiveAction.Action != "" {
 		results = append(results, s.DisruptiveAction.ToString())
 	}
 	for _, action := range s.NonDisruptiveActions {
@@ -38,72 +38,54 @@ func (s *SeclangActions) String() string {
 	return fmt.Sprintf("Disruptive: %v, NonDisruptive: %v, Flow: %v, Data: %v", s.DisruptiveAction, s.NonDisruptiveActions, s.FlowActions, s.DataActions)
 }
 
-type SeclangAction interface {
-	SetAction(action, param string)
-	ToString() string
-	GetKey() string
+type Action struct {
+	Action string `yaml:"action"`
+	Param  string `yaml:"param,omitempty"`
 }
 
-type ActionOnly struct {
-	Action string
-}
-
-func (a *ActionOnly) SetAction(action, param string) {
-	a.Action = action
-}
-
-func (a *ActionOnly) ToString() string {
-	return a.Action
-}
-
-func (a *ActionOnly) GetKey() string {
-	return a.Action
-}
-
-type ActionWithParam struct {
-	Action string
-	Param  string
-}
-
-func (a *ActionWithParam) SetAction(action, param string) {
+func (a Action) SetAction(action, param string) {
 	a.Action = action
 	a.Param = param
 }
 
-func (a *ActionWithParam) ToString() string {
-	return a.Action + ":" + a.Param
+func (a Action) ToString() string {
+	if a.Param == "" {
+		return a.Action
+	} else {
+		return a.Action + ":" + a.Param
+	}
 }
 
-func (a *ActionWithParam) GetKey() string {
+func (a Action) GetKey() string {
 	return a.Action
 }
 
 func (s *SeclangActions) SetDisruptiveActionWithParam(action, value string) {
-	s.DisruptiveAction = &ActionWithParam{Action: action, Param: value}
+	s.DisruptiveAction = Action{Action: action, Param: value}
 }
 
 func (s *SeclangActions) SetDisruptiveActionOnly(action string) {
-	s.DisruptiveAction = &ActionOnly{Action: action}
+	s.DisruptiveAction = Action{Action: action}
 }
 
 func (s *SeclangActions) AddNonDisruptiveActionWithParam(action, param string) {
-	s.NonDisruptiveActions = append(s.NonDisruptiveActions, &ActionWithParam{Action: action, Param: param})
+	s.NonDisruptiveActions = append(s.NonDisruptiveActions, Action{Action: action, Param: param})
 }
 
 func (s *SeclangActions) AddNonDisruptiveActionOnly(action string) {
-	s.NonDisruptiveActions = append(s.NonDisruptiveActions, &ActionOnly{Action: action})
+	s.NonDisruptiveActions = append(s.NonDisruptiveActions, Action{Action: action})
 }
 
 func (s *SeclangActions) AddFlowActionWithParam(action, param string) {
-	s.FlowActions = append(s.FlowActions, &ActionWithParam{Action: action, Param: param})
+	s.FlowActions = append(s.FlowActions, Action{Action: action, Param: param})
 }
 
 func (s *SeclangActions) AddFlowActionOnly(action string) {
-	s.FlowActions = append(s.FlowActions, &ActionOnly{Action: action})
+	s.FlowActions = append(s.FlowActions, Action{Action: action})
 }
 
 func (s *SeclangActions) AddDataActionWithParams(action, param string) {
-	s.DataActions = append(s.DataActions, &ActionWithParam{Action: action, Param: param})
+	s.DataActions = append(s.DataActions, Action{Action: action, Param: param})
 }
 
 func (s *SeclangActions) GetActionKeys() []string {
@@ -123,7 +105,7 @@ func (s *SeclangActions) GetActionKeys() []string {
 	return keys
 }
 
-func (s *SeclangActions) GetActionByKey(key string) SeclangAction {
+func (s *SeclangActions) GetActionByKey(key string) Action {
 	// if s.DisruptiveAction != nil {
 	// 	if s.DisruptiveAction.ToString() == key {
 	// 		return s.DisruptiveAction
@@ -144,11 +126,11 @@ func (s *SeclangActions) GetActionByKey(key string) SeclangAction {
 			return action
 		}
 	}
-	return nil
+	return Action{}
 }
 
-func (s *SeclangActions) GetActionsByKey(key string) []SeclangAction {
-	actions := []SeclangAction{}
+func (s *SeclangActions) GetActionsByKey(key string) []Action {
+	actions := []Action{}
 	// if s.DisruptiveAction != nil {
 	// 	if s.DisruptiveAction.ToString() == key {
 	// 		actions = append(actions, s.DisruptiveAction)

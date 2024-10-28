@@ -115,6 +115,7 @@ func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parsing.Rules_
 		l.chainedNextRule = nil
 	} else {
 		l.currentDirective = new(types.SecRule)
+		l.currentDirective.(*types.SecRule).SetOperatorName("rx")
 		l.currentFunctionToAppendDirective = func() {
 			l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.SecRule))
 		}
@@ -246,8 +247,16 @@ func (l *ExtendedSeclangParserListener) EnterOperator_value(ctx *parsing.Operato
 }
 
 func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx *parsing.String_engine_config_directiveContext) {
-	// fmt.Println("String engine config directive: ", ctx.GetText())
-	l.currentParameter = ctx.GetText()
+	l.currentConfigurationDirective = new(types.ConfigurationDirective)
+	l.currentConfigurationDirective.DirectiveName = ctx.GetText()
+	l.currentFunctionToAppendComment = l.currentConfigurationDirective.SetComment
+	l.currentFunctionToAppendDirective = func() {
+		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentConfigurationDirective)
+	}
+	l.currentFunctionToSetParam = func(value string) {
+		l.currentConfigurationDirective.Parameter = value
+		l.currentFunctionToSetParam = doNothingFuncString
+	}
 }
 
 // This is the event function for the secmarker directive

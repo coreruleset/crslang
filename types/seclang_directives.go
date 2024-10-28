@@ -91,7 +91,7 @@ func (s SecRule) ToSeclangWithParam(initialString string) string {
 	if s.SecRuleMetadata.Phase != "" {
 		auxSlice = append(auxSlice, "phase:" + s.SecRuleMetadata.Phase)
 	}
-	if s.SeclangActions.DisruptiveAction != nil {
+	if s.SeclangActions.DisruptiveAction.Action != "" {
 		auxSlice = append(auxSlice, s.SeclangActions.DisruptiveAction.ToString())
 	}
 	if slices.Contains(actions, "status") {

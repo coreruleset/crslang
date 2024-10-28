@@ -12,75 +12,76 @@ import (
 )
 
 var files = []string{
-	// "seclang_parser/testdata/test1.conf",
-	// "seclang_parser/testdata/test2.conf",
-	// "seclang_parser/testdata/test3.conf",
-	// "seclang_parser/testdata/test4.conf",
-	// "seclang_parser/testdata/test5.conf",
-	// "seclang_parser/testdata/test6.conf",
-	// "seclang_parser/testdata/test7.conf",
-	// "seclang_parser/testdata/crs-setup.conf",
-	// "seclang_parser/testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
-	// "seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
-	// "seclang_parser/testdata/crs/REQUEST-905-COMMON-EXCEPTIONS.conf",
-	// "seclang_parser/testdata/crs/REQUEST-911-METHOD-ENFORCEMENT.conf",
-	// "seclang_parser/testdata/crs/REQUEST-913-SCANNER-DETECTION.conf",
-	// "seclang_parser/testdata/crs/REQUEST-920-PROTOCOL-ENFORCEMENT.conf",
-	// "seclang_parser/testdata/crs/REQUEST-921-PROTOCOL-ATTACK.conf",
-	// "seclang_parser/testdata/crs/REQUEST-922-MULTIPART-ATTACK.conf",
-	// "seclang_parser/testdata/crs/REQUEST-930-APPLICATION-ATTACK-LFI.conf",
-	// "seclang_parser/testdata/crs/REQUEST-931-APPLICATION-ATTACK-RFI.conf",
-	// "seclang_parser/testdata/crs/REQUEST-932-APPLICATION-ATTACK-RCE.conf",
-	// "seclang_parser/testdata/crs/REQUEST-933-APPLICATION-ATTACK-PHP.conf",
-	// "seclang_parser/testdata/crs/REQUEST-934-APPLICATION-ATTACK-GENERIC.conf",
-	// "seclang_parser/testdata/crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf",
-	// "seclang_parser/testdata/crs/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
-	// "seclang_parser/testdata/crs/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf",
-	// "seclang_parser/testdata/crs/REQUEST-944-APPLICATION-ATTACK-JAVA.conf",
-	// "seclang_parser/testdata/crs/REQUEST-949-BLOCKING-EVALUATION.conf",
-	// "seclang_parser/testdata/crs/RESPONSE-950-DATA-LEAKAGES.conf",
-	// "seclang_parser/testdata/crs/RESPONSE-951-DATA-LEAKAGES-SQL.conf",
-	// "seclang_parser/testdata/crs/RESPONSE-952-DATA-LEAKAGES-JAVA.conf",
-	// "seclang_parser/testdata/crs/RESPONSE-953-DATA-LEAKAGES-PHP.conf",
-	// "seclang_parser/testdata/crs/RESPONSE-954-DATA-LEAKAGES-IIS.conf",
-	// // "seclang_parser/testdata/crs/RESPONSE-955-WEB-SHELLS.conf",
-	// "seclang_parser/testdata/crs/RESPONSE-959-BLOCKING-EVALUATION.conf",
-	// "seclang_parser/testdata/crs/RESPONSE-980-CORRELATION.conf",
-	// "seclang_parser/testdata/test_01_comment.conf",
-	// "seclang_parser/testdata/test_02_seccompsignature.conf",
-	// "seclang_parser/testdata/test_03_secruleengine.conf",
-	// "seclang_parser/testdata/test_04_directives.conf",
-	// "seclang_parser/testdata/test_05_secaction.conf",
-	// "seclang_parser/testdata/test_06_secaction2.conf",
-	// "seclang_parser/testdata/test_07_secaction3.conf",
-	// "seclang_parser/testdata/test_08_secaction4.conf",
-	// "seclang_parser/testdata/test_09_secaction_ctl_01.conf",
-	// "seclang_parser/testdata/test_10_secaction_ctl_02.conf",
-	// "seclang_parser/testdata/test_11_secaction_ctl_03.conf",
-	// "seclang_parser/testdata/test_12_secaction_ctl_04.conf",
-	// "seclang_parser/testdata/test_13_secaction_ctl_05.conf",
-	// "seclang_parser/testdata/test_14_secaction_ctl_06.conf",
-	// "seclang_parser/testdata/test_15_secaction_01.conf",
-	// "seclang_parser/testdata/test_16_secrule_01.conf",
-	// "seclang_parser/testdata/test_17_secrule_02.conf",
-	// "seclang_parser/testdata/test_19_secrule_04.conf",
-	// "seclang_parser/testdata/test_20_secrule_05.conf",
-	// "seclang_parser/testdata/test_21_secrule_06.conf",
-	// "seclang_parser/testdata/test_22_secrule_07.conf",
-	// "seclang_parser/testdata/test_23_secrule_08.conf",
-	// "seclang_parser/testdata/test_24_secrule_09.conf",
-	// "seclang_parser/testdata/test_25_secrule_10.conf",
-	// "seclang_parser/testdata/test_26_secrule_11.conf",
-	// "seclang_parser/testdata/test_27_secrule_12.conf",
-	// "seclang_parser/testdata/test_28_secrule_13.conf",
-	// "seclang_parser/testdata/test_29_secrule_14.conf",
-	// "seclang_parser/testdata/test_30_secrule_15.conf",
-	// "seclang_parser/testdata/test_31_secaction_ctl_07.conf",
-	// "seclang_parser/testdata/test_32_secrule_16.conf",
-	// "seclang_parser/testdata/test_33_secrule_16.conf",
-	// "seclang_parser/testdata/test_34_xml.conf",
-	// "seclang_parser/testdata/test_35_all_directives.conf",
+	"seclang_parser/testdata/test1.conf",
+	"seclang_parser/testdata/test2.conf",
+	"seclang_parser/testdata/test3.conf",
+	"seclang_parser/testdata/test4.conf",
+	"seclang_parser/testdata/test5.conf",
+	"seclang_parser/testdata/test6.conf",
+	"seclang_parser/testdata/test7.conf",
+	"seclang_parser/testdata/crs-setup.conf",
+	"seclang_parser/testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
+	"seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
+	"seclang_parser/testdata/crs/REQUEST-905-COMMON-EXCEPTIONS.conf",
+	"seclang_parser/testdata/crs/REQUEST-911-METHOD-ENFORCEMENT.conf",
+	"seclang_parser/testdata/crs/REQUEST-913-SCANNER-DETECTION.conf",
+	"seclang_parser/testdata/crs/REQUEST-920-PROTOCOL-ENFORCEMENT.conf",
+	"seclang_parser/testdata/crs/REQUEST-921-PROTOCOL-ATTACK.conf",
+	"seclang_parser/testdata/crs/REQUEST-922-MULTIPART-ATTACK.conf",
+	"seclang_parser/testdata/crs/REQUEST-930-APPLICATION-ATTACK-LFI.conf",
+	"seclang_parser/testdata/crs/REQUEST-931-APPLICATION-ATTACK-RFI.conf",
+	"seclang_parser/testdata/crs/REQUEST-932-APPLICATION-ATTACK-RCE.conf",
+	"seclang_parser/testdata/crs/REQUEST-933-APPLICATION-ATTACK-PHP.conf",
+	"seclang_parser/testdata/crs/REQUEST-934-APPLICATION-ATTACK-GENERIC.conf",
+	"seclang_parser/testdata/crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf",
+	"seclang_parser/testdata/crs/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
+	"seclang_parser/testdata/crs/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf",
+	"seclang_parser/testdata/crs/REQUEST-944-APPLICATION-ATTACK-JAVA.conf",
+	"seclang_parser/testdata/crs/REQUEST-949-BLOCKING-EVALUATION.conf",
+	"seclang_parser/testdata/crs/RESPONSE-950-DATA-LEAKAGES.conf",
+	"seclang_parser/testdata/crs/RESPONSE-951-DATA-LEAKAGES-SQL.conf",
+	"seclang_parser/testdata/crs/RESPONSE-952-DATA-LEAKAGES-JAVA.conf",
+	"seclang_parser/testdata/crs/RESPONSE-953-DATA-LEAKAGES-PHP.conf",
+	"seclang_parser/testdata/crs/RESPONSE-954-DATA-LEAKAGES-IIS.conf",
+	// "seclang_parser/testdata/crs/RESPONSE-955-WEB-SHELLS.conf",
+	"seclang_parser/testdata/crs/RESPONSE-959-BLOCKING-EVALUATION.conf",
+	"seclang_parser/testdata/crs/RESPONSE-980-CORRELATION.conf",
+	"seclang_parser/testdata/test_01_comment.conf",
+	"seclang_parser/testdata/test_02_seccompsignature.conf",
+	"seclang_parser/testdata/test_03_secruleengine.conf",
+	"seclang_parser/testdata/test_04_directives.conf",
+	"seclang_parser/testdata/test_05_secaction.conf",
+	"seclang_parser/testdata/test_06_secaction2.conf",
+	"seclang_parser/testdata/test_07_secaction3.conf",
+	"seclang_parser/testdata/test_08_secaction4.conf",
+	"seclang_parser/testdata/test_09_secaction_ctl_01.conf",
+	"seclang_parser/testdata/test_10_secaction_ctl_02.conf",
+	"seclang_parser/testdata/test_11_secaction_ctl_03.conf",
+	"seclang_parser/testdata/test_12_secaction_ctl_04.conf",
+	"seclang_parser/testdata/test_13_secaction_ctl_05.conf",
+	"seclang_parser/testdata/test_14_secaction_ctl_06.conf",
+	"seclang_parser/testdata/test_15_secaction_01.conf",
+	"seclang_parser/testdata/test_16_secrule_01.conf",
+	"seclang_parser/testdata/test_17_secrule_02.conf",
+	"seclang_parser/testdata/test_19_secrule_04.conf",
+	"seclang_parser/testdata/test_20_secrule_05.conf",
+	"seclang_parser/testdata/test_21_secrule_06.conf",
+	"seclang_parser/testdata/test_22_secrule_07.conf",
+	"seclang_parser/testdata/test_23_secrule_08.conf",
+	"seclang_parser/testdata/test_24_secrule_09.conf",
+	"seclang_parser/testdata/test_25_secrule_10.conf",
+	"seclang_parser/testdata/test_26_secrule_11.conf",
+	"seclang_parser/testdata/test_27_secrule_12.conf",
+	"seclang_parser/testdata/test_28_secrule_13.conf",
+	"seclang_parser/testdata/test_29_secrule_14.conf",
+	"seclang_parser/testdata/test_30_secrule_15.conf",
+	"seclang_parser/testdata/test_31_secaction_ctl_07.conf",
+	"seclang_parser/testdata/test_32_secrule_16.conf",
+	"seclang_parser/testdata/test_33_secrule_16.conf",
+	"seclang_parser/testdata/test_34_xml.conf",
+	"seclang_parser/testdata/test_35_all_directives.conf",
 	"seclang_parser/testdata/test_36_chain.conf",
+	"seclang_parser/testdata/test_37_ugly_rules.conf",
 }
 
 func main() {
@@ -100,36 +101,16 @@ func main() {
 	}
 	configList := types.ConfigurationList{Configurations: resultConfigs}
 
-	PrintConcreteRepr1(configList)
+	ToConcreteRepr1(configList, "seclang.yaml")
 
-	PrintConcreteRepr2(configList)
+	loadedConfigList := LoadConcreteRepr1()
 
-	PrintConcreteRepr3(configList)
+	ToConcreteRepr1(loadedConfigList, "seclang2.yaml")
+
+	ToConcreteRepr2(loadedConfigList, "seclang.conf")
+
+	ToConcreteRepr3(configList, "crslang.yaml")
 }
-
-// func ReadYAML() {
-// 	yamlFile, err := os.ReadFile("seclang.yaml")
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	var configs []types.Configuration
-// 	err = yaml.Unmarshal(yamlFile, &configs)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	f, err := os.Create("seclang.conf")
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	for _, config := range configs {
-// 		for _, directive := range config.Directives {
-// 				_, err = io.WriteString(f, directive.ToSeclang())
-// 			if err != nil {
-// 				panic(err)
-// 			}
-// 		}
-// 	}
-// }
 
 func ToSeclang(configs []exporters.ConfigurationWrapper) string {
 	result := ""
@@ -142,7 +123,7 @@ func ToSeclang(configs []exporters.ConfigurationWrapper) string {
 }
 
 // YAML with simple labels
-func PrintConcreteRepr1(configList types.ConfigurationList) {
+func ToConcreteRepr1(configList types.ConfigurationList, filename string) {
 	wrappedConfigList := exporters.ToDirectivesWithLabels(configList)
 
 	yamlFile, err := yaml.Marshal(wrappedConfigList.Configurations)
@@ -151,7 +132,7 @@ func PrintConcreteRepr1(configList types.ConfigurationList) {
 	}
 	// fmt.Println("Printing yaml", string(yamlFile))
 
-	f, err := os.Create("seclang.yaml")
+	f, err := os.Create(filename)
 	if err != nil {
 		panic(err)
 	}
@@ -163,13 +144,65 @@ func PrintConcreteRepr1(configList types.ConfigurationList) {
 	}
 }
 
-// Seclang
-func PrintConcreteRepr2(configList types.ConfigurationList) {
-	f, err := os.Create("seclang.conf")
+type YAMLLoader struct {
+	Marker     exporters.ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
+	Directives []YAMLLoaderAux     `yaml:"directives,omitempty"`
+}
+
+type YAMLLoaderAux struct {
+	*types.CommentMetadata `yaml:",inline"`
+	*types.ConfigurationDirective
+	*types.SecDefaultAction
+	*types.SecAction
+	*types.SecRule
+}
+
+func LoadConcreteRepr1() types.ConfigurationList {
+	yamlFile, err := os.ReadFile("seclang.yaml")
 	if err != nil {
 		panic(err)
 	}
+	var configs []YAMLLoader
+	err = yaml.Unmarshal(yamlFile, &configs)
+	// fmt.Printf("Printing yaml %v\n", *configs[0].Directives[0].CommentMetadata)
+	var resultConfigs []types.Configuration
+	for _, config := range configs {
+		var directives []types.SeclangDirective
+		for _, directive := range config.Directives {
+			seclangDirective := ConcreteRepr1Aux(directive)
+			if seclangDirective == nil {
+				// panic("Unknown directive type")
+			} else {
+				directives = append(directives, seclangDirective)
+			}
+		}
+		resultConfigs = append(resultConfigs, types.Configuration{Marker: config.Marker.ConfigurationDirective, Directives: directives})
+	}
+	return types.ConfigurationList{Configurations: resultConfigs}
+}
 
+
+func ConcreteRepr1Aux(directive YAMLLoaderAux) types.SeclangDirective {
+	if directive.CommentMetadata != nil {
+		return *directive.CommentMetadata
+	} else if directive.ConfigurationDirective != nil {
+		return *directive.ConfigurationDirective
+	} else if directive.SecDefaultAction != nil {
+		return *directive.SecDefaultAction
+	} else if directive.SecAction != nil {
+		return *directive.SecAction
+	} else if directive.SecRule != nil {
+		return *directive.SecRule
+	}
+	return nil
+}
+
+// Seclang
+func ToConcreteRepr2(configList types.ConfigurationList, filename string) {
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
 
 	for _, config := range configList.Configurations {
 		for _, directive := range config.Directives {
@@ -182,7 +215,7 @@ func PrintConcreteRepr2(configList types.ConfigurationList) {
 }
 
 // YAML with conditions
-func PrintConcreteRepr3(configList types.ConfigurationList) {
+func ToConcreteRepr3(configList types.ConfigurationList, filename string) {
 	configListWithConditions := exporters.ConcreteRepr2(configList)
 
 	yamlFile, err := yaml.Marshal(configListWithConditions.Configurations)
@@ -191,7 +224,7 @@ func PrintConcreteRepr3(configList types.ConfigurationList) {
 	}
 	// fmt.Println("Printing yaml", string(yamlFile))
 
-	f, err := os.Create("crslang.yaml")
+	f, err := os.Create(filename)
 	if err != nil {
 		panic(err)
 	}

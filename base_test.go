@@ -260,6 +260,14 @@ var genericTests = map[string]struct {
 		0,
 		"",
 	},
+	"seclang_parser/testdata/test_36_chain.conf": {
+		0,
+		"",
+	},
+	"seclang_parser/testdata/test_37_ugly_rules.conf": {
+		0,
+		"",
+	},
 }
 
 
