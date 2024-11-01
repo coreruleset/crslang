@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/antlr4-go/antlr/v4"
+	"gitlab.fing.edu.uy/gsi/seclang/crslang/exporters"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 	"gopkg.in/yaml.v3"
@@ -19,11 +20,68 @@ var files = []string{
 	"seclang_parser/testdata/test6.conf",
 	"seclang_parser/testdata/test7.conf",
 	"seclang_parser/testdata/crs-setup.conf",
-	"seclang_parser/testdata/REQUEST-901-INITIALIZATION.conf",
-	"seclang_parser/testdata/REQUEST-905-COMMON-EXCEPTIONS.conf",
-	"seclang_parser/testdata/REQUEST-911-METHOD-ENFORCEMENT.conf",
-	"seclang_parser/testdata/REQUEST-913-SCANNER-DETECTION.conf",
-	"seclang_parser/testdata/REQUEST-920-PROTOCOL-ENFORCEMENT.conf",
+	"seclang_parser/testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
+	"seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
+	"seclang_parser/testdata/crs/REQUEST-905-COMMON-EXCEPTIONS.conf",
+	"seclang_parser/testdata/crs/REQUEST-911-METHOD-ENFORCEMENT.conf",
+	"seclang_parser/testdata/crs/REQUEST-913-SCANNER-DETECTION.conf",
+	"seclang_parser/testdata/crs/REQUEST-920-PROTOCOL-ENFORCEMENT.conf",
+	"seclang_parser/testdata/crs/REQUEST-921-PROTOCOL-ATTACK.conf",
+	"seclang_parser/testdata/crs/REQUEST-922-MULTIPART-ATTACK.conf",
+	"seclang_parser/testdata/crs/REQUEST-930-APPLICATION-ATTACK-LFI.conf",
+	"seclang_parser/testdata/crs/REQUEST-931-APPLICATION-ATTACK-RFI.conf",
+	"seclang_parser/testdata/crs/REQUEST-932-APPLICATION-ATTACK-RCE.conf",
+	"seclang_parser/testdata/crs/REQUEST-933-APPLICATION-ATTACK-PHP.conf",
+	"seclang_parser/testdata/crs/REQUEST-934-APPLICATION-ATTACK-GENERIC.conf",
+	"seclang_parser/testdata/crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf",
+	"seclang_parser/testdata/crs/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
+	"seclang_parser/testdata/crs/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf",
+	"seclang_parser/testdata/crs/REQUEST-944-APPLICATION-ATTACK-JAVA.conf",
+	"seclang_parser/testdata/crs/REQUEST-949-BLOCKING-EVALUATION.conf",
+	"seclang_parser/testdata/crs/RESPONSE-950-DATA-LEAKAGES.conf",
+	"seclang_parser/testdata/crs/RESPONSE-951-DATA-LEAKAGES-SQL.conf",
+	"seclang_parser/testdata/crs/RESPONSE-952-DATA-LEAKAGES-JAVA.conf",
+	"seclang_parser/testdata/crs/RESPONSE-953-DATA-LEAKAGES-PHP.conf",
+	"seclang_parser/testdata/crs/RESPONSE-954-DATA-LEAKAGES-IIS.conf",
+	// "seclang_parser/testdata/crs/RESPONSE-955-WEB-SHELLS.conf",
+	"seclang_parser/testdata/crs/RESPONSE-959-BLOCKING-EVALUATION.conf",
+	"seclang_parser/testdata/crs/RESPONSE-980-CORRELATION.conf",
+	"seclang_parser/testdata/test_01_comment.conf",
+	"seclang_parser/testdata/test_02_seccompsignature.conf",
+	"seclang_parser/testdata/test_03_secruleengine.conf",
+	"seclang_parser/testdata/test_04_directives.conf",
+	"seclang_parser/testdata/test_05_secaction.conf",
+	"seclang_parser/testdata/test_06_secaction2.conf",
+	"seclang_parser/testdata/test_07_secaction3.conf",
+	"seclang_parser/testdata/test_08_secaction4.conf",
+	"seclang_parser/testdata/test_09_secaction_ctl_01.conf",
+	"seclang_parser/testdata/test_10_secaction_ctl_02.conf",
+	"seclang_parser/testdata/test_11_secaction_ctl_03.conf",
+	"seclang_parser/testdata/test_12_secaction_ctl_04.conf",
+	"seclang_parser/testdata/test_13_secaction_ctl_05.conf",
+	"seclang_parser/testdata/test_14_secaction_ctl_06.conf",
+	"seclang_parser/testdata/test_15_secaction_01.conf",
+	"seclang_parser/testdata/test_16_secrule_01.conf",
+	"seclang_parser/testdata/test_17_secrule_02.conf",
+	"seclang_parser/testdata/test_19_secrule_04.conf",
+	"seclang_parser/testdata/test_20_secrule_05.conf",
+	"seclang_parser/testdata/test_21_secrule_06.conf",
+	"seclang_parser/testdata/test_22_secrule_07.conf",
+	"seclang_parser/testdata/test_23_secrule_08.conf",
+	"seclang_parser/testdata/test_24_secrule_09.conf",
+	"seclang_parser/testdata/test_25_secrule_10.conf",
+	"seclang_parser/testdata/test_26_secrule_11.conf",
+	"seclang_parser/testdata/test_27_secrule_12.conf",
+	"seclang_parser/testdata/test_28_secrule_13.conf",
+	"seclang_parser/testdata/test_29_secrule_14.conf",
+	"seclang_parser/testdata/test_30_secrule_15.conf",
+	"seclang_parser/testdata/test_31_secaction_ctl_07.conf",
+	"seclang_parser/testdata/test_32_secrule_16.conf",
+	"seclang_parser/testdata/test_33_secrule_16.conf",
+	"seclang_parser/testdata/test_34_xml.conf",
+	"seclang_parser/testdata/test_35_all_directives.conf",
+	"seclang_parser/testdata/test_36_chain.conf",
+	"seclang_parser/testdata/test_37_ugly_rules.conf",
 }
 
 func main() {
@@ -39,15 +97,42 @@ func main() {
 		start := p.Configuration()
 		var listener ExtendedSeclangParserListener
 		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-		resultConfigs = append(resultConfigs, listener.Configuration)
+		resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
 	}
-	yamlFile, err := yaml.Marshal(resultConfigs)
+	configList := types.ConfigurationList{Configurations: resultConfigs}
+
+	ToConcreteRepr1(configList, "seclang.yaml")
+
+	loadedConfigList := LoadConcreteRepr1()
+
+	ToConcreteRepr1(loadedConfigList, "seclang2.yaml")
+
+	ToConcreteRepr2(loadedConfigList, "seclang.conf")
+
+	ToConcreteRepr3(configList, "crslang.yaml")
+}
+
+func ToSeclang(configs []exporters.ConfigurationWrapper) string {
+	result := ""
+	for _, config := range configs {
+		for _, directive := range config.Directives {
+			result += directive.ToSeclang()
+		}
+	}
+	return result
+}
+
+// YAML with simple labels
+func ToConcreteRepr1(configList types.ConfigurationList, filename string) {
+	wrappedConfigList := exporters.ToDirectivesWithLabels(configList)
+
+	yamlFile, err := yaml.Marshal(wrappedConfigList.Configurations)
 	if err != nil {
 		panic(err)
 	}
 	// fmt.Println("Printing yaml", string(yamlFile))
 
-	f, err := os.Create("seclang.yaml")
+	f, err := os.Create(filename)
 	if err != nil {
 		panic(err)
 	}
@@ -57,5 +142,96 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+}
 
+type YAMLLoader struct {
+	Marker     exporters.ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
+	Directives []YAMLLoaderAux     `yaml:"directives,omitempty"`
+}
+
+type YAMLLoaderAux struct {
+	*types.CommentMetadata `yaml:",inline"`
+	*types.ConfigurationDirective
+	*types.SecDefaultAction
+	*types.SecAction
+	*types.SecRule
+}
+
+func LoadConcreteRepr1() types.ConfigurationList {
+	yamlFile, err := os.ReadFile("seclang.yaml")
+	if err != nil {
+		panic(err)
+	}
+	var configs []YAMLLoader
+	err = yaml.Unmarshal(yamlFile, &configs)
+	// fmt.Printf("Printing yaml %v\n", *configs[0].Directives[0].CommentMetadata)
+	var resultConfigs []types.Configuration
+	for _, config := range configs {
+		var directives []types.SeclangDirective
+		for _, directive := range config.Directives {
+			seclangDirective := ConcreteRepr1Aux(directive)
+			if seclangDirective == nil {
+				// panic("Unknown directive type")
+			} else {
+				directives = append(directives, seclangDirective)
+			}
+		}
+		resultConfigs = append(resultConfigs, types.Configuration{Marker: config.Marker.ConfigurationDirective, Directives: directives})
+	}
+	return types.ConfigurationList{Configurations: resultConfigs}
+}
+
+
+func ConcreteRepr1Aux(directive YAMLLoaderAux) types.SeclangDirective {
+	if directive.CommentMetadata != nil {
+		return *directive.CommentMetadata
+	} else if directive.ConfigurationDirective != nil {
+		return *directive.ConfigurationDirective
+	} else if directive.SecDefaultAction != nil {
+		return *directive.SecDefaultAction
+	} else if directive.SecAction != nil {
+		return *directive.SecAction
+	} else if directive.SecRule != nil {
+		return *directive.SecRule
+	}
+	return nil
+}
+
+// Seclang
+func ToConcreteRepr2(configList types.ConfigurationList, filename string) {
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, config := range configList.Configurations {
+		for _, directive := range config.Directives {
+				_, err = io.WriteString(f, directive.ToSeclang() + "\n")
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+}
+
+// YAML with conditions
+func ToConcreteRepr3(configList types.ConfigurationList, filename string) {
+	configListWithConditions := exporters.ConcreteRepr2(configList)
+
+	yamlFile, err := yaml.Marshal(configListWithConditions.Configurations)
+	if err != nil {
+		panic(err)
+	}
+	// fmt.Println("Printing yaml", string(yamlFile))
+
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	_, err = io.WriteString(f, string(yamlFile))
+	if err != nil {
+		panic(err)
+	}
 }
