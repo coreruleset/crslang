@@ -1,3 +1,3 @@
 [submodule "seclang_parser"]
 	path = seclang_parser
-	url = https://gitlab.fing.edu.uy/gsi/seclang/seclang_parser.git
+	url = https://github.com/GSI-Fing-Udelar/seclang_parser.git
