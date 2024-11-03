@@ -75,7 +75,7 @@ func (s SecRule) ToSeclang() string {
 }
 
 func (s SecRule) ToSeclangWithParam(initialString string) string {
-	auxString := ",\\\n" + initialString + "\t"
+	auxString := ",\\\n" + initialString + "    "
 	endString := ""
 	actions := s.SeclangActions.GetActionKeys()
 	auxSlice := []string{}
@@ -182,7 +182,7 @@ func (s SecRule) ToSeclangWithParam(initialString string) string {
 	}
 	for i, action := range auxSlice {
 		if i == 0 {
-			result += " \\\n" + initialString + "\t\""
+			result += " \\\n" + initialString + "    \""
 		} else {
 			result += auxString
 		}
@@ -195,7 +195,7 @@ func (s SecRule) ToSeclangWithParam(initialString string) string {
 	}
 	result += "\n"
 	if chainedRule {
-		result += s.ChainedRule.ToSeclangWithParam(initialString + "\t")
+		result += s.ChainedRule.ToSeclangWithParam(initialString + "    ")
 	}
 	return result
 }
