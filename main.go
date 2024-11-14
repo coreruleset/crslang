@@ -146,15 +146,7 @@ func ToConcreteRepr1(configList types.ConfigurationList, filename string) {
 
 type YAMLLoader struct {
 	Marker     exporters.ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
-	Directives []YAMLLoaderAux     `yaml:"directives,omitempty"`
-}
-
-type YAMLLoaderAux struct {
-	*types.CommentMetadata `yaml:",inline"`
-	*types.ConfigurationDirective
-	*types.SecDefaultAction
-	*types.SecAction
-	*types.SecRule
+	Directives []yaml.Node     `yaml:"directives,omitempty"`
 }
 
 func LoadConcreteRepr1() types.ConfigurationList {
@@ -164,16 +156,15 @@ func LoadConcreteRepr1() types.ConfigurationList {
 	}
 	var configs []YAMLLoader
 	err = yaml.Unmarshal(yamlFile, &configs)
-	// fmt.Printf("Printing yaml %v\n", *configs[0].Directives[0].CommentMetadata)
 	var resultConfigs []types.Configuration
 	for _, config := range configs {
 		var directives []types.SeclangDirective
-		for _, directive := range config.Directives {
-			seclangDirective := ConcreteRepr1Aux(directive)
-			if seclangDirective == nil {
-				// panic("Unknown directive type")
+		for _, yamlDirective := range config.Directives {
+			directive := ConcreteRepr1Aux(yamlDirective)
+			if directive == nil {
+				panic("Unknown directive type")
 			} else {
-				directives = append(directives, seclangDirective)
+				directives = append(directives, directive)
 			}
 		}
 		resultConfigs = append(resultConfigs, types.Configuration{Marker: config.Marker.ConfigurationDirective, Directives: directives})
@@ -181,18 +172,65 @@ func LoadConcreteRepr1() types.ConfigurationList {
 	return types.ConfigurationList{Configurations: resultConfigs}
 }
 
-
-func ConcreteRepr1Aux(directive YAMLLoaderAux) types.SeclangDirective {
-	if directive.CommentMetadata != nil {
-		return *directive.CommentMetadata
-	} else if directive.ConfigurationDirective != nil {
-		return *directive.ConfigurationDirective
-	} else if directive.SecDefaultAction != nil {
-		return *directive.SecDefaultAction
-	} else if directive.SecAction != nil {
-		return *directive.SecAction
-	} else if directive.SecRule != nil {
-		return *directive.SecRule
+func ConcreteRepr1Aux(yamlDirective yaml.Node) types.SeclangDirective {
+	if yamlDirective.Kind != yaml.MappingNode {
+		panic("Unknown format type")
+	}
+	if yamlDirective.Content[0].Value == "comment" {
+		rawDirective, err := yaml.Marshal(yamlDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.CommentMetadata{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	} else if yamlDirective.Content[0].Value == "configurationdirective" {
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.ConfigurationDirective{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	} else if yamlDirective.Content[0].Value == "secdefaultaction" {
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecDefaultAction{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	} else if yamlDirective.Content[0].Value == "secaction" {
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecAction{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	} else if yamlDirective.Content[0].Value == "secrule" {
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecRule{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
 	}
 	return nil
 }
