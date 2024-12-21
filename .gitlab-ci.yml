@@ -27,9 +27,11 @@ format:
 compile:
   stage: build
   script:
+    - apt-get update && apt-get install -y openjdk-11-jdk
     - git clone https://github.com/magefile/mage
     - cd mage
     - go run bootstrap.go
     - cd ..
+    - go mod tidy
     - mage test
 
