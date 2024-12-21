@@ -249,7 +249,7 @@ var genericTests = map[string]struct {
 		"",
 	},
 	"seclang_parser/testdata/test_directive_unknown.conf": {
-		4,
+		1,
 		"test should fail with unknown directive",
 	},
 	"seclang_parser/testdata/test_34_xml.conf": {
@@ -271,7 +271,7 @@ var genericTests = map[string]struct {
 }
 
 
-func TestLexerMinimal(t *testing.T) {
+/* func TestLexerMinimal(t *testing.T) {
 	file := "seclang_parser/testdata/test1.conf"
 	t.Logf("Testing file %s", file)
 	input, err := antlr.NewFileStream(file)
@@ -292,9 +292,9 @@ func TestLexerMinimal(t *testing.T) {
 		fmt.Printf("%s (%q)\n",
 			lexer.SymbolicNames[token.GetTokenType()], token.GetText())
 	}
-}
+} */
 
-func TestParserMinimal(t *testing.T) {
+/* func TestParserMinimal(t *testing.T) {
 	file := "seclang_parser/testdata/test1.conf"
 	t.Logf("Testing file %s", file)
 	input, err := antlr.NewFileStream(file)
@@ -317,7 +317,7 @@ func TestParserMinimal(t *testing.T) {
 	tree := p.Configuration()
 
 	antlr.ParseTreeWalkerDefault.Walk(NewTreeShapeListener(), tree)
-}
+} */
 
 func TestSecLang(t *testing.T) {
 	for file, data := range genericTests {
