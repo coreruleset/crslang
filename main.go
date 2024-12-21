@@ -12,13 +12,6 @@ import (
 )
 
 var files = []string{
-	// "seclang_parser/testdata/test1.conf",
-	// "seclang_parser/testdata/test2.conf",
-	// "seclang_parser/testdata/test3.conf",
-	// "seclang_parser/testdata/test4.conf",
-	// "seclang_parser/testdata/test5.conf",
-	// "seclang_parser/testdata/test6.conf",
-	// "seclang_parser/testdata/test7.conf",
 	"seclang_parser/testdata/crs-setup.conf",
 	"seclang_parser/testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
 	"seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
@@ -43,45 +36,8 @@ var files = []string{
 	"seclang_parser/testdata/crs/RESPONSE-952-DATA-LEAKAGES-JAVA.conf",
 	"seclang_parser/testdata/crs/RESPONSE-953-DATA-LEAKAGES-PHP.conf",
 	"seclang_parser/testdata/crs/RESPONSE-954-DATA-LEAKAGES-IIS.conf",
-	// "seclang_parser/testdata/crs/RESPONSE-955-WEB-SHELLS.conf",
 	"seclang_parser/testdata/crs/RESPONSE-959-BLOCKING-EVALUATION.conf",
 	"seclang_parser/testdata/crs/RESPONSE-980-CORRELATION.conf",
-	// "seclang_parser/testdata/test_01_comment.conf",
-	// "seclang_parser/testdata/test_02_seccompsignature.conf",
-	// "seclang_parser/testdata/test_03_secruleengine.conf",
-	// "seclang_parser/testdata/test_04_directives.conf",
-	// "seclang_parser/testdata/test_05_secaction.conf",
-	// "seclang_parser/testdata/test_06_secaction2.conf",
-	// "seclang_parser/testdata/test_07_secaction3.conf",
-	// "seclang_parser/testdata/test_08_secaction4.conf",
-	// "seclang_parser/testdata/test_09_secaction_ctl_01.conf",
-	// "seclang_parser/testdata/test_10_secaction_ctl_02.conf",
-	// "seclang_parser/testdata/test_11_secaction_ctl_03.conf",
-	// "seclang_parser/testdata/test_12_secaction_ctl_04.conf",
-	// "seclang_parser/testdata/test_13_secaction_ctl_05.conf",
-	// "seclang_parser/testdata/test_14_secaction_ctl_06.conf",
-	// "seclang_parser/testdata/test_15_secaction_01.conf",
-	// "seclang_parser/testdata/test_16_secrule_01.conf",
-	// "seclang_parser/testdata/test_17_secrule_02.conf",
-	// "seclang_parser/testdata/test_19_secrule_04.conf",
-	// "seclang_parser/testdata/test_20_secrule_05.conf",
-	// "seclang_parser/testdata/test_21_secrule_06.conf",
-	// "seclang_parser/testdata/test_22_secrule_07.conf",
-	// "seclang_parser/testdata/test_23_secrule_08.conf",
-	// "seclang_parser/testdata/test_24_secrule_09.conf",
-	// "seclang_parser/testdata/test_25_secrule_10.conf",
-	// "seclang_parser/testdata/test_26_secrule_11.conf",
-	// "seclang_parser/testdata/test_27_secrule_12.conf",
-	// "seclang_parser/testdata/test_28_secrule_13.conf",
-	// "seclang_parser/testdata/test_29_secrule_14.conf",
-	// "seclang_parser/testdata/test_30_secrule_15.conf",
-	// "seclang_parser/testdata/test_31_secaction_ctl_07.conf",
-	// "seclang_parser/testdata/test_32_secrule_16.conf",
-	// "seclang_parser/testdata/test_33_secrule_16.conf",
-	// "seclang_parser/testdata/test_34_xml.conf",
-	// "seclang_parser/testdata/test_35_all_directives.conf",
-	// "seclang_parser/testdata/test_36_chain.conf",
-	// "seclang_parser/testdata/test_37_ugly_rules.conf",
 }
 
 func main() {
@@ -107,8 +63,8 @@ func main() {
 	}
 }
 
-// YAML with simple labels
-func PrintDirectivesWithLabels(configList types.ConfigurationList, filename string) error {
+// printDirectivesWithLabels writes alias format directives to a file
+func printDirectivesWithLabels(configList types.ConfigurationList, filename string) error {
 	wrappedConfigList := exporters.ToDirectivesWithLabels(configList)
 
 	yamlFile, err := yaml.Marshal(wrappedConfigList.Configurations)
@@ -130,12 +86,14 @@ func PrintDirectivesWithLabels(configList types.ConfigurationList, filename stri
 	return nil
 }
 
-type YAMLLoader struct {
+// yamlLoader is a auxiliary struct to load and iterate over the yaml file
+type yamlLoader struct {
 	Marker     exporters.ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
 	Directives []yaml.Node                             `yaml:"directives,omitempty"`
 }
 
-type DirectiveLoader struct {
+// directiveLoader is a auxiliary struct to load directives
+type directiveLoader struct {
 	types.SecRuleMetadata `yaml:"metadata,omitempty"`
 	types.Variables       `yaml:",inline"`
 	types.Transformations `yaml:",inline"`
@@ -145,18 +103,19 @@ type DirectiveLoader struct {
 	ChainedRule           yaml.Node `yaml:"chainedRule"`
 }
 
-func LoadDirectivesWithLabels(filename string) types.ConfigurationList{
+// loadDirectivesWithLabels loads alias format directives from a yaml file
+func loadDirectivesWithLabels(filename string) types.ConfigurationList{
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	var configs []YAMLLoader
+	var configs []yamlLoader
 	err = yaml.Unmarshal(yamlFile, &configs)
 	var resultConfigs []types.Configuration
 	for _, config := range configs {
 		var directives []types.SeclangDirective
 		for _, yamlDirective := range config.Directives {
-			directive := DirectivesWithLabelsAux(yamlDirective)
+			directive := directivesWithLabelsAux(yamlDirective)
 			if directive == nil {
 				panic("Unknown directive type")
 			} else {
@@ -168,7 +127,8 @@ func LoadDirectivesWithLabels(filename string) types.ConfigurationList{
 	return types.ConfigurationList{Configurations: resultConfigs}
 }
 
-func DirectivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
+// directivesWithLabelsAux is a recursive function to load directives
+func directivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 	if yamlDirective.Kind != yaml.MappingNode {
 		panic("Unknown format type")
 	}
@@ -211,7 +171,7 @@ func DirectivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 		if err != nil {
 			panic(err)
 		}
-		loaderDirective := DirectiveLoader{}
+		loaderDirective := directiveLoader{}
 		err = yaml.Unmarshal(rawDirective, &loaderDirective)
 		if err != nil {
 			panic(err)
@@ -223,7 +183,7 @@ func DirectivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 		}
 		var chainedRule types.SeclangDirective
 		if len(loaderDirective.ChainedRule.Content) > 0 {
-			chainedRule = DirectivesWithLabelsAux(loaderDirective.ChainedRule)
+			chainedRule = directivesWithLabelsAux(loaderDirective.ChainedRule)
 			directive.ChainedRule = castChainableDirective(chainedRule)
 		}
 		return &directive
@@ -232,7 +192,7 @@ func DirectivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 		if err != nil {
 			panic(err)
 		}
-		loaderDirective := DirectiveLoader{}
+		loaderDirective := directiveLoader{}
 		err = yaml.Unmarshal(rawDirective, &loaderDirective)
 		if err != nil {
 			panic(err)
@@ -246,7 +206,7 @@ func DirectivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 		}
 		var chainedRule types.SeclangDirective
 		if len(loaderDirective.ChainedRule.Content) > 0 {
-			chainedRule = DirectivesWithLabelsAux(loaderDirective.ChainedRule)
+			chainedRule = directivesWithLabelsAux(loaderDirective.ChainedRule)
 			directive.ChainedRule = castChainableDirective(chainedRule)
 		}
 		return &directive
@@ -255,7 +215,7 @@ func DirectivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 		if err != nil {
 			panic(err)
 		}
-		loaderDirective := DirectiveLoader{}
+		loaderDirective := directiveLoader{}
 		err = yaml.Unmarshal(rawDirective, &loaderDirective)
 		if err != nil {
 			panic(err)
@@ -268,7 +228,7 @@ func DirectivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 		}
 		var chainedRule types.SeclangDirective
 		if len(loaderDirective.ChainedRule.Content) > 0 {
-			chainedRule = DirectivesWithLabelsAux(loaderDirective.ChainedRule)
+			chainedRule = directivesWithLabelsAux(loaderDirective.ChainedRule)
 			directive.ChainedRule = castChainableDirective(chainedRule)
 		}
 		return &directive
@@ -276,6 +236,7 @@ func DirectivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 	return nil
 }
 
+// castChainableDirective casts a seclang directive to a chainable directive
 func castChainableDirective(directive types.SeclangDirective) types.ChainableDirective {
 	switch directive.(type) {
 	case *types.SecRule:
@@ -288,8 +249,8 @@ func castChainableDirective(directive types.SeclangDirective) types.ChainableDir
 	return nil
 }
 
-// Seclang
-func PrintSeclang(configList types.ConfigurationList, filename string) error {
+// printSeclang writes seclang format directives to a file
+func printSeclang(configList types.ConfigurationList, filename string) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -305,7 +266,7 @@ func PrintSeclang(configList types.ConfigurationList, filename string) error {
 	return nil
 }
 
-// YAML with conditions
+// PrintCRSLang writes crslang format directives (directives with conditions) to a file
 func PrintCRSLang(configList types.ConfigurationList, filename string) error {
 	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
 
