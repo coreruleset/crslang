@@ -101,39 +101,34 @@ func main() {
 	}
 	configList := types.ConfigurationList{Configurations: resultConfigs}
 
-	PrintCRSLang(configList, "crslang.yaml")
-}
-
-func ToSeclang(configs []exporters.ConfigurationWrapper) string {
-	result := ""
-	for _, config := range configs {
-		for _, directive := range config.Directives {
-			result += directive.ToSeclang()
-		}
+	err := PrintCRSLang(configList, "crslang.yaml")
+	if err != nil {
+		panic(err)
 	}
-	return result
 }
 
 // YAML with simple labels
-func PrintDirectivesWithLabels(configList types.ConfigurationList, filename string) {
+func PrintDirectivesWithLabels(configList types.ConfigurationList, filename string) error {
 	wrappedConfigList := exporters.ToDirectivesWithLabels(configList)
 
 	yamlFile, err := yaml.Marshal(wrappedConfigList.Configurations)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	// fmt.Println("Printing yaml", string(yamlFile))
 
 	f, err := os.Create(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer f.Close()
 
 	_, err = io.WriteString(f, string(yamlFile))
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
 type YAMLLoader struct {
@@ -151,7 +146,7 @@ type DirectiveLoader struct {
 	ChainedRule           yaml.Node `yaml:"chainedRule"`
 }
 
-func LoadDirectivesWithLabels(filename string) types.ConfigurationList {
+func LoadDirectivesWithLabels(filename string) types.ConfigurationList{
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
@@ -295,39 +290,41 @@ func castChainableDirective(directive types.SeclangDirective) types.ChainableDir
 }
 
 // Seclang
-func PrintSeclang(configList types.ConfigurationList, filename string) {
+func PrintSeclang(configList types.ConfigurationList, filename string) error {
 	f, err := os.Create(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	for _, config := range configList.Configurations {
-		for _, directive := range config.Directives {
-			_, err = io.WriteString(f, directive.ToSeclang()+"\n")
-			if err != nil {
-				panic(err)
-			}
-		}
+	seclangDirectives := exporters.ToSeclang(configList)
+
+	_, err = io.WriteString(f, seclangDirectives)
+	if err != nil {
+		return err
 	}
+
+	return nil
 }
 
 // YAML with conditions
-func PrintCRSLang(configList types.ConfigurationList, filename string) {
+func PrintCRSLang(configList types.ConfigurationList, filename string) error {
 	configListWithConditions := exporters.ConcreteRepr2(configList)
 
 	yamlFile, err := yaml.Marshal(configListWithConditions.Configurations)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	f, err := os.Create(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer f.Close()
 
 	_, err = io.WriteString(f, string(yamlFile))
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
