@@ -115,7 +115,6 @@ func PrintDirectivesWithLabels(configList types.ConfigurationList, filename stri
 	if err != nil {
 		return err
 	}
-	// fmt.Println("Printing yaml", string(yamlFile))
 
 	f, err := os.Create(filename)
 	if err != nil {
@@ -308,7 +307,7 @@ func PrintSeclang(configList types.ConfigurationList, filename string) error {
 
 // YAML with conditions
 func PrintCRSLang(configList types.ConfigurationList, filename string) error {
-	configListWithConditions := exporters.ConcreteRepr2(configList)
+	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
 
 	yamlFile, err := yaml.Marshal(configListWithConditions.Configurations)
 	if err != nil {

@@ -34,22 +34,22 @@ func (s ScriptCondition) ConditionToSeclang() string {
 	return "New script condition"
 }
 
-type RuleWithCondititon struct {
+type RuleWithCondition struct {
 	types.SecRuleMetadata `yaml:"metadata,omitempty"`
 	Conditions            []Condition `yaml:"conditions,omitempty"`
 	types.SeclangActions  `yaml:"actions,omitempty"`
-	ChainedRule           *RuleWithCondititon `yaml:"chainedRule,omitempty"`
+	ChainedRule           *RuleWithCondition `yaml:"chainedRule,omitempty"`
 }
 
-type RuleWithCondititonWrapper struct {
-	RuleWithCondititon `yaml:"rule"`
+type RuleWithConditionWrapper struct {
+	RuleWithCondition `yaml:"rule"`
 }
 
-func (s RuleWithCondititon) ToSeclang() string {
+func (s RuleWithCondition) ToSeclang() string {
 	return "New sec rule with conditions"
 }
 
-func ConcreteRepr2(configList types.ConfigurationList) *ConfigurationListWrapper {
+func ToDirectiveWithConditions(configList types.ConfigurationList) *ConfigurationListWrapper {
 	result := new(ConfigurationListWrapper)
 	for _, config := range configList.Configurations {
 		configWrapper := new(ConfigurationWrapper)
@@ -61,23 +61,17 @@ func ConcreteRepr2(configList types.ConfigurationList) *ConfigurationListWrapper
 				directiveWrapper = directive.(types.CommentMetadata)
 			case types.SecDefaultAction:
 				directiveWrapper = SecDefaultActionWrapper{directive.(types.SecDefaultAction)}
-			// case types.SecAction:
-			// 	directiveWrapper = SecActionWrapper{directive.(types.SecAction)}
-			// case types.SecRule:
-			// 	directiveWrapper = SecRuleWithCondititonWrapper{
-			// 		ToConditions((directive.(types.SecRule))),
-			// 	}
 			case *types.SecAction:
-				directiveWrapper = RuleWithCondititonWrapper{
-					ToConditions(directive.(*types.SecAction)),
+				directiveWrapper = RuleWithConditionWrapper{
+					RuleToCondition(directive.(*types.SecAction)),
 				}
 			case *types.SecRule:
-				directiveWrapper = RuleWithCondititonWrapper{
-					ToConditions(directive.(*types.SecRule)),
+				directiveWrapper = RuleWithConditionWrapper{
+					RuleToCondition(directive.(*types.SecRule)),
 				}
 			case *types.SecRuleScript:
-				directiveWrapper = RuleWithCondititonWrapper{
-					ToConditions(directive.(*types.SecRuleScript)),
+				directiveWrapper = RuleWithConditionWrapper{
+					RuleToCondition(directive.(*types.SecRuleScript)),
 				}
 			case types.ConfigurationDirective:
 				directiveWrapper = ConfigurationDirectiveWrapper{directive.(types.ConfigurationDirective)}
@@ -89,12 +83,12 @@ func ConcreteRepr2(configList types.ConfigurationList) *ConfigurationListWrapper
 	return result
 }
 
-func ToConditions(directive types.ChainableDirective) RuleWithCondititon {
-	var ruleWithCondition RuleWithCondititon
+func RuleToCondition(directive types.ChainableDirective) RuleWithCondition {
+	var ruleWithCondition RuleWithCondition
 	switch directive.(type) {
 	case *types.SecRule:
 		rule := directive.(*types.SecRule)
-		ruleWithCondition = RuleWithCondititon{
+		ruleWithCondition = RuleWithCondition{
 			rule.SecRuleMetadata,
 			[]Condition{
 				SecRuleCondition{
@@ -108,7 +102,7 @@ func ToConditions(directive types.ChainableDirective) RuleWithCondititon {
 		}
 	case *types.SecAction:
 		action:= directive.(*types.SecAction)
-		ruleWithCondition = RuleWithCondititon{
+		ruleWithCondition = RuleWithCondition{
 			action.SecRuleMetadata,
 			[]Condition{
 				SecActionCondition{
@@ -120,7 +114,7 @@ func ToConditions(directive types.ChainableDirective) RuleWithCondititon {
 		}
 	case *types.SecRuleScript:
 		script:= directive.(*types.SecRuleScript)
-		ruleWithCondition = RuleWithCondititon{
+		ruleWithCondition = RuleWithCondition{
 			script.SecRuleMetadata,
 			[]Condition{
 				ScriptCondition{
@@ -132,12 +126,9 @@ func ToConditions(directive types.ChainableDirective) RuleWithCondititon {
 		}
 	}
 	if directive.GetChainedDirective() != nil {
-		chainedConditionRule := ToConditions(directive.GetChainedDirective())
-		// fmt.Printf("Condition rule: %v\n", conditionRule)
+		chainedConditionRule := RuleToCondition(directive.GetChainedDirective())
 		if directive.NonDisruptiveActionsCount() > 0 {
 			ruleWithCondition.ChainedRule = &chainedConditionRule
-			// fmt.Printf("Condition rule: %v\n", chainedConditionRule)
-			// fmt.Printf("Chained rule: %v\n", *conditionRule.chainedRule)
 		} else {
 			ruleWithCondition.Conditions = append(ruleWithCondition.Conditions, chainedConditionRule.Conditions...)
 			ruleWithCondition.NonDisruptiveActions = chainedConditionRule.NonDisruptiveActions
