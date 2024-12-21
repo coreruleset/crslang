@@ -9,9 +9,13 @@
 
 image: golang:latest
 
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_DEPTH: 1
+
 stages:
-  - test
   - build
+  - test
 
 format:
   stage: test
