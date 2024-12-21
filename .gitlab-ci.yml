@@ -27,5 +27,9 @@ format:
 compile:
   stage: build
   script:
-    - go run mage.go test
+    - git clone https://github.com/magefile/mage
+    - cd mage
+    - go run bootstrap.go
+    - cd ..
+    - mage test
 
