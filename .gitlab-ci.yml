@@ -20,6 +20,7 @@ stages:
 format:
   stage: test
   script:
+    - printf "machine gitlab.fing.edu.uy\nlogin fzipi\npassword $gitlabtoken\n" > .netrc
     - go fmt $(go list ./... | grep -v /vendor/)
     - go vet $(go list ./... | grep -v /vendor/)
     - go test -race $(go list ./... | grep -v /vendor/)
