@@ -17,27 +17,19 @@ stages:
   - build
   - test
 
-format:
-  stage: test
-  script:
-    - printf "machine gitlab.fing.edu.uy\nlogin fzipi\npassword $gitlabtoken\n" > .netrc
+.pre_reqs: &pre_reqs
+  before_script:
     - apt-get update && apt-get install -y default-jdk
-    - git clone https://github.com/magefile/mage
-    - cd mage
-    - go run bootstrap.go
-    - cd ..
-    - mage build
-    - go fmt $(go list ./... | grep -v /vendor/)
-    - go vet $(go list ./... | grep -v /vendor/ | grep -v /crslang/parsing)
-    - go test -race $(go list ./... | grep -v /vendor/)
 
 compile:
   stage: build
   script:
-    - apt-get update && apt-get install -y default-jdk
-    - git clone https://github.com/magefile/mage
-    - cd mage
-    - go run bootstrap.go
-    - cd ..
-    - mage test
+    <<: *pre_reqs
+    - go run mage.go build
+    - ./crslang
 
+tests:
+  stage: test
+  script:
+    <<: *pre_reqs
+    - go run mage.go test
