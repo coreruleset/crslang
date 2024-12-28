@@ -20,12 +20,12 @@ stages:
 compile:
   stage: build
   script:
-    - apt-get update && apt-get install -y default-jdk
+    - apt-get update && apt-get install -y default-jre
     - go run mage.go build
     - ./crslang
 
 tests:
   stage: test
   script:
-    - apt-get update && apt-get install -y default-jdk
+    - apt-get update && apt-get install -y default-jre
     - go run mage.go test
