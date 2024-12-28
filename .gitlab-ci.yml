@@ -17,19 +17,15 @@ stages:
   - build
   - test
 
-.pre_reqs: &pre_reqs
-  before_script:
-    - apt-get update && apt-get install -y default-jdk
-
 compile:
   stage: build
   script:
-    <<: *pre_reqs
+    - apt-get update && apt-get install -y default-jdk
     - go run mage.go build
     - ./crslang
 
 tests:
   stage: test
   script:
-    <<: *pre_reqs
+    - apt-get update && apt-get install -y default-jdk
     - go run mage.go test
