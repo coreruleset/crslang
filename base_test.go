@@ -249,7 +249,7 @@ var genericTests = map[string]struct {
 		"",
 	},
 	"seclang_parser/testdata/test_directive_unknown.conf": {
-		4,
+		1,
 		"test should fail with unknown directive",
 	},
 	"seclang_parser/testdata/test_34_xml.conf": {
