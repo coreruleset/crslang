@@ -1,7 +1,10 @@
 package exporters
 
 import (
+	"os"
+
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
+	"gopkg.in/yaml.v3"
 )
 
 type ConfigurationDirectiveWrapper struct {
@@ -89,6 +92,169 @@ func castWrappedDirective(directive types.SeclangDirective) types.ChainableDirec
 		return directive.(SecActionWrapper)
 	case SecRuleScriptWrapper:
 		return directive.(SecRuleScriptWrapper)
+	}
+	return nil
+}
+
+// yamlLoader is a auxiliary struct to load and iterate over the yaml file
+type yamlLoader struct {
+	Marker     ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
+	Directives []yaml.Node                             `yaml:"directives,omitempty"`
+}
+
+// directiveLoader is a auxiliary struct to load directives
+type directiveLoader struct {
+	types.SecRuleMetadata `yaml:"metadata,omitempty"`
+	types.Variables       `yaml:",inline"`
+	types.Transformations `yaml:",inline"`
+	types.Operator        `yaml:"operator"`
+	types.SeclangActions  `yaml:"actions"`
+	ScriptPath            string    `yaml:"scriptpath"`
+	ChainedRule           yaml.Node `yaml:"chainedRule"`
+}
+
+// loadDirectivesWithLabels loads alias format directives from a yaml file
+func loadDirectivesWithLabels(filename string) types.ConfigurationList{
+	yamlFile, err := os.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	var configs []yamlLoader
+	err = yaml.Unmarshal(yamlFile, &configs)
+	var resultConfigs []types.Configuration
+	for _, config := range configs {
+		var directives []types.SeclangDirective
+		for _, yamlDirective := range config.Directives {
+			directive := directivesWithLabelsAux(yamlDirective)
+			if directive == nil {
+				panic("Unknown directive type")
+			} else {
+				directives = append(directives, directive)
+			}
+		}
+		resultConfigs = append(resultConfigs, types.Configuration{Marker: config.Marker.ConfigurationDirective, Directives: directives})
+	}
+	return types.ConfigurationList{Configurations: resultConfigs}
+}
+
+// directivesWithLabelsAux is a recursive function to load directives
+func directivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
+	if yamlDirective.Kind != yaml.MappingNode {
+		panic("Unknown format type")
+	}
+	switch yamlDirective.Content[0].Value {
+	case "comment":
+		rawDirective, err := yaml.Marshal(yamlDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.CommentMetadata{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	case "configurationdirective":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.ConfigurationDirective{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	case "secdefaultaction":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecDefaultAction{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	case "secaction":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		loaderDirective := directiveLoader{}
+		err = yaml.Unmarshal(rawDirective, &loaderDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecAction{
+			SecRuleMetadata: loaderDirective.SecRuleMetadata,
+			Transformations: loaderDirective.Transformations,
+			SeclangActions:  loaderDirective.SeclangActions,
+		}
+		var chainedRule types.SeclangDirective
+		if len(loaderDirective.ChainedRule.Content) > 0 {
+			chainedRule = directivesWithLabelsAux(loaderDirective.ChainedRule)
+			directive.ChainedRule = castChainableDirective(chainedRule)
+		}
+		return &directive
+	case "secrule":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		loaderDirective := directiveLoader{}
+		err = yaml.Unmarshal(rawDirective, &loaderDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecRule{
+			SecRuleMetadata: loaderDirective.SecRuleMetadata,
+			Variables:       loaderDirective.Variables,
+			Transformations: loaderDirective.Transformations,
+			Operator:        loaderDirective.Operator,
+			SeclangActions:  loaderDirective.SeclangActions,
+		}
+		var chainedRule types.SeclangDirective
+		if len(loaderDirective.ChainedRule.Content) > 0 {
+			chainedRule = directivesWithLabelsAux(loaderDirective.ChainedRule)
+			directive.ChainedRule = castChainableDirective(chainedRule)
+		}
+		return &directive
+	case "secrulescript":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		loaderDirective := directiveLoader{}
+		err = yaml.Unmarshal(rawDirective, &loaderDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecRuleScript{
+			SecRuleMetadata: loaderDirective.SecRuleMetadata,
+			Transformations: loaderDirective.Transformations,
+			SeclangActions:  loaderDirective.SeclangActions,
+			ScriptPath:      loaderDirective.ScriptPath,
+		}
+		var chainedRule types.SeclangDirective
+		if len(loaderDirective.ChainedRule.Content) > 0 {
+			chainedRule = directivesWithLabelsAux(loaderDirective.ChainedRule)
+			directive.ChainedRule = castChainableDirective(chainedRule)
+		}
+		return &directive
+	}
+	return nil
+}
+
+// castChainableDirective casts a seclang directive to a chainable directive
+func castChainableDirective(directive types.SeclangDirective) types.ChainableDirective {
+	switch directive.(type) {
+	case *types.SecRule:
+		return directive.(*types.SecRule)
+	case *types.SecAction:
+		return directive.(*types.SecAction)
+	case *types.SecRuleScript:
+		return directive.(*types.SecRuleScript)
 	}
 	return nil
 }
