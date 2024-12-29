@@ -28,4 +28,5 @@ tests:
   stage: test
   script:
     - apt-get update && apt-get install -y default-jre
-    - go run mage.go test
+    - go run mage.go generate
+    - go test -v
