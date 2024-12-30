@@ -157,15 +157,24 @@ type conditionDirectiveLoader struct {
 	ChainedRule           yaml.Node `yaml:"chainedRule"`
 }
 
-// LoadDirectivesWithConditions loads condition format directives from a yaml file
-func LoadDirectivesWithConditions(filename string) types.ConfigurationList {
+// LoadDirectivesWithConditionsFromFile loads condition format directives from a yaml file
+func LoadDirectivesWithConditionsFromFile(filename string) ConfigurationListWrapper {
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	var configs []yamlLoader
-	err = yaml.Unmarshal(yamlFile, &configs)
-	var resultConfigs []types.Configuration
+
+	return LoadDirectivesWithConditions(yamlFile)
+}
+
+// LoadDirectivesWithConditions loads condition format directives from a yaml file
+func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationListWrapper {
+	var configs []yamlLoaderConditionRules
+	err := yaml.Unmarshal(yamlFile, &configs)
+	if err != nil {
+		panic(err)
+	}
+	var resultConfigs []ConfigurationWrapper
 	for _, config := range configs {
 		var directives []types.SeclangDirective
 		for _, yamlDirective := range config.Directives {
@@ -176,9 +185,9 @@ func LoadDirectivesWithConditions(filename string) types.ConfigurationList {
 				directives = append(directives, directive)
 			}
 		}
-		resultConfigs = append(resultConfigs, types.Configuration{Marker: config.Marker.ConfigurationDirective, Directives: directives})
+		resultConfigs = append(resultConfigs, ConfigurationWrapper{Marker: config.Marker, Directives: directives})
 	}
-	return types.ConfigurationList{Configurations: resultConfigs}
+	return ConfigurationListWrapper{Configurations: resultConfigs}
 }
 
 // loadConditionDirective loads the different kind of directives

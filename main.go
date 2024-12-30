@@ -62,13 +62,13 @@ func main() {
 		panic(err)
 	}
 
-	/* loadedConfigList := exporters.LoadDirectivesWithConditions("crslang.yaml")
-	yamlFile, err := yaml.Marshal(loadedConfigList.Configurations)
-	if err != nil {
-		panic(err)
-	}
+	/* 	loadedConfigList := exporters.LoadDirectivesWithConditionsFromFile("crslang.yaml")
+	   	yamlFile, err := yaml.Marshal(loadedConfigList.Configurations)
+	   	if err != nil {
+	   		panic(err)
+	   	}
 
-	writeToFile(yamlFile, "crslang_loaded.yaml") */
+	   	writeToFile(yamlFile, "crslang_loaded.yaml") */
 }
 
 // printDirectivesWithLabels writes alias format directives to a file
