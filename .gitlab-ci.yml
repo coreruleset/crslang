@@ -9,19 +9,24 @@
 
 image: golang:latest
 
-stages:
-  - test
-  - build
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_DEPTH: 1
 
-format:
-  stage: test
-  script:
-    - go fmt $(go list ./... | grep -v /vendor/)
-    - go vet $(go list ./... | grep -v /vendor/)
-    - go test -race $(go list ./... | grep -v /vendor/)
+stages:
+  - build
+  - test
 
 compile:
   stage: build
   script:
-    - go run mage.go test
+    - apt-get update && apt-get install -y default-jre
+    - go run mage.go build
+    - ./crslang
 
+tests:
+  stage: test
+  script:
+    - apt-get update && apt-get install -y default-jre
+    - go run mage.go generate
+    - go test -v
