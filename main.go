@@ -57,10 +57,18 @@ func main() {
 	}
 	configList := types.ConfigurationList{Configurations: resultConfigs}
 
-	err := PrintCRSLang(configList, "crslang.yaml")
+	err := printCRSLang(configList, "crslang.yaml")
 	if err != nil {
 		panic(err)
 	}
+
+	/* loadedConfigList := exporters.LoadDirectivesWithConditions("crslang.yaml")
+	yamlFile, err := yaml.Marshal(loadedConfigList.Configurations)
+	if err != nil {
+		panic(err)
+	}
+
+	writeToFile(yamlFile, "crslang_loaded.yaml") */
 }
 
 // printDirectivesWithLabels writes alias format directives to a file
@@ -72,18 +80,9 @@ func printDirectivesWithLabels(configList types.ConfigurationList, filename stri
 		return err
 	}
 
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
+	err = writeToFile(yamlFile, filename)
 
-	_, err = io.WriteString(f, string(yamlFile))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // printSeclang writes seclang format directives to a file
@@ -103,8 +102,8 @@ func printSeclang(configList types.ConfigurationList, filename string) error {
 	return nil
 }
 
-// PrintCRSLang writes crslang format directives (directives with conditions) to a file
-func PrintCRSLang(configList types.ConfigurationList, filename string) error {
+// printCRSLang writes crslang format directives (directives with conditions) to a file
+func printCRSLang(configList types.ConfigurationList, filename string) error {
 	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
 
 	yamlFile, err := yaml.Marshal(configListWithConditions.Configurations)
@@ -112,13 +111,19 @@ func PrintCRSLang(configList types.ConfigurationList, filename string) error {
 		return err
 	}
 
+	err = writeToFile(yamlFile, filename)
+
+	return err
+}
+
+func writeToFile(payload []byte, filename string) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	_, err = io.WriteString(f, string(yamlFile))
+	_, err = io.WriteString(f, string(payload))
 	if err != nil {
 		return err
 	}
