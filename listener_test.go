@@ -50,6 +50,39 @@ func TestLoadComment(t *testing.T) {
 	}
 }
 
+func TestLoadConfigurationDirective(t *testing.T) {
+	testPayload := `
+SecRuleEngine On
+`
+
+	resultConfigs := []types.Configuration{}
+	input := antlr.NewInputStream(testPayload)
+	lexer := parsing.NewSecLangLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, 0)
+	p := parsing.NewSecLangParser(stream)
+	start := p.Configuration()
+	var listener ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+
+	if len(resultConfigs) != 1 {
+		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
+	}
+	if len(resultConfigs[0].Directives) != 1 {
+		t.Errorf("Expected 1 directive, got %d", len(resultConfigs[0].Directives))
+	}
+	configDirective, ok := resultConfigs[0].Directives[0].(types.ConfigurationDirective)
+	if !ok {
+		t.Errorf("Expected configuration directive, got %T", resultConfigs[0].Directives[0])
+	}
+	if configDirective.DirectiveName != "SecRuleEngine" {
+		t.Errorf("Expected directive SecRuleEngine, got %s", configDirective.DirectiveName)
+	}
+	if configDirective.Parameter != "On" {
+		t.Errorf("Expected parameter On, got %s", configDirective.Parameter)
+	}
+}
+
 func TestLoadSecAction(t *testing.T) {
 	testPayload := `
 # Initialize anomaly scoring variables.
