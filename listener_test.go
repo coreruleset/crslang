@@ -9,6 +9,47 @@ import (
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 )
 
+func TestLoadComment(t *testing.T) {
+	testPayload := `#
+# -- [[ Introduction ]] --------------------------------------------------------
+#
+# The OWASP ModSecurity Core Rule Set (CRS) is a set of generic attack
+# detection rules that provide a base level of protection for any web
+# application. They are written for the open source, cross-platform
+# ModSecurity Web Application Firewall.
+#
+# See also:
+# https://coreruleset.org/
+# https://github.com/coreruleset/coreruleset
+# https://owasp.org/www-project-modsecurity-core-rule-set/
+#
+`
+
+	resultConfigs := []types.Configuration{}
+	input := antlr.NewInputStream(testPayload)
+	lexer := parsing.NewSecLangLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, 0)
+	p := parsing.NewSecLangParser(stream)
+	start := p.Configuration()
+	var listener ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+
+	if len(resultConfigs) != 1 {
+		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
+	}
+	if len(resultConfigs[0].Directives) != 1 {
+		t.Errorf("Expected 1 directive, got %d", len(resultConfigs[0].Directives))
+	}
+	_, ok := resultConfigs[0].Directives[0].(types.CommentMetadata)
+	if !ok {
+		t.Errorf("Expected comment, got %T", resultConfigs[0].Directives[0])
+	}
+	if resultConfigs[0].Directives[0].(types.CommentMetadata).Comment != testPayload {
+		t.Errorf("Expected comment %s, got %s", testPayload, resultConfigs[0].Directives[0].(types.CommentMetadata).Comment)
+	}
+}
+
 func TestLoadSecAction(t *testing.T) {
 	testPayload := `
 # Initialize anomaly scoring variables.
