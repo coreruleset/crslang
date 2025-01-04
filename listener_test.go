@@ -80,3 +80,86 @@ SecAction \
 		t.Errorf("Expected disruptive action pass, got %s", resultConfigs[0].Directives[0].(*types.SecAction).DisruptiveAction.Action)
 	} 
 }
+
+func TestLoadSecRule(t *testing.T) {
+	testPayload := `
+#
+# Validate request line against the format specified in the HTTP RFC
+#
+# -=[ Rule Logic ]=-
+#
+# Uses rule negation against the regex for positive security.   The regex specifies the proper
+# construction of URI request lines such as:
+#
+#   "http" "://" authority path-abempty [ "?" query ]
+#
+# It also outlines proper construction for CONNECT, OPTIONS and GET requests.
+#
+# Regular expression generated from regex-assembly/920100.ra.
+# To update the regular expression run the following shell script
+# (consult https://coreruleset.org/docs/development/regex_assembly/ for details):
+#   crs-toolchain regex update 920100
+#
+# -=[ References ]=-
+# https://www.rfc-editor.org/rfc/rfc9110.html#section-4.2.1
+# http://capec.mitre.org/data/definitions/272.html
+#
+SecRule REQUEST_LINE "!@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:connect (?:(?:[0-9]{1,3}\.){3}[0-9]{1,3}\.?(?::[0-9]+)?|[\--9A-Z_a-z]+:[0-9]+)|options \*|[a-z]{3,10}[\s\v]+(?:[0-9A-Z_a-z]{3,7}?://[\--9A-Z_a-z]*(?::[0-9]+)?)?/[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?)[\s\v]+[\.-9A-Z_a-z]+)$" \
+    "id:920100,\
+    phase:1,\
+    block,\
+    t:none,\
+    msg:'Invalid HTTP Request Line',\
+    logdata:'%{request_line}',\
+    tag:'application-multi',\
+    tag:'language-multi',\
+    tag:'platform-multi',\
+    tag:'attack-protocol',\
+    tag:'paranoia-level/1',\
+    tag:'OWASP_CRS',\
+    tag:'capec/1000/210/272',\
+    ver:'OWASP_CRS/4.0.1-dev',\
+    severity:'WARNING',\
+    setvar:'tx.inbound_anomaly_score_pl1=+%{tx.warning_anomaly_score}'"`
+
+	resultConfigs := []types.Configuration{}
+	input := antlr.NewInputStream(testPayload)
+	lexer := parsing.NewSecLangLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, 0)
+	p := parsing.NewSecLangParser(stream)
+	start := p.Configuration()
+	var listener ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+
+	if len(resultConfigs) != 1 {
+		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
+	}
+	if len(resultConfigs[0].Directives) != 1 {
+		t.Errorf("Expected 1 directive, got %d", len(resultConfigs[0].Directives))
+	}
+	if resultConfigs[0].Directives[0].(*types.SecRule).Id != 920100 {
+		t.Errorf("Expected id 920100, got %d", resultConfigs[0].Directives[0].(*types.SecRule).Id)
+	}
+	if resultConfigs[0].Directives[0].(*types.SecRule).Phase != "1" {
+		t.Errorf("Expected phase 1, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Phase)
+	}
+	if resultConfigs[0].Directives[0].(*types.SecRule).Tags[0] != "application-multi" {
+		t.Errorf("Expected tag application-multi, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Tags[0])
+	}
+	if resultConfigs[0].Directives[0].(*types.SecRule).Ver != "OWASP_CRS/4.0.1-dev" {
+		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Ver)
+	}
+	if resultConfigs[0].Directives[0].(*types.SecRule).Msg != "Invalid HTTP Request Line" {
+		t.Errorf("Expected message Invalid HTTP Request Line, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Msg)
+	}
+	if resultConfigs[0].Directives[0].(*types.SecRule).Severity != "WARNING" {
+		t.Errorf("Expected severity WARNING, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Severity)
+	}
+	if slices.Contains(resultConfigs[0].Directives[0].(*types.SecRule).GetActionKeys(), "logdata") == false {
+		t.Errorf("Expected logdata action, not found")
+	}
+	if resultConfigs[0].Directives[0].(*types.SecRule).DisruptiveAction.Action != "block" {
+		t.Errorf("Expected disruptive action block, got %s", resultConfigs[0].Directives[0].(*types.SecRule).DisruptiveAction.Action)
+	}
+}
