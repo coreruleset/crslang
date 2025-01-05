@@ -135,24 +135,28 @@ SecAction \
 	if len(resultConfigs[0].Directives) != 1 {
 		t.Errorf("Expected 1 directive, got %d", len(resultConfigs[0].Directives))
 	}
-	if resultConfigs[0].Directives[0].(*types.SecAction).Id != 901200 {
-		t.Errorf("Expected id 901200, got %d", resultConfigs[0].Directives[0].(*types.SecAction).Id)
+	secAction, ok := resultConfigs[0].Directives[0].(*types.SecAction)
+	if !ok {
+		t.Errorf("Expected SecAction, got %T", resultConfigs[0].Directives[0])
 	}
-	if resultConfigs[0].Directives[0].(*types.SecAction).Phase != "1" {
-		t.Errorf("Expected phase 1, got %s", resultConfigs[0].Directives[0].(*types.SecAction).Phase)
+	if secAction.Id != 901200 {
+		t.Errorf("Expected id 901200, got %d", secAction.Id)
 	}
-	if resultConfigs[0].Directives[0].(*types.SecAction).Tags[0] != "OWASP_CRS" {
-		t.Errorf("Expected tag OWASP_CRS, got %s", resultConfigs[0].Directives[0].(*types.SecAction).Tags[0])
+	if secAction.Phase != "1" {
+		t.Errorf("Expected phase 1, got %s", secAction.Phase)
 	}
-	if resultConfigs[0].Directives[0].(*types.SecAction).Ver != "OWASP_CRS/4.0.1-dev" {
-		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", resultConfigs[0].Directives[0].(*types.SecAction).Ver)
+	if secAction.Tags[0] != "OWASP_CRS" {
+		t.Errorf("Expected tag OWASP_CRS, got %s", secAction.Tags[0])
 	}
-	if slices.Contains(resultConfigs[0].Directives[0].(*types.SecAction).GetActionKeys(), "nolog") == false {
+	if secAction.Ver != "OWASP_CRS/4.0.1-dev" {
+		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", secAction.Ver)
+	}
+	if slices.Contains(secAction.GetActionKeys(), "nolog") == false {
 		t.Errorf("Expected nolog action, not found")
 	}
-	if resultConfigs[0].Directives[0].(*types.SecAction).DisruptiveAction.Action != "pass" {
-		t.Errorf("Expected disruptive action pass, got %s", resultConfigs[0].Directives[0].(*types.SecAction).DisruptiveAction.Action)
-	} 
+	if secAction.DisruptiveAction.Action != "pass" {
+		t.Errorf("Expected disruptive action pass, got %s", secAction.DisruptiveAction.Action)
+	}
 }
 
 func TestLoadSecRule(t *testing.T) {
@@ -212,28 +216,32 @@ SecRule REQUEST_LINE "!@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?
 	if len(resultConfigs[0].Directives) != 1 {
 		t.Errorf("Expected 1 directive, got %d", len(resultConfigs[0].Directives))
 	}
-	if resultConfigs[0].Directives[0].(*types.SecRule).Id != 920100 {
-		t.Errorf("Expected id 920100, got %d", resultConfigs[0].Directives[0].(*types.SecRule).Id)
+	secRule, ok := resultConfigs[0].Directives[0].(*types.SecRule)
+	if !ok {
+		t.Errorf("Expected SecRule, got %T", resultConfigs[0].Directives[0])
 	}
-	if resultConfigs[0].Directives[0].(*types.SecRule).Phase != "1" {
-		t.Errorf("Expected phase 1, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Phase)
+	if secRule.Id != 920100 {
+		t.Errorf("Expected id 920100, got %d", secRule.Id)
 	}
-	if resultConfigs[0].Directives[0].(*types.SecRule).Tags[0] != "application-multi" {
-		t.Errorf("Expected tag application-multi, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Tags[0])
+	if secRule.Phase != "1" {
+		t.Errorf("Expected phase 1, got %s", secRule.Phase)
 	}
-	if resultConfigs[0].Directives[0].(*types.SecRule).Ver != "OWASP_CRS/4.0.1-dev" {
-		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Ver)
+	if secRule.Tags[0] != "application-multi" {
+		t.Errorf("Expected tag application-multi, got %s", secRule.Tags[0])
 	}
-	if resultConfigs[0].Directives[0].(*types.SecRule).Msg != "Invalid HTTP Request Line" {
-		t.Errorf("Expected message Invalid HTTP Request Line, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Msg)
+	if secRule.Ver != "OWASP_CRS/4.0.1-dev" {
+		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", secRule.Ver)
 	}
-	if resultConfigs[0].Directives[0].(*types.SecRule).Severity != "WARNING" {
-		t.Errorf("Expected severity WARNING, got %s", resultConfigs[0].Directives[0].(*types.SecRule).Severity)
+	if secRule.Msg != "Invalid HTTP Request Line" {
+		t.Errorf("Expected message Invalid HTTP Request Line, got %s", secRule.Msg)
 	}
-	if slices.Contains(resultConfigs[0].Directives[0].(*types.SecRule).GetActionKeys(), "logdata") == false {
+	if secRule.Severity != "WARNING" {
+		t.Errorf("Expected severity WARNING, got %s", secRule.Severity)
+	}
+	if slices.Contains(secRule.GetActionKeys(), "logdata") == false {
 		t.Errorf("Expected logdata action, not found")
 	}
-	if resultConfigs[0].Directives[0].(*types.SecRule).DisruptiveAction.Action != "block" {
-		t.Errorf("Expected disruptive action block, got %s", resultConfigs[0].Directives[0].(*types.SecRule).DisruptiveAction.Action)
+	if secRule.DisruptiveAction.Action != "block" {
+		t.Errorf("Expected disruptive action block, got %s", secRule.DisruptiveAction.Action)
 	}
 }
