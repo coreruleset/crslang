@@ -245,3 +245,80 @@ SecRule REQUEST_LINE "!@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?
 		t.Errorf("Expected disruptive action block, got %s", secRule.DisruptiveAction.Action)
 	}
 }
+
+func TestLoadChain(t *testing.T) {
+	testPayload := `# This file is used as an exception mechanism to remove common false positives
+# that may be encountered.
+#
+# Exception for Apache SSL pinger
+#
+SecRule REQUEST_LINE "@streq GET /" \
+    "id:905100,\
+    phase:1,\
+    pass,\
+    t:none,\
+    nolog,\
+    tag:'application-multi',\
+    tag:'language-multi',\
+    tag:'platform-apache',\
+    tag:'attack-generic',\
+    tag:'OWASP_CRS',\
+    ver:'OWASP_CRS/4.6.0-dev',\
+    chain"
+    SecRule REMOTE_ADDR "@ipMatch 127.0.0.1,::1" \
+        "t:none,\
+        ctl:ruleRemoveByTag=OWASP_CRS,\
+        ctl:auditEngine=Off"`
+
+	resultConfigs := []types.Configuration{}
+	input := antlr.NewInputStream(testPayload)
+	lexer := parsing.NewSecLangLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, 0)
+	p := parsing.NewSecLangParser(stream)
+	start := p.Configuration()
+	var listener ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+
+	if len(resultConfigs) != 1 {
+		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
+	}
+	if len(resultConfigs[0].Directives) != 1 {
+		t.Errorf("Expected 1 directive, got %d", len(resultConfigs[0].Directives))
+	}
+	secRule, ok := resultConfigs[0].Directives[0].(*types.SecRule)
+	if !ok {
+		t.Errorf("Expected SecRule, got %T", resultConfigs[0].Directives[0])
+	}
+	if secRule.Id != 905100 {
+		t.Errorf("Expected id 905100, got %d", secRule.Id)
+	}
+	if secRule.Phase != "1" {
+		t.Errorf("Expected phase 1, got %s", secRule.Phase)
+	}
+	if secRule.Tags[0] != "application-multi" {
+		t.Errorf("Expected tag application-multi, got %s", secRule.Tags[0])
+	}
+	if secRule.Ver != "OWASP_CRS/4.6.0-dev" {
+		t.Errorf("Expected version OWASP_CRS/4.6.0-dev, got %s", secRule.Ver)
+	}
+	if secRule.DisruptiveAction.Action != "pass" {
+		t.Errorf("Expected disruptive action pass, got %s", secRule.DisruptiveAction.Action)
+	}
+	if slices.Contains(secRule.GetActionKeys(), "chain") == false {
+		t.Errorf("Expected chain action, not found")
+	}
+	chainedRule, ok := secRule.ChainedRule.(*types.SecRule)
+	if !ok {
+		t.Errorf("Expected SecRule, got %T", secRule.ChainedRule)
+	}
+	if chainedRule.Operator.Name != "ipMatch" {
+		t.Errorf("Expected operator ipMatch, got %s", chainedRule.Operator.Name)
+	}
+	if chainedRule.Operator.Value != "127.0.0.1,::1" {
+		t.Errorf("Expected operator value 127.0.0.1,::1, got %s", chainedRule.Operator.Value)
+	}
+	if slices.Contains(chainedRule.GetActionKeys(), "ctl") == false {
+		t.Errorf("Expected ctl action, not found")
+	}
+}
