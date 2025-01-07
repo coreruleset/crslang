@@ -217,7 +217,7 @@ func loadConditionDirective(yamlDirective yaml.Node) types.SeclangDirective {
 		if err != nil {
 			panic(err)
 		}
-		return ConfigurationDirectiveWrapper{directive} 
+		return ConfigurationDirectiveWrapper{directive}
 	case "secdefaultaction":
 		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
 		if err != nil {
@@ -289,4 +289,40 @@ func castConditions(condition *yaml.Node) Condition {
 		return ruleCondition
 	}
 	return nil
+}
+
+func FromCRSLangToUnmorfattedDirectives(configListWrapped ConfigurationListWrapper) *types.ConfigurationList {
+	result := new(types.ConfigurationList)
+	for _, config := range configListWrapped.Configurations {
+		configList := new(types.Configuration)
+		configList.Marker = config.Marker.ConfigurationDirective
+		for _, directiveWrapped := range config.Directives {
+			var directive types.SeclangDirective
+			switch directiveWrapped.(type) {
+			case types.CommentMetadata:
+				directive = directiveWrapped.(types.CommentMetadata)
+			case SecDefaultActionWrapper:
+				directive = directiveWrapped.(SecDefaultActionWrapper).SecDefaultAction
+			case RuleWithConditionWrapper:
+				// conditionDirective := directiveWrapped.(RuleWithConditionWrapper).RuleWithCondition
+				directive = types.SecRule{}
+			// 	directive = RuleWithConditionWrapper{
+			// 		RuleToCondition(directiveWrapped.(*types.SecAction)),
+			// 	}
+			// case *types.SecRule:
+			// 	directive = RuleWithConditionWrapper{
+			// 		RuleToCondition(directiveWrapped.(*types.SecRule)),
+			// 	}
+			// case *types.SecRuleScript:
+			// 	directive = RuleWithConditionWrapper{
+			// 		RuleToCondition(directiveWrapped.(*types.SecRuleScript)),
+			// 	}
+			case ConfigurationDirectiveWrapper:
+				directive = directiveWrapped.(ConfigurationDirectiveWrapper).ConfigurationDirective
+			}
+			configList.Directives = append(configList.Directives, directive)
+		}
+		result.Configurations = append(result.Configurations, *configList)
+	}
+	return result
 }
