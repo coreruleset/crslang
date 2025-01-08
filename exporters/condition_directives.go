@@ -304,19 +304,6 @@ func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationListWrapp
 			case SecDefaultActionWrapper:
 				directive = directiveWrapped.(SecDefaultActionWrapper).SecDefaultAction
 			case RuleWithConditionWrapper:
-				// conditionDirective := directiveWrapped.(RuleWithConditionWrapper).RuleWithCondition
-				// 	directive = types.SecRule{}
-				// // 	directive = RuleWithConditionWrapper{
-				// // 		RuleToCondition(directiveWrapped.(*types.SecAction)),
-				// // 	}
-				// // case *types.SecRule:
-				// // 	directive = RuleWithConditionWrapper{
-				// // 		RuleToCondition(directiveWrapped.(*types.SecRule)),
-				// // 	}
-				// // case *types.SecRuleScript:
-				// // 	directive = RuleWithConditionWrapper{
-				// // 		RuleToCondition(directiveWrapped.(*types.SecRuleScript)),
-				// // 	}
 				directive = FromConditionToUnmorfattedDirective(directiveWrapped.(RuleWithConditionWrapper).RuleWithCondition)
 			case ConfigurationDirectiveWrapper:
 				directive = directiveWrapped.(ConfigurationDirectiveWrapper).ConfigurationDirective
@@ -329,63 +316,64 @@ func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationListWrapp
 }
 
 func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) types.ChainableDirective {
-	var directive types.ChainableDirective
+	var rootDirective types.ChainableDirective
 	var directiveIterator types.ChainableDirective
 	var chainedDirective types.ChainableDirective
+	var directiveAux types.ChainableDirective
+
 	chainedDirective = nil
 
 	if conditionDirective.ChainedRule != nil {
 		chainedDirective = FromConditionToUnmorfattedDirective(*conditionDirective.ChainedRule)
 	}
 
-	switch conditionDirective.Conditions[0].(type) {
-	case SecRuleCondition:
-		parentDirective := new(types.SecRule)
-		parentDirective.Variables = conditionDirective.Conditions[0].(SecRuleCondition).Variables
-		parentDirective.Transformations = conditionDirective.Conditions[0].(SecRuleCondition).Transformations
-		parentDirective.Operator = conditionDirective.Conditions[0].(SecRuleCondition).Operator
-		parentDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
-		parentDirective.SeclangActions = conditionDirective.SeclangActions
-		parentDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
-		directive = parentDirective
-	case SecActionCondition:
-		parentDirective := new(types.SecAction)
-		parentDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
-		parentDirective.SeclangActions = conditionDirective.SeclangActions
-		parentDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
-		directive = parentDirective
-	case ScriptCondition:
-		parentDirective := new(types.SecRuleScript)
-		parentDirective.ScriptPath = conditionDirective.Conditions[0].(ScriptCondition).Script
-		parentDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
-		parentDirective.SeclangActions = conditionDirective.SeclangActions
-		parentDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
-		directive = parentDirective
-	}
-
-	directiveIterator = directive
-
 	for i, condition := range conditionDirective.Conditions {
-		if i != 0 {
-			switch condition.(type) {
-			case SecRuleCondition:
-				directiveAux := new(types.SecRule)
-				directiveAux.Variables = condition.(SecRuleCondition).Variables
-				directiveAux.Transformations = condition.(SecRuleCondition).Transformations
-				directiveAux.Operator = condition.(SecRuleCondition).Operator
-				directiveIterator.AppendChainedDirective(directiveAux)
-				directiveIterator = directiveAux
-			case SecActionCondition:
-				directiveAux := new(types.SecAction)
-				directiveIterator.AppendChainedDirective(directiveAux)
-				directiveIterator = directiveAux
-			case ScriptCondition:
-				directiveAux := new(types.SecRuleScript)
-				directiveAux.ScriptPath = condition.(ScriptCondition).Script
-				directiveIterator.AppendChainedDirective(directiveAux)
-				directiveIterator = directiveAux
+		switch condition.(type) {
+		case SecRuleCondition:
+			secruleDirective := new(types.SecRule)
+			secruleDirective.Variables = condition.(SecRuleCondition).Variables
+			secruleDirective.Transformations = condition.(SecRuleCondition).Transformations
+			secruleDirective.Operator = condition.(SecRuleCondition).Operator
+			if i == 0 {
+				secruleDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
+				secruleDirective.SeclangActions = conditionDirective.SeclangActions
+				secruleDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
+				rootDirective = secruleDirective
+			} else if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
+				secruleDirective.SeclangActions.FlowActions = []types.Action{{Action: "chain"}}
 			}
+			directiveAux = secruleDirective
+		case SecActionCondition:
+			secactionDirective := new(types.SecAction)
+			if i == 0 {
+				secactionDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
+				secactionDirective.SeclangActions = conditionDirective.SeclangActions
+				secactionDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
+				rootDirective = secactionDirective
+			} else if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
+				secactionDirective.SeclangActions.FlowActions = []types.Action{{Action: "chain"}}
+			}
+			directiveAux = secactionDirective
+		case ScriptCondition:
+			secscriptDirective := new(types.SecRuleScript)
+			secscriptDirective.ScriptPath = condition.(ScriptCondition).Script
+			if i == 0 {
+				secscriptDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
+				secscriptDirective.SeclangActions = conditionDirective.SeclangActions
+				secscriptDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
+				rootDirective = secscriptDirective
+			} else if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
+				secscriptDirective.SeclangActions.FlowActions = []types.Action{{Action: "chain"}}
+			}
+			directiveAux = secscriptDirective
 		}
+		if i == 0 {
+			directiveIterator = rootDirective
+		} else {
+			directiveIterator.AppendChainedDirective(directiveAux)
+			directiveIterator = directiveAux
+		}
+
 	}
 
 	switch directiveIterator.(type) {
@@ -401,5 +389,5 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) t
 		directiveIterator.AppendChainedDirective(chainedDirective)
 	}
 
-	return directive
+	return rootDirective
 }
