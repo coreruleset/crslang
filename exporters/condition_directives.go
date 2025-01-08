@@ -291,7 +291,7 @@ func castConditions(condition *yaml.Node) Condition {
 	return nil
 }
 
-func FromCRSLangToUnmorfattedDirectives(configListWrapped ConfigurationListWrapper) *types.ConfigurationList {
+func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationListWrapper) *types.ConfigurationList {
 	result := new(types.ConfigurationList)
 	for _, config := range configListWrapped.Configurations {
 		configList := new(types.Configuration)
@@ -305,18 +305,19 @@ func FromCRSLangToUnmorfattedDirectives(configListWrapped ConfigurationListWrapp
 				directive = directiveWrapped.(SecDefaultActionWrapper).SecDefaultAction
 			case RuleWithConditionWrapper:
 				// conditionDirective := directiveWrapped.(RuleWithConditionWrapper).RuleWithCondition
-				directive = types.SecRule{}
-			// 	directive = RuleWithConditionWrapper{
-			// 		RuleToCondition(directiveWrapped.(*types.SecAction)),
-			// 	}
-			// case *types.SecRule:
-			// 	directive = RuleWithConditionWrapper{
-			// 		RuleToCondition(directiveWrapped.(*types.SecRule)),
-			// 	}
-			// case *types.SecRuleScript:
-			// 	directive = RuleWithConditionWrapper{
-			// 		RuleToCondition(directiveWrapped.(*types.SecRuleScript)),
-			// 	}
+				// 	directive = types.SecRule{}
+				// // 	directive = RuleWithConditionWrapper{
+				// // 		RuleToCondition(directiveWrapped.(*types.SecAction)),
+				// // 	}
+				// // case *types.SecRule:
+				// // 	directive = RuleWithConditionWrapper{
+				// // 		RuleToCondition(directiveWrapped.(*types.SecRule)),
+				// // 	}
+				// // case *types.SecRuleScript:
+				// // 	directive = RuleWithConditionWrapper{
+				// // 		RuleToCondition(directiveWrapped.(*types.SecRuleScript)),
+				// // 	}
+				directive = FromConditionToUnmorfattedDirective(directiveWrapped.(RuleWithConditionWrapper).RuleWithCondition)
 			case ConfigurationDirectiveWrapper:
 				directive = directiveWrapped.(ConfigurationDirectiveWrapper).ConfigurationDirective
 			}
@@ -325,4 +326,80 @@ func FromCRSLangToUnmorfattedDirectives(configListWrapped ConfigurationListWrapp
 		result.Configurations = append(result.Configurations, *configList)
 	}
 	return result
+}
+
+func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) types.ChainableDirective {
+	var directive types.ChainableDirective
+	var directiveIterator types.ChainableDirective
+	var chainedDirective types.ChainableDirective
+	chainedDirective = nil
+
+	if conditionDirective.ChainedRule != nil {
+		chainedDirective = FromConditionToUnmorfattedDirective(*conditionDirective.ChainedRule)
+	}
+
+	switch conditionDirective.Conditions[0].(type) {
+	case SecRuleCondition:
+		parentDirective := new(types.SecRule)
+		parentDirective.Variables = conditionDirective.Conditions[0].(SecRuleCondition).Variables
+		parentDirective.Transformations = conditionDirective.Conditions[0].(SecRuleCondition).Transformations
+		parentDirective.Operator = conditionDirective.Conditions[0].(SecRuleCondition).Operator
+		parentDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
+		parentDirective.SeclangActions = conditionDirective.SeclangActions
+		parentDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
+		directive = parentDirective
+	case SecActionCondition:
+		parentDirective := new(types.SecAction)
+		parentDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
+		parentDirective.SeclangActions = conditionDirective.SeclangActions
+		parentDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
+		directive = parentDirective
+	case ScriptCondition:
+		parentDirective := new(types.SecRuleScript)
+		parentDirective.ScriptPath = conditionDirective.Conditions[0].(ScriptCondition).Script
+		parentDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
+		parentDirective.SeclangActions = conditionDirective.SeclangActions
+		parentDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
+		directive = parentDirective
+	}
+
+	directiveIterator = directive
+
+	for i, condition := range conditionDirective.Conditions {
+		if i != 0 {
+			switch condition.(type) {
+			case SecRuleCondition:
+				directiveAux := new(types.SecRule)
+				directiveAux.Variables = condition.(SecRuleCondition).Variables
+				directiveAux.Transformations = condition.(SecRuleCondition).Transformations
+				directiveAux.Operator = condition.(SecRuleCondition).Operator
+				directiveIterator.AppendChainedDirective(directiveAux)
+				directiveIterator = directiveAux
+			case SecActionCondition:
+				directiveAux := new(types.SecAction)
+				directiveIterator.AppendChainedDirective(directiveAux)
+				directiveIterator = directiveAux
+			case ScriptCondition:
+				directiveAux := new(types.SecRuleScript)
+				directiveAux.ScriptPath = condition.(ScriptCondition).Script
+				directiveIterator.AppendChainedDirective(directiveAux)
+				directiveIterator = directiveAux
+			}
+		}
+	}
+
+	switch directiveIterator.(type) {
+	case *types.SecRule:
+		directiveIterator.(*types.SecRule).SeclangActions.NonDisruptiveActions = conditionDirective.NonDisruptiveActions
+	case *types.SecAction:
+		directiveIterator.(*types.SecAction).SeclangActions.NonDisruptiveActions = conditionDirective.NonDisruptiveActions
+	case *types.SecRuleScript:
+		directiveIterator.(*types.SecRuleScript).SeclangActions.NonDisruptiveActions = conditionDirective.NonDisruptiveActions
+	}
+
+	if chainedDirective != nil {
+		directiveIterator.AppendChainedDirective(chainedDirective)
+	}
+
+	return directive
 }
