@@ -12,9 +12,9 @@ type Condition interface {
 }
 
 type SecRuleCondition struct {
-	types.Transformations `yaml:",inline,omitempty"`
 	types.Variables       `yaml:",inline,omitempty"`
 	types.Operator        `yaml:",omitempty"`
+	types.Transformations `yaml:",inline,omitempty"`
 }
 
 func (s SecRuleCondition) ConditionToSeclang() string {
@@ -22,7 +22,8 @@ func (s SecRuleCondition) ConditionToSeclang() string {
 }
 
 type SecActionCondition struct {
-	AlwaysMatch bool `yaml:"alwaysMatch,omitempty"`
+	AlwaysMatch           bool `yaml:"alwaysMatch,omitempty"`
+	types.Transformations `yaml:",inline,omitempty"`
 }
 
 func (s SecActionCondition) ConditionToSeclang() string {
@@ -95,9 +96,9 @@ func RuleToCondition(directive types.ChainableDirective) RuleWithCondition {
 			rule.SecRuleMetadata,
 			[]Condition{
 				SecRuleCondition{
-					rule.Transformations,
 					rule.Variables,
 					rule.Operator,
+					rule.Transformations,
 				},
 			},
 			rule.SeclangActions,
@@ -109,7 +110,8 @@ func RuleToCondition(directive types.ChainableDirective) RuleWithCondition {
 			action.SecRuleMetadata,
 			[]Condition{
 				SecActionCondition{
-					AlwaysMatch: true,
+					AlwaysMatch:     true,
+					Transformations: action.Transformations,
 				},
 			},
 			action.SeclangActions,
@@ -276,10 +278,19 @@ func loadRuleWithConditions(yamlDirective yaml.Node, isChained bool) RuleWithCon
 func castConditions(condition *yaml.Node) Condition {
 	switch condition.Content[0].Value {
 	case "alwaysMatch":
-		return SecActionCondition{AlwaysMatch: true}
+		rawDirective, err := yaml.Marshal(condition)
+		if err != nil {
+			panic(err)
+		}
+		ruleCondition := SecActionCondition{}
+		err = yaml.Unmarshal(rawDirective, &ruleCondition)
+		if err != nil {
+			panic(err)
+		}
+		return ruleCondition
 	case "script":
 		return ScriptCondition{Script: condition.Content[1].Value}
-	case "variables", "transformations", "operator":
+	case "variables":
 		rawDirective, err := yaml.Marshal(condition)
 		if err != nil {
 			panic(err)
@@ -345,6 +356,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) t
 			directiveAux = secruleDirective
 		case SecActionCondition:
 			secactionDirective := new(types.SecAction)
+			secactionDirective.Transformations = condition.(SecActionCondition).Transformations
 			if i == 0 {
 				secactionDirective.SecRuleMetadata = conditionDirective.SecRuleMetadata
 				secactionDirective.SeclangActions = conditionDirective.SeclangActions
