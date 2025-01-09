@@ -67,7 +67,7 @@ func TestLoadCRS(t *testing.T) {
 	err = writeToFile(yamlFile, "tmp_crslang.yaml")
 
 	defer os.Remove("tmp_crslang.yaml")
-	
+
 	if err != nil {
 		t.Errorf("Error writing file: %v", err)
 	}
@@ -81,4 +81,35 @@ func TestLoadCRS(t *testing.T) {
 	if string(yamlFile) != string(yamlLoadedFile) {
 		t.Errorf("Error: loaded file is different from original. Expected string length: %v, got: %v", len(string(yamlFile)), len(string(yamlLoadedFile)))
 	}
+}
+
+func TestFromCRSLangToSeclang(t *testing.T) {
+	resultConfigs := []types.Configuration{}
+	for _, file := range testFiles {
+		input, err := antlr.NewFileStream(file)
+		if err != nil {
+			panic("Error reading file" + file)
+		}
+		lexer := parsing.NewSecLangLexer(input)
+		stream := antlr.NewCommonTokenStream(lexer, 0)
+		p := parsing.NewSecLangParser(stream)
+		start := p.Configuration()
+		var listener ExtendedSeclangParserListener
+		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
+		resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+	}
+	configList := types.ConfigurationList{Configurations: resultConfigs}
+
+	seclangDirectives := exporters.ToSeclang(configList)
+
+	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
+
+	configListFromConditions := exporters.FromCRSLangToUnformattedDirectives(*configListWithConditions)
+
+	seclangDirectivesFromConditions := exporters.ToSeclang(*configListFromConditions)
+
+	if seclangDirectives != seclangDirectivesFromConditions {
+		t.Errorf("Error in CRSLang to Seclang directives convertion. Expected length: %v, got: %v", len(seclangDirectives), len(seclangDirectivesFromConditions))
+	}
+
 }
