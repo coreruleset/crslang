@@ -59,18 +59,30 @@ func ToDirectiveWithConditions(configList types.ConfigurationList) *Configuratio
 			var directiveWrapper types.SeclangDirective
 			switch directive.(type) {
 			case types.CommentMetadata:
-				directiveWrapper = directive.(types.CommentMetadata)
+				directiveWrapper = CommentDirective{
+					Kind:     "comment",
+					Metadata: directive.(types.CommentMetadata),
+				}
 			case types.SecDefaultAction:
-				directiveWrapper = SecDefaultActionWrapper{directive.(types.SecDefaultAction)}
+				directiveWrapper = DefaultAction{
+					Kind:            "defaultaction",
+					Metadata:        directive.(types.SecDefaultAction).OnlyPhaseMetadata,
+					Transformations: directive.(types.SecDefaultAction).Transformations,
+					Actions:         directive.(types.SecDefaultAction).SeclangActions,
+				}
 			case *types.SecAction:
 				directiveWrapper = RuleToCondition(directive.(*types.SecAction))
-
 			case *types.SecRule:
 				directiveWrapper = RuleToCondition(directive.(*types.SecRule))
 			case *types.SecRuleScript:
 				directiveWrapper = RuleToCondition(directive.(*types.SecRuleScript))
 			case types.ConfigurationDirective:
-				directiveWrapper = ConfigurationDirectiveWrapper{directive.(types.ConfigurationDirective)}
+				directiveWrapper = ConfigurationDirective{
+					Kind:      "configuration",
+					Metadata:  directive.(types.ConfigurationDirective).CommentMetadata,
+					Name:      directive.(types.ConfigurationDirective).DirectiveName,
+					Parameter: directive.(types.ConfigurationDirective).Parameter,
+				}
 			}
 			configWrapper.Directives = append(configWrapper.Directives, directiveWrapper)
 		}
@@ -192,48 +204,43 @@ func loadConditionDirective(yamlDirective yaml.Node) types.SeclangDirective {
 	if yamlDirective.Kind != yaml.MappingNode {
 		panic("Unknown format type")
 	}
-	switch yamlDirective.Content[0].Value {
+	switch yamlDirective.Content[1].Value {
 	case "comment":
 		rawDirective, err := yaml.Marshal(yamlDirective)
 		if err != nil {
 			panic(err)
 		}
-		directive := types.CommentMetadata{}
+		directive := CommentDirective{}
 		err = yaml.Unmarshal(rawDirective, &directive)
 		if err != nil {
 			panic(err)
 		}
 		return directive
-	case "configurationdirective":
-		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+	case "configuration":
+		rawDirective, err := yaml.Marshal(yamlDirective)
 		if err != nil {
 			panic(err)
 		}
-		directive := types.ConfigurationDirective{}
+		directive := ConfigurationDirective{}
 		err = yaml.Unmarshal(rawDirective, &directive)
 		if err != nil {
 			panic(err)
 		}
-		return ConfigurationDirectiveWrapper{directive}
-	case "secdefaultaction":
-		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		return directive
+	case "defaultaction":
+		rawDirective, err := yaml.Marshal(yamlDirective)
 		if err != nil {
 			panic(err)
 		}
-		directive := types.SecDefaultAction{}
+		directive := DefaultAction{}
 		err = yaml.Unmarshal(rawDirective, &directive)
 		if err != nil {
 			panic(err)
 		}
-		return SecDefaultActionWrapper{directive}
+		return directive
 	case "rule":
 		return loadRuleWithConditions(yamlDirective)
-	case "kind":
-		if yamlDirective.Content[1].Value == "rule" {
-			return loadRuleWithConditions(yamlDirective)
-		}
 	}
-
 	return nil
 }
 
@@ -309,14 +316,22 @@ func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationListWrapp
 		for _, directiveWrapped := range config.Directives {
 			var directive types.SeclangDirective
 			switch directiveWrapped.(type) {
-			case types.CommentMetadata:
-				directive = directiveWrapped.(types.CommentMetadata)
-			case SecDefaultActionWrapper:
-				directive = directiveWrapped.(SecDefaultActionWrapper).SecDefaultAction
+			case CommentDirective:
+				directive = directiveWrapped.(CommentDirective).Metadata
+			case DefaultAction:
+				directive = types.SecDefaultAction{
+					OnlyPhaseMetadata: directiveWrapped.(DefaultAction).Metadata,
+					Transformations:   directiveWrapped.(DefaultAction).Transformations,
+					SeclangActions:    directiveWrapped.(DefaultAction).Actions,
+				}
 			case RuleWithCondition:
 				directive = FromConditionToUnmorfattedDirective(directiveWrapped.(RuleWithCondition))
-			case ConfigurationDirectiveWrapper:
-				directive = directiveWrapped.(ConfigurationDirectiveWrapper).ConfigurationDirective
+			case ConfigurationDirective:
+				directive = types.ConfigurationDirective{
+					CommentMetadata: directiveWrapped.(ConfigurationDirective).Metadata,
+					DirectiveName:   directiveWrapped.(ConfigurationDirective).Name,
+					Parameter:       directiveWrapped.(ConfigurationDirective).Parameter,
+				}
 			}
 			configList.Directives = append(configList.Directives, directive)
 		}
