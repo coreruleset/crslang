@@ -13,7 +13,7 @@ type Condition interface {
 
 type SecRuleCondition struct {
 	types.Variables       `yaml:",inline,omitempty"`
-	types.Operator        `yaml:",omitempty"`
+	Operator              types.Operator `yaml:",omitempty"`
 	types.Transformations `yaml:",inline,omitempty"`
 }
 
