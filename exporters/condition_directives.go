@@ -50,11 +50,11 @@ func (s RuleWithCondition) ToSeclang() string {
 	return "New sec rule with conditions"
 }
 
-func ToDirectiveWithConditions(configList types.ConfigurationList) *ConfigurationListWrapper {
-	result := new(ConfigurationListWrapper)
+func ToDirectiveWithConditions(configList types.ConfigurationList) *types.ConfigurationList {
+	result := new(types.ConfigurationList)
 	for _, config := range configList.DirectiveList {
-		configWrapper := new(ConfigurationWrapper)
-		configWrapper.Marker = ConfigurationDirectiveWrapper{config.Marker}
+		configWrapper := new(types.DirectiveList)
+		configWrapper.Marker = config.Marker
 		for _, directive := range config.Directives {
 			var directiveWrapper types.SeclangDirective
 			switch directive.(type) {
@@ -64,9 +64,7 @@ func ToDirectiveWithConditions(configList types.ConfigurationList) *Configuratio
 					Metadata: directive.(types.CommentMetadata),
 				}
 			case types.DefaultAction:
-				defaultaction := directive.(types.DefaultAction)
-				defaultaction.Kind = "defaultaction"
-				directiveWrapper = defaultaction
+				directiveWrapper = directive
 			case *types.SecAction:
 				directiveWrapper = RuleToCondition(directive.(*types.SecAction))
 			case *types.SecRule:
@@ -74,16 +72,11 @@ func ToDirectiveWithConditions(configList types.ConfigurationList) *Configuratio
 			case *types.SecRuleScript:
 				directiveWrapper = RuleToCondition(directive.(*types.SecRuleScript))
 			case types.ConfigurationDirective:
-				directiveWrapper = types.ConfigurationDirective{
-					Kind:      "configuration",
-					Metadata:  directive.(types.ConfigurationDirective).Metadata,
-					Name:      directive.(types.ConfigurationDirective).Name,
-					Parameter: directive.(types.ConfigurationDirective).Parameter,
-				}
+				directiveWrapper = directive
 			}
 			configWrapper.Directives = append(configWrapper.Directives, directiveWrapper)
 		}
-		result.Configurations = append(result.Configurations, *configWrapper)
+		result.DirectiveList = append(result.DirectiveList, *configWrapper)
 	}
 	return result
 }
@@ -151,8 +144,8 @@ func RuleToCondition(directive types.ChainableDirective) RuleWithCondition {
 
 // yamlLoaderConditionRules is a auxiliary struct to load and iterate over the yaml file
 type yamlLoaderConditionRules struct {
-	Marker     ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
-	Directives []yaml.Node                   `yaml:"directives,omitempty"`
+	Marker     types.ConfigurationDirective `yaml:"marker,omitempty"`
+	Directives []yaml.Node                  `yaml:"directives,omitempty"`
 }
 
 // conditionDirectiveLoader is a auxiliary struct to load condition directives
@@ -165,7 +158,7 @@ type conditionDirectiveLoader struct {
 }
 
 // LoadDirectivesWithConditionsFromFile loads condition format directives from a yaml file
-func LoadDirectivesWithConditionsFromFile(filename string) ConfigurationListWrapper {
+func LoadDirectivesWithConditionsFromFile(filename string) types.ConfigurationList {
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
@@ -175,13 +168,13 @@ func LoadDirectivesWithConditionsFromFile(filename string) ConfigurationListWrap
 }
 
 // LoadDirectivesWithConditions loads condition format directives from a yaml file
-func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationListWrapper {
+func LoadDirectivesWithConditions(yamlFile []byte) types.ConfigurationList {
 	var configs []yamlLoaderConditionRules
 	err := yaml.Unmarshal(yamlFile, &configs)
 	if err != nil {
 		panic(err)
 	}
-	var resultConfigs []ConfigurationWrapper
+	var resultConfigs []types.DirectiveList
 	for _, config := range configs {
 		var directives []types.SeclangDirective
 		for _, yamlDirective := range config.Directives {
@@ -192,9 +185,9 @@ func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationListWrapper {
 				directives = append(directives, directive)
 			}
 		}
-		resultConfigs = append(resultConfigs, ConfigurationWrapper{Marker: config.Marker, Directives: directives})
+		resultConfigs = append(resultConfigs, types.DirectiveList{Marker: config.Marker, Directives: directives})
 	}
-	return ConfigurationListWrapper{Configurations: resultConfigs}
+	return types.ConfigurationList{DirectiveList: resultConfigs}
 }
 
 // loadConditionDirective loads the different kind of directives
@@ -306,11 +299,11 @@ func castConditions(condition *yaml.Node) Condition {
 	return nil
 }
 
-func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationListWrapper) *types.ConfigurationList {
+func FromCRSLangToUnformattedDirectives(configListWrapped types.ConfigurationList) *types.ConfigurationList {
 	result := new(types.ConfigurationList)
-	for _, config := range configListWrapped.Configurations {
+	for _, config := range configListWrapped.DirectiveList {
 		configList := new(types.DirectiveList)
-		configList.Marker = config.Marker.ConfigurationDirective
+		configList.Marker = config.Marker
 		for _, directiveWrapped := range config.Directives {
 			var directive types.SeclangDirective
 			switch directiveWrapped.(type) {

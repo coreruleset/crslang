@@ -59,7 +59,7 @@ func TestLoadCRS(t *testing.T) {
 
 	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
 
-	yamlFile, err := yaml.Marshal(configListWithConditions.Configurations)
+	yamlFile, err := yaml.Marshal(configListWithConditions.DirectiveList)
 	if err != nil {
 		t.Errorf("Error marshalling yaml: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestLoadCRS(t *testing.T) {
 	}
 
 	loadedConfigList := exporters.LoadDirectivesWithConditionsFromFile("tmp_crslang.yaml")
-	yamlLoadedFile, err := yaml.Marshal(loadedConfigList.Configurations)
+	yamlLoadedFile, err := yaml.Marshal(loadedConfigList.DirectiveList)
 	if err != nil {
 		t.Errorf("Error writing file: %v", err)
 	}
