@@ -8,7 +8,7 @@ import (
 type AuxDirective interface {
 	GetMetadata() types.Metadata
 	GetActions() *types.SeclangActions
-	AddTransformation(transformation string)
+	AddTransformation(transformation string) error
 	AppendChainedDirective(directive types.ChainableDirective)
 }
 
@@ -221,7 +221,10 @@ func (l *ExtendedSeclangParserListener) EnterData_action_with_params(ctx *parsin
 }
 
 func (l *ExtendedSeclangParserListener) EnterTransformation_action_value(ctx *parsing.Transformation_action_valueContext) {
-	l.currentDirective.AddTransformation(ctx.GetText())
+	err := l.currentDirective.AddTransformation(ctx.GetText())
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (l *ExtendedSeclangParserListener) EnterAction_value_types(ctx *parsing.Action_value_typesContext) {
