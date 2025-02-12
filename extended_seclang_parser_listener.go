@@ -252,7 +252,10 @@ func (l *ExtendedSeclangParserListener) EnterFile_path(ctx *parsing.File_pathCon
 }
 
 func (l *ExtendedSeclangParserListener) EnterVar_stmt(ctx *parsing.Var_stmtContext) {
-	l.currentDirective.(*types.SecRule).AddVariable(ctx.GetText())
+	err := l.currentDirective.(*types.SecRule).AddVariable(ctx.GetText())
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (l *ExtendedSeclangParserListener) EnterOperator_name(ctx *parsing.Operator_nameContext) {

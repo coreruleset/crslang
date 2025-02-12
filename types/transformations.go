@@ -50,7 +50,7 @@ const (
 )
 
 var (
-	transformationConstants = map[string]Transformation{
+	allTransformation = map[string]Transformation{
 		"base64Decode":       Base64Decode,
 		"base64DecodeExt":    Base64DecodeExt,
 		"base64Encode":       Base64Encode,
@@ -93,7 +93,7 @@ var (
 )
 
 func (t *Transformations) AddTransformation(transformation string) error {
-	constValue, exists := transformationConstants[transformation]
+	constValue, exists := allTransformation[transformation]
 	if !exists {
 		return fmt.Errorf("Invalid transformation value: %s", transformation)
 	}
