@@ -9,10 +9,10 @@ package types
 // }
 
 type ConfigurationList struct {
-	Configurations []Configuration `yaml:"configurations,omitempty"`
+	DirectiveList []DirectiveList `yaml:"directivelist,omitempty"`
 }
 
-type Configuration struct {
+type DirectiveList struct {
 	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 	Directives []SeclangDirective     `yaml:"directives,omitempty"`
 }

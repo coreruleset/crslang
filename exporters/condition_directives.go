@@ -52,24 +52,21 @@ func (s RuleWithCondition) ToSeclang() string {
 
 func ToDirectiveWithConditions(configList types.ConfigurationList) *ConfigurationListWrapper {
 	result := new(ConfigurationListWrapper)
-	for _, config := range configList.Configurations {
+	for _, config := range configList.DirectiveList {
 		configWrapper := new(ConfigurationWrapper)
 		configWrapper.Marker = ConfigurationDirectiveWrapper{config.Marker}
 		for _, directive := range config.Directives {
 			var directiveWrapper types.SeclangDirective
 			switch directive.(type) {
 			case types.CommentMetadata:
-				directiveWrapper = CommentDirective{
+				directiveWrapper = types.CommentDirective{
 					Kind:     "comment",
 					Metadata: directive.(types.CommentMetadata),
 				}
-			case types.SecDefaultAction:
-				directiveWrapper = DefaultAction{
-					Kind:            "defaultaction",
-					Metadata:        directive.(types.SecDefaultAction).OnlyPhaseMetadata,
-					Transformations: directive.(types.SecDefaultAction).Transformations,
-					Actions:         directive.(types.SecDefaultAction).SeclangActions,
-				}
+			case types.DefaultAction:
+				defaultaction := directive.(types.DefaultAction)
+				defaultaction.Kind = "defaultaction"
+				directiveWrapper = defaultaction
 			case *types.SecAction:
 				directiveWrapper = RuleToCondition(directive.(*types.SecAction))
 			case *types.SecRule:
@@ -77,10 +74,10 @@ func ToDirectiveWithConditions(configList types.ConfigurationList) *Configuratio
 			case *types.SecRuleScript:
 				directiveWrapper = RuleToCondition(directive.(*types.SecRuleScript))
 			case types.ConfigurationDirective:
-				directiveWrapper = ConfigurationDirective{
+				directiveWrapper = types.ConfigurationDirective{
 					Kind:      "configuration",
-					Metadata:  directive.(types.ConfigurationDirective).CommentMetadata,
-					Name:      directive.(types.ConfigurationDirective).DirectiveName,
+					Metadata:  directive.(types.ConfigurationDirective).Metadata,
+					Name:      directive.(types.ConfigurationDirective).Name,
 					Parameter: directive.(types.ConfigurationDirective).Parameter,
 				}
 			}
@@ -98,7 +95,7 @@ func RuleToCondition(directive types.ChainableDirective) RuleWithCondition {
 		rule := directive.(*types.SecRule)
 		ruleWithCondition = RuleWithCondition{
 			"rule",
-			rule.SecRuleMetadata,
+			*rule.Metadata,
 			[]Condition{
 				SecRuleCondition{
 					rule.Variables,
@@ -106,34 +103,34 @@ func RuleToCondition(directive types.ChainableDirective) RuleWithCondition {
 					rule.Transformations,
 				},
 			},
-			rule.SeclangActions,
+			*rule.Actions,
 			nil,
 		}
 	case *types.SecAction:
 		action := directive.(*types.SecAction)
 		ruleWithCondition = RuleWithCondition{
 			"rule",
-			action.SecRuleMetadata,
+			*action.Metadata,
 			[]Condition{
 				SecActionCondition{
 					AlwaysMatch:     true,
 					Transformations: action.Transformations,
 				},
 			},
-			action.SeclangActions,
+			*action.Actions,
 			nil,
 		}
 	case *types.SecRuleScript:
 		script := directive.(*types.SecRuleScript)
 		ruleWithCondition = RuleWithCondition{
 			"rule",
-			script.SecRuleMetadata,
+			*script.Metadata,
 			[]Condition{
 				ScriptCondition{
 					Script: script.ScriptPath,
 				},
 			},
-			script.SeclangActions,
+			*script.Actions,
 			nil,
 		}
 	}
@@ -160,6 +157,7 @@ type yamlLoaderConditionRules struct {
 
 // conditionDirectiveLoader is a auxiliary struct to load condition directives
 type conditionDirectiveLoader struct {
+	Kind        string                `yaml:"kind"`
 	Metadata    types.SecRuleMetadata `yaml:"metadata,omitempty"`
 	Conditions  yaml.Node             `yaml:"conditions,omitempty"`
 	Actions     types.SeclangActions  `yaml:"actions,omitempty"`
@@ -210,7 +208,7 @@ func loadConditionDirective(yamlDirective yaml.Node) types.SeclangDirective {
 		if err != nil {
 			panic(err)
 		}
-		directive := CommentDirective{}
+		directive := types.CommentDirective{}
 		err = yaml.Unmarshal(rawDirective, &directive)
 		if err != nil {
 			panic(err)
@@ -221,7 +219,7 @@ func loadConditionDirective(yamlDirective yaml.Node) types.SeclangDirective {
 		if err != nil {
 			panic(err)
 		}
-		directive := ConfigurationDirective{}
+		directive := types.ConfigurationDirective{}
 		err = yaml.Unmarshal(rawDirective, &directive)
 		if err != nil {
 			panic(err)
@@ -232,7 +230,7 @@ func loadConditionDirective(yamlDirective yaml.Node) types.SeclangDirective {
 		if err != nil {
 			panic(err)
 		}
-		directive := DefaultAction{}
+		directive := types.DefaultAction{}
 		err = yaml.Unmarshal(rawDirective, &directive)
 		if err != nil {
 			panic(err)
@@ -311,31 +309,27 @@ func castConditions(condition *yaml.Node) Condition {
 func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationListWrapper) *types.ConfigurationList {
 	result := new(types.ConfigurationList)
 	for _, config := range configListWrapped.Configurations {
-		configList := new(types.Configuration)
+		configList := new(types.DirectiveList)
 		configList.Marker = config.Marker.ConfigurationDirective
 		for _, directiveWrapped := range config.Directives {
 			var directive types.SeclangDirective
 			switch directiveWrapped.(type) {
-			case CommentDirective:
-				directive = directiveWrapped.(CommentDirective).Metadata
-			case DefaultAction:
-				directive = types.SecDefaultAction{
-					OnlyPhaseMetadata: directiveWrapped.(DefaultAction).Metadata,
-					Transformations:   directiveWrapped.(DefaultAction).Transformations,
-					SeclangActions:    directiveWrapped.(DefaultAction).Actions,
-				}
+			case types.CommentDirective:
+				directive = directiveWrapped.(types.CommentDirective).Metadata
+			case types.DefaultAction:
+				directive = directiveWrapped
 			case RuleWithCondition:
 				directive = FromConditionToUnmorfattedDirective(directiveWrapped.(RuleWithCondition))
-			case ConfigurationDirective:
+			case types.ConfigurationDirective:
 				directive = types.ConfigurationDirective{
-					CommentMetadata: directiveWrapped.(ConfigurationDirective).Metadata,
-					DirectiveName:   directiveWrapped.(ConfigurationDirective).Name,
-					Parameter:       directiveWrapped.(ConfigurationDirective).Parameter,
+					Metadata:  directiveWrapped.(types.ConfigurationDirective).Metadata,
+					Name:      directiveWrapped.(types.ConfigurationDirective).Name,
+					Parameter: directiveWrapped.(types.ConfigurationDirective).Parameter,
 				}
 			}
 			configList.Directives = append(configList.Directives, directive)
 		}
-		result.Configurations = append(result.Configurations, *configList)
+		result.DirectiveList = append(result.DirectiveList, *configList)
 	}
 	return result
 }
@@ -360,36 +354,48 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) t
 			secruleDirective.Transformations = condition.(SecRuleCondition).Transformations
 			secruleDirective.Operator = condition.(SecRuleCondition).Operator
 			if i == 0 {
-				secruleDirective.SecRuleMetadata = conditionDirective.Metadata
-				secruleDirective.SeclangActions = conditionDirective.Actions
-				secruleDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
+				secruleDirective.Metadata = types.CopySecRuleMetadata(conditionDirective.Metadata)
+				secruleDirective.Actions = types.CopyActions(conditionDirective.Actions)
+				secruleDirective.Actions.NonDisruptiveActions = []types.Action{}
 				rootDirective = secruleDirective
-			} else if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-				secruleDirective.SeclangActions.FlowActions = []types.Action{{Action: "chain"}}
+			} else {
+				secruleDirective.Metadata = new(types.SecRuleMetadata)
+				secruleDirective.Actions = new(types.SeclangActions)
+				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
+					secruleDirective.Actions.FlowActions = []types.Action{{Action: "chain"}}
+				}
 			}
 			directiveAux = secruleDirective
 		case SecActionCondition:
 			secactionDirective := new(types.SecAction)
 			secactionDirective.Transformations = condition.(SecActionCondition).Transformations
 			if i == 0 {
-				secactionDirective.SecRuleMetadata = conditionDirective.Metadata
-				secactionDirective.SeclangActions = conditionDirective.Actions
-				secactionDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
+				secactionDirective.Metadata = types.CopySecRuleMetadata(conditionDirective.Metadata)
+				secactionDirective.Actions = types.CopyActions(conditionDirective.Actions)
+				secactionDirective.Actions.NonDisruptiveActions = []types.Action{}
 				rootDirective = secactionDirective
-			} else if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-				secactionDirective.SeclangActions.FlowActions = []types.Action{{Action: "chain"}}
+			} else {
+				secactionDirective.Metadata = new(types.SecRuleMetadata)
+				secactionDirective.Actions = new(types.SeclangActions)
+				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
+					secactionDirective.Actions.FlowActions = []types.Action{{Action: "chain"}}
+				}
 			}
 			directiveAux = secactionDirective
 		case ScriptCondition:
 			secscriptDirective := new(types.SecRuleScript)
 			secscriptDirective.ScriptPath = condition.(ScriptCondition).Script
 			if i == 0 {
-				secscriptDirective.SecRuleMetadata = conditionDirective.Metadata
-				secscriptDirective.SeclangActions = conditionDirective.Actions
-				secscriptDirective.SeclangActions.NonDisruptiveActions = []types.Action{}
+				secscriptDirective.Metadata = types.CopySecRuleMetadata(conditionDirective.Metadata)
+				secscriptDirective.Actions = types.CopyActions(conditionDirective.Actions)
+				secscriptDirective.Actions.NonDisruptiveActions = []types.Action{}
 				rootDirective = secscriptDirective
-			} else if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-				secscriptDirective.SeclangActions.FlowActions = []types.Action{{Action: "chain"}}
+			} else {
+				secscriptDirective.Metadata = new(types.SecRuleMetadata)
+				secscriptDirective.Actions = new(types.SeclangActions)
+				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
+					secscriptDirective.Actions.FlowActions = []types.Action{{Action: "chain"}}
+				}
 			}
 			directiveAux = secscriptDirective
 		}
@@ -404,11 +410,11 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) t
 
 	switch directiveIterator.(type) {
 	case *types.SecRule:
-		directiveIterator.(*types.SecRule).SeclangActions.NonDisruptiveActions = conditionDirective.Actions.NonDisruptiveActions
+		directiveIterator.(*types.SecRule).Actions.NonDisruptiveActions = conditionDirective.Actions.NonDisruptiveActions
 	case *types.SecAction:
-		directiveIterator.(*types.SecAction).SeclangActions.NonDisruptiveActions = conditionDirective.Actions.NonDisruptiveActions
+		directiveIterator.(*types.SecAction).Actions.NonDisruptiveActions = conditionDirective.Actions.NonDisruptiveActions
 	case *types.SecRuleScript:
-		directiveIterator.(*types.SecRuleScript).SeclangActions.NonDisruptiveActions = conditionDirective.Actions.NonDisruptiveActions
+		directiveIterator.(*types.SecRuleScript).Actions.NonDisruptiveActions = conditionDirective.Actions.NonDisruptiveActions
 	}
 
 	if chainedDirective != nil {

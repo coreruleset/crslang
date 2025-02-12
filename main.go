@@ -41,7 +41,7 @@ var files = []string{
 }
 
 func main() {
-	resultConfigs := []types.Configuration{}
+	resultConfigs := []types.DirectiveList{}
 	for _, file := range files {
 		input, err := antlr.NewFileStream(file)
 		if err != nil {
@@ -53,9 +53,9 @@ func main() {
 		start := p.Configuration()
 		var listener ExtendedSeclangParserListener
 		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-		resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+		resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
 	}
-	configList := types.ConfigurationList{Configurations: resultConfigs}
+	configList := types.ConfigurationList{DirectiveList: resultConfigs}
 
 	err := printCRSLang(configList, "crslang.yaml")
 	if err != nil {

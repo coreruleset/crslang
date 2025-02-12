@@ -41,7 +41,7 @@ var testFiles = []string{
 }
 
 func TestLoadCRS(t *testing.T) {
-	resultConfigs := []types.Configuration{}
+	resultConfigs := []types.DirectiveList{}
 	for _, file := range testFiles {
 		input, err := antlr.NewFileStream(file)
 		if err != nil {
@@ -53,9 +53,9 @@ func TestLoadCRS(t *testing.T) {
 		start := p.Configuration()
 		var listener ExtendedSeclangParserListener
 		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-		resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+		resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
 	}
-	configList := types.ConfigurationList{Configurations: resultConfigs}
+	configList := types.ConfigurationList{DirectiveList: resultConfigs}
 
 	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
 
@@ -84,7 +84,7 @@ func TestLoadCRS(t *testing.T) {
 }
 
 func TestFromCRSLangToSeclang(t *testing.T) {
-	resultConfigs := []types.Configuration{}
+	resultConfigs := []types.DirectiveList{}
 	for _, file := range testFiles {
 		input, err := antlr.NewFileStream(file)
 		if err != nil {
@@ -96,9 +96,9 @@ func TestFromCRSLangToSeclang(t *testing.T) {
 		start := p.Configuration()
 		var listener ExtendedSeclangParserListener
 		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-		resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+		resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
 	}
-	configList := types.ConfigurationList{Configurations: resultConfigs}
+	configList := types.ConfigurationList{DirectiveList: resultConfigs}
 
 	seclangDirectives := exporters.ToSeclang(configList)
 

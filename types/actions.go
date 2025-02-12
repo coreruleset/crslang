@@ -26,7 +26,7 @@ func (s *SeclangActions) ToString() string {
 	result := ""
 	for i, value := range results {
 		if i == 0 {
-			result += value 
+			result += value
 		} else {
 			result += ", " + value
 		}
@@ -41,6 +41,18 @@ func (s *SeclangActions) String() string {
 type Action struct {
 	Action string `yaml:"action"`
 	Param  string `yaml:"param,omitempty"`
+}
+
+func CopyActions(a SeclangActions) *SeclangActions {
+	newActions := new(SeclangActions)
+	newActions.DisruptiveAction = a.DisruptiveAction
+	newActions.NonDisruptiveActions = make([]Action, len(a.NonDisruptiveActions))
+	copy(newActions.NonDisruptiveActions, a.NonDisruptiveActions)
+	newActions.FlowActions = make([]Action, len(a.FlowActions))
+	copy(newActions.FlowActions, a.FlowActions)
+	newActions.DataActions = make([]Action, len(a.DataActions))
+	copy(newActions.DataActions, a.DataActions)
+	return newActions
 }
 
 func (a Action) SetAction(action, param string) {

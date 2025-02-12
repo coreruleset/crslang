@@ -6,7 +6,7 @@ import (
 
 func ToSeclang(configList types.ConfigurationList) string {
 	result := ""
-	for _, config := range configList.Configurations {
+	for _, config := range configList.DirectiveList {
 		for _, directive := range config.Directives {
 			result += directive.ToSeclang() + "\n"
 		}

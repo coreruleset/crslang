@@ -12,7 +12,7 @@ type ConfigurationDirectiveWrapper struct {
 }
 
 type SecDefaultActionWrapper struct {
-	types.SecDefaultAction
+	types.DefaultAction
 }
 
 type SecActionWrapper struct {
@@ -38,7 +38,7 @@ type ConfigurationWrapper struct {
 
 func ToDirectivesWithLabels(configList types.ConfigurationList) *ConfigurationListWrapper {
 	result := new(ConfigurationListWrapper)
-	for _, config := range configList.Configurations {
+	for _, config := range configList.DirectiveList {
 		configWrapper := new(ConfigurationWrapper)
 		configWrapper.Marker = ConfigurationDirectiveWrapper{config.Marker}
 		for _, directive := range config.Directives {
@@ -55,8 +55,8 @@ func WrapDirective(directive types.SeclangDirective) types.SeclangDirective {
 	switch directive.(type) {
 	case types.CommentMetadata:
 		directiveWrapper = directive.(types.CommentMetadata)
-	case types.SecDefaultAction:
-		directiveWrapper = SecDefaultActionWrapper{directive.(types.SecDefaultAction)}
+	case types.DefaultAction:
+		directiveWrapper = SecDefaultActionWrapper{directive.(types.DefaultAction)}
 	case *types.SecAction:
 		// recursibly wrap chained rule
 		if directive.(*types.SecAction).ChainedRule != nil {
@@ -99,7 +99,7 @@ func castWrappedDirective(directive types.SeclangDirective) types.ChainableDirec
 // yamlLoader is a auxiliary struct to load and iterate over the yaml file
 type yamlLoader struct {
 	Marker     ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
-	Directives []yaml.Node                             `yaml:"directives,omitempty"`
+	Directives []yaml.Node                   `yaml:"directives,omitempty"`
 }
 
 // directiveLoader is a auxiliary struct to load directives
@@ -114,14 +114,14 @@ type directiveLoader struct {
 }
 
 // loadDirectivesWithLabels loads alias format directives from a yaml file
-func loadDirectivesWithLabels(filename string) types.ConfigurationList{
+func loadDirectivesWithLabels(filename string) types.ConfigurationList {
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
 	var configs []yamlLoader
 	err = yaml.Unmarshal(yamlFile, &configs)
-	var resultConfigs []types.Configuration
+	var resultConfigs []types.DirectiveList
 	for _, config := range configs {
 		var directives []types.SeclangDirective
 		for _, yamlDirective := range config.Directives {
@@ -132,9 +132,9 @@ func loadDirectivesWithLabels(filename string) types.ConfigurationList{
 				directives = append(directives, directive)
 			}
 		}
-		resultConfigs = append(resultConfigs, types.Configuration{Marker: config.Marker.ConfigurationDirective, Directives: directives})
+		resultConfigs = append(resultConfigs, types.DirectiveList{Marker: config.Marker.ConfigurationDirective, Directives: directives})
 	}
-	return types.ConfigurationList{Configurations: resultConfigs}
+	return types.ConfigurationList{DirectiveList: resultConfigs}
 }
 
 // directivesWithLabelsAux is a recursive function to load directives
@@ -170,7 +170,7 @@ func directivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 		if err != nil {
 			panic(err)
 		}
-		directive := types.SecDefaultAction{}
+		directive := types.DefaultAction{}
 		err = yaml.Unmarshal(rawDirective, &directive)
 		if err != nil {
 			panic(err)
@@ -187,9 +187,9 @@ func directivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 			panic(err)
 		}
 		directive := types.SecAction{
-			SecRuleMetadata: loaderDirective.SecRuleMetadata,
+			Metadata:        &loaderDirective.SecRuleMetadata,
 			Transformations: loaderDirective.Transformations,
-			SeclangActions:  loaderDirective.SeclangActions,
+			Actions:         &loaderDirective.SeclangActions,
 		}
 		var chainedRule types.SeclangDirective
 		if len(loaderDirective.ChainedRule.Content) > 0 {
@@ -208,11 +208,11 @@ func directivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 			panic(err)
 		}
 		directive := types.SecRule{
-			SecRuleMetadata: loaderDirective.SecRuleMetadata,
+			Metadata:        &loaderDirective.SecRuleMetadata,
 			Variables:       loaderDirective.Variables,
 			Transformations: loaderDirective.Transformations,
 			Operator:        loaderDirective.Operator,
-			SeclangActions:  loaderDirective.SeclangActions,
+			Actions:         &loaderDirective.SeclangActions,
 		}
 		var chainedRule types.SeclangDirective
 		if len(loaderDirective.ChainedRule.Content) > 0 {
@@ -231,9 +231,9 @@ func directivesWithLabelsAux(yamlDirective yaml.Node) types.SeclangDirective {
 			panic(err)
 		}
 		directive := types.SecRuleScript{
-			SecRuleMetadata: loaderDirective.SecRuleMetadata,
+			Metadata:        &loaderDirective.SecRuleMetadata,
 			Transformations: loaderDirective.Transformations,
-			SeclangActions:  loaderDirective.SeclangActions,
+			Actions:         &loaderDirective.SeclangActions,
 			ScriptPath:      loaderDirective.ScriptPath,
 		}
 		var chainedRule types.SeclangDirective
