@@ -36,7 +36,7 @@ func (c ConfigurationDirective) ToSeclang() string {
 
 type CommentDirective struct {
 	Kind     string          `yaml:"kind"`
-	Metadata CommentMetadata `yaml:"metadata"`
+	Metadata CommentMetadata `yaml:",inline"`
 }
 
 func (d CommentDirective) ToSeclang() string {
