@@ -1,13 +1,5 @@
 package types
 
-// type Configuration struct {
-// 	Comments         []CommentMetadata  `yaml:"comments,omitempty"`
-// 	ConfigDirectives map[string]string  `yaml:"configDirectives,omitempty"`
-// 	DefaultActions   []SecDefaultAction `yaml:"defaultActions,omitempty"`
-// 	SecActions       []SecAction        `yaml:"secActions,omitempty"`
-// 	SecRules         []SecRule          `yaml:"secRules,omitempty"`
-// }
-
 type ConfigurationList struct {
 	DirectiveList []DirectiveList `yaml:"directivelist,omitempty"`
 }
@@ -15,4 +7,14 @@ type ConfigurationList struct {
 type DirectiveList struct {
 	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 	Directives []SeclangDirective     `yaml:"directives,omitempty"`
+}
+
+func ToSeclang(configList ConfigurationList) string {
+	result := ""
+	for _, config := range configList.DirectiveList {
+		for _, directive := range config.Directives {
+			result += directive.ToSeclang() + "\n"
+		}
+	}
+	return result
 }

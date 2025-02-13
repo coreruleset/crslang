@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/exporters"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 	"gopkg.in/yaml.v3"
@@ -57,7 +56,7 @@ func TestLoadCRS(t *testing.T) {
 	}
 	configList := types.ConfigurationList{DirectiveList: resultConfigs}
 
-	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
+	configListWithConditions := types.ToDirectiveWithConditions(configList)
 
 	yamlFile, err := yaml.Marshal(configListWithConditions.DirectiveList)
 	if err != nil {
@@ -72,7 +71,7 @@ func TestLoadCRS(t *testing.T) {
 		t.Errorf("Error writing file: %v", err)
 	}
 
-	loadedConfigList := exporters.LoadDirectivesWithConditionsFromFile("tmp_crslang.yaml")
+	loadedConfigList := types.LoadDirectivesWithConditionsFromFile("tmp_crslang.yaml")
 	yamlLoadedFile, err := yaml.Marshal(loadedConfigList.DirectiveList)
 	if err != nil {
 		t.Errorf("Error writing file: %v", err)
@@ -100,13 +99,13 @@ func TestFromCRSLangToSeclang(t *testing.T) {
 	}
 	configList := types.ConfigurationList{DirectiveList: resultConfigs}
 
-	seclangDirectives := exporters.ToSeclang(configList)
+	seclangDirectives := types.ToSeclang(configList)
 
-	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
+	configListWithConditions := types.ToDirectiveWithConditions(configList)
 
-	configListFromConditions := exporters.FromCRSLangToUnformattedDirectives(*configListWithConditions)
+	configListFromConditions := types.FromCRSLangToUnformattedDirectives(*configListWithConditions)
 
-	seclangDirectivesFromConditions := exporters.ToSeclang(*configListFromConditions)
+	seclangDirectivesFromConditions := types.ToSeclang(*configListFromConditions)
 
 	if seclangDirectives != seclangDirectivesFromConditions {
 		t.Errorf("Error in CRSLang to Seclang directives convertion. Expected length: %v, got: %v", len(seclangDirectives), len(seclangDirectivesFromConditions))
