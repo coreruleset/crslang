@@ -12,8 +12,8 @@ type Condition interface {
 }
 
 type SecRuleCondition struct {
-	types.Variables       `yaml:",inline,omitempty"`
-	Operator              types.Operator `yaml:",omitempty"`
+	Variables             []types.Variable `yaml:"variables,omitempty"`
+	Operator              types.Operator   `yaml:",omitempty"`
 	types.Transformations `yaml:",inline,omitempty"`
 }
 

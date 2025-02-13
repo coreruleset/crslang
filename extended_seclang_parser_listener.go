@@ -26,6 +26,8 @@ type ExtendedSeclangParserListener struct {
 	currentConfigurationDirective    *types.ConfigurationDirective
 	currentDirective                 AuxDirective
 	previousDirective                AuxDirective
+	varName                          string
+	varValue                         string
 	currentParameter                 string
 	// chainedNextRule 		  *AuxChainableDirective
 	Configuration     *types.DirectiveList
@@ -252,10 +254,25 @@ func (l *ExtendedSeclangParserListener) EnterFile_path(ctx *parsing.File_pathCon
 }
 
 func (l *ExtendedSeclangParserListener) EnterVar_stmt(ctx *parsing.Var_stmtContext) {
-	err := l.currentDirective.(*types.SecRule).AddVariable(ctx.GetText())
+	l.varName = ""
+	l.varValue = ""
+}
+
+func (l *ExtendedSeclangParserListener) EnterVariable_enum(ctx *parsing.Variable_enumContext) {
+	l.varName = ctx.GetText()
+}
+
+func (l *ExtendedSeclangParserListener) EnterVariable_value(ctx *parsing.Variable_valueContext) {
+	l.varValue = ctx.GetText()
+}
+
+func (l *ExtendedSeclangParserListener) ExitVar_stmt(ctx *parsing.Var_stmtContext) {
+	err := l.currentDirective.(*types.SecRule).AddVariable(l.varName, l.varValue)
 	if err != nil {
 		panic(err)
 	}
+	l.varName = ""
+	l.varValue = ""
 }
 
 func (l *ExtendedSeclangParserListener) EnterOperator_name(ctx *parsing.Operator_nameContext) {
