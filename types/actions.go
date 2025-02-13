@@ -43,22 +43,113 @@ type Action struct {
 	Param  string `yaml:"param,omitempty"`
 }
 
-func CopyActions(a SeclangActions) *SeclangActions {
-	newActions := new(SeclangActions)
-	newActions.DisruptiveAction = a.DisruptiveAction
-	newActions.NonDisruptiveActions = make([]Action, len(a.NonDisruptiveActions))
-	copy(newActions.NonDisruptiveActions, a.NonDisruptiveActions)
-	newActions.FlowActions = make([]Action, len(a.FlowActions))
-	copy(newActions.FlowActions, a.FlowActions)
-	newActions.DataActions = make([]Action, len(a.DataActions))
-	copy(newActions.DataActions, a.DataActions)
-	return newActions
-}
+type DisruptiveAction string
 
-func (a Action) SetAction(action, param string) {
-	a.Action = action
-	a.Param = param
-}
+const (
+	Allow    DisruptiveAction = "allow"
+	Block    DisruptiveAction = "block"
+	Deny     DisruptiveAction = "deny"
+	Drop     DisruptiveAction = "drop"
+	Pass     DisruptiveAction = "pass"
+	Pause    DisruptiveAction = "pause"
+	Proxy    DisruptiveAction = "proxy"
+	Redirect DisruptiveAction = "redirect"
+)
+
+type FlowAction string
+
+const (
+	Chain     FlowAction = "chain"
+	Skip      FlowAction = "skip"
+	SkipAfter FlowAction = "skipAfter"
+)
+
+type DataAction string
+
+const (
+	Data  DataAction = "data"
+	XLMNS DataAction = "xmlns"
+)
+
+type NonDisruptiveAction string
+
+const (
+	Append                 NonDisruptiveAction = "append"
+	AuditLog               NonDisruptiveAction = "auditlog"
+	Capture                NonDisruptiveAction = "capture"
+	Ctl                    NonDisruptiveAction = "ctl"
+	DeprecateVar           NonDisruptiveAction = "deprecatevar"
+	Exec                   NonDisruptiveAction = "exec"
+	ExpireVar              NonDisruptiveAction = "expirevar"
+	InitCol                NonDisruptiveAction = "initcol"
+	Log                    NonDisruptiveAction = "log"
+	LogData                NonDisruptiveAction = "logdata"
+	MultiMatch             NonDisruptiveAction = "multiMatch"
+	NoAuditLog             NonDisruptiveAction = "noauditlog"
+	NoLog                  NonDisruptiveAction = "nolog"
+	Prepend                NonDisruptiveAction = "prepend"
+	SanitiseArg            NonDisruptiveAction = "sanitiseArg"
+	SanitiseMatched        NonDisruptiveAction = "sanitiseMatched"
+	SanitiseMatchedBytes   NonDisruptiveAction = "sanitiseMatchedBytes"
+	SanitiseRequestHeader  NonDisruptiveAction = "sanitiseRequestHeader"
+	SanitiseResponseHeader NonDisruptiveAction = "sanitiseResponseHeader"
+	SetUid                 NonDisruptiveAction = "setuid"
+	SetRsc                 NonDisruptiveAction = "setrsc"
+	SetSid                 NonDisruptiveAction = "setsid"
+	SetEnv                 NonDisruptiveAction = "setenv"
+	SetVar                 NonDisruptiveAction = "setvar"
+)
+
+var (
+	disruptiveActions = map[string]DisruptiveAction{
+		"allow":    Allow,
+		"block":    Block,
+		"deny":     Deny,
+		"drop":     Drop,
+		"pass":     Pass,
+		"pause":    Pause,
+		"proxy":    Proxy,
+		"redirect": Redirect,
+	}
+
+	flowActions = map[string]FlowAction{
+		"chain":     Chain,
+		"skip":      Skip,
+		"skipAfter": SkipAfter,
+	}
+
+	dataActions = map[string]DataAction{
+		"data":  Data,
+		"xmlns": XLMNS,
+	}
+
+	nonDisruptiveActions = map[string]NonDisruptiveAction{
+		"append":                 Append,
+		"auditlog":               AuditLog,
+		"capture":                Capture,
+		"ctl":                    Ctl,
+		"deprecatevar":           DeprecateVar,
+		"exec":                   Exec,
+		"expirevar":              ExpireVar,
+		"initcol":                InitCol,
+		"log":                    Log,
+		"logdata":                LogData,
+		"multiMatch":             MultiMatch,
+		"noauditlog":             NoAuditLog,
+		"nolog":                  NoLog,
+		"prepend":                Prepend,
+		"sanitiseArg":            SanitiseArg,
+		"sanitiseMatched":        SanitiseMatched,
+		"sanitiseMatchedBytes":   SanitiseMatchedBytes,
+		"sanitiseRequestHeader":  SanitiseRequestHeader,
+		"sanitiseResponseHeader": SanitiseResponseHeader,
+		"setuid":                 SetUid,
+		"setrsc":                 SetRsc,
+		"setsid":                 SetSid,
+		"setenv":                 SetEnv,
+		"setvar":                 SetVar,
+	}
+)
 
 func (a Action) ToString() string {
 	if a.Param == "" {
@@ -72,32 +163,79 @@ func (a Action) GetKey() string {
 	return a.Action
 }
 
-func (s *SeclangActions) SetDisruptiveActionWithParam(action, value string) {
+func (s *SeclangActions) SetDisruptiveActionWithParam(action, value string) error {
+	_, ok := disruptiveActions[action]
+	if !ok {
+		return fmt.Errorf("Disruptive action %s not found", action)
+	}
 	s.DisruptiveAction = Action{Action: action, Param: value}
+	return nil
 }
 
-func (s *SeclangActions) SetDisruptiveActionOnly(action string) {
+func (s *SeclangActions) SetDisruptiveActionOnly(action string) error {
+	_, ok := disruptiveActions[action]
+	if !ok {
+		return fmt.Errorf("Disruptive action %s not found", action)
+	}
 	s.DisruptiveAction = Action{Action: action}
+	return nil
 }
 
-func (s *SeclangActions) AddNonDisruptiveActionWithParam(action, param string) {
+func (s *SeclangActions) AddNonDisruptiveActionWithParam(action, param string) error {
+	_, ok := nonDisruptiveActions[action]
+	if !ok {
+		return fmt.Errorf("Non-disruptive action %s not found", action)
+	}
 	s.NonDisruptiveActions = append(s.NonDisruptiveActions, Action{Action: action, Param: param})
+	return nil
 }
 
-func (s *SeclangActions) AddNonDisruptiveActionOnly(action string) {
+func (s *SeclangActions) AddNonDisruptiveActionOnly(action string) error {
+	_, ok := nonDisruptiveActions[action]
+	if !ok {
+		return fmt.Errorf("Non-disruptive action %s not found", action)
+	}
 	s.NonDisruptiveActions = append(s.NonDisruptiveActions, Action{Action: action})
+	return nil
 }
 
-func (s *SeclangActions) AddFlowActionWithParam(action, param string) {
+func (s *SeclangActions) AddFlowActionWithParam(action, param string) error {
+	_, ok := flowActions[action]
+	if !ok {
+		return fmt.Errorf("Flow action %s not found", action)
+	}
 	s.FlowActions = append(s.FlowActions, Action{Action: action, Param: param})
+	return nil
 }
 
-func (s *SeclangActions) AddFlowActionOnly(action string) {
+func (s *SeclangActions) AddFlowActionOnly(action string) error {
+	_, ok := flowActions[action]
+	if !ok {
+		return fmt.Errorf("Flow action %s not found", action)
+	}
 	s.FlowActions = append(s.FlowActions, Action{Action: action})
+	return nil
 }
 
-func (s *SeclangActions) AddDataActionWithParams(action, param string) {
+func (s *SeclangActions) AddDataActionWithParams(action, param string) error {
+	_, ok := dataActions[action]
+	if !ok {
+		return fmt.Errorf("Data action %s not found", action)
+	}
 	s.DataActions = append(s.DataActions, Action{Action: action, Param: param})
+	return nil
+}
+
+func CopyActions(a SeclangActions) *SeclangActions {
+	newActions := new(SeclangActions)
+	newActions.DisruptiveAction = a.DisruptiveAction
+	newActions.NonDisruptiveActions = make([]Action, len(a.NonDisruptiveActions))
+	copy(newActions.NonDisruptiveActions, a.NonDisruptiveActions)
+	newActions.FlowActions = make([]Action, len(a.FlowActions))
+	copy(newActions.FlowActions, a.FlowActions)
+	newActions.DataActions = make([]Action, len(a.DataActions))
+	copy(newActions.DataActions, a.DataActions)
+	return newActions
 }
 
 func (s *SeclangActions) GetActionKeys() []string {
