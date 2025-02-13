@@ -276,7 +276,10 @@ func (l *ExtendedSeclangParserListener) ExitVar_stmt(ctx *parsing.Var_stmtContex
 }
 
 func (l *ExtendedSeclangParserListener) EnterOperator_name(ctx *parsing.Operator_nameContext) {
-	l.currentDirective.(*types.SecRule).SetOperatorName(ctx.GetText())
+	err := l.currentDirective.(*types.SecRule).SetOperatorName(ctx.GetText())
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (l *ExtendedSeclangParserListener) EnterOperator_value(ctx *parsing.Operator_valueContext) {
