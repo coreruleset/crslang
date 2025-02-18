@@ -1,7 +1,7 @@
 package types
 
 type DefaultAction struct {
-	Kind            string             `yaml:"kind,omitempty"`
+	Kind            Kind               `yaml:"kind,omitempty"`
 	Metadata        *OnlyPhaseMetadata `yaml:"metadata"`
 	Transformations `yaml:",inline"`
 	Actions         *SeclangActions `yaml:"actions"`
@@ -9,7 +9,7 @@ type DefaultAction struct {
 
 func NewDefaultAction() *DefaultAction {
 	defaultAction := new(DefaultAction)
-	defaultAction.Kind = "defaultaction"
+	defaultAction.Kind = DefaultActionKind
 	defaultAction.Metadata = new(OnlyPhaseMetadata)
 	defaultAction.Actions = new(SeclangActions)
 	return defaultAction

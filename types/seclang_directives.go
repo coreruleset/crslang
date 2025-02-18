@@ -15,7 +15,7 @@ type ChainableDirective interface {
 }
 
 type CommentDirective struct {
-	Kind     string          `yaml:"kind"`
+	Kind     Kind            `yaml:"kind"`
 	Metadata CommentMetadata `yaml:",inline"`
 }
 
@@ -24,7 +24,7 @@ func (d CommentDirective) ToSeclang() string {
 }
 
 type ConfigurationDirective struct {
-	Kind      string                     `yaml:"kind"`
+	Kind      Kind                       `yaml:"kind"`
 	Metadata  *CommentMetadata           `yaml:",inline"`
 	Name      ConfigurationDirectiveType `yaml:"name"`
 	Parameter string                     `yaml:"parameter"`
@@ -178,7 +178,7 @@ var (
 
 func NewConfigurationDirective() *ConfigurationDirective {
 	c := new(ConfigurationDirective)
-	c.Kind = "configuration"
+	c.Kind = ConfigurationKind
 	c.Metadata = new(CommentMetadata)
 	return c
 }

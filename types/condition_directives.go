@@ -38,7 +38,7 @@ func (s ScriptCondition) ConditionToSeclang() string {
 }
 
 type RuleWithCondition struct {
-	Kind        string             `yaml:"kind"`
+	Kind        Kind               `yaml:"kind"`
 	Metadata    SecRuleMetadata    `yaml:"metadata,omitempty"`
 	Conditions  []Condition        `yaml:"conditions,omitempty"`
 	Actions     SeclangActions     `yaml:"actions,omitempty"`
@@ -59,7 +59,7 @@ func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList 
 			switch directive.(type) {
 			case CommentMetadata:
 				directiveWrapper = CommentDirective{
-					Kind:     "comment",
+					Kind:     CommentKind,
 					Metadata: directive.(CommentMetadata),
 				}
 			case DefaultAction:
@@ -252,7 +252,7 @@ func loadRuleWithConditions(yamlDirective yaml.Node) RuleWithCondition {
 		panic(err)
 	}
 	directive := RuleWithCondition{
-		Kind:     "rule",
+		Kind:     RuleKind,
 		Metadata: loaderDirective.Metadata,
 		Actions:  loaderDirective.Actions,
 	}
