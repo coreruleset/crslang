@@ -89,7 +89,7 @@ func (l *ExtendedSeclangParserListener) EnterRule_script_directive(ctx *parsing.
 func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_with_param(ctx *parsing.Engine_config_directive_with_paramContext) {
 	// fmt.Println("String engine config directive: ", ctx.GetText())
 	l.currentConfigurationDirective = types.NewConfigurationDirective()
-	l.currentConfigurationDirective.Name = ctx.GetText()
+	l.currentConfigurationDirective.SetName(ctx.GetText())
 	l.currentFunctionToAppendComment = l.currentConfigurationDirective.GetMetadata().SetComment
 	l.currentFunctionToAppendDirective = func() {
 		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentConfigurationDirective)
@@ -107,7 +107,7 @@ func (l *ExtendedSeclangParserListener) EnterValues(ctx *parsing.ValuesContext) 
 
 func (l *ExtendedSeclangParserListener) EnterEngine_config_sec_cache_transformations(ctx *parsing.Engine_config_sec_cache_transformationsContext) {
 	l.currentConfigurationDirective = types.NewConfigurationDirective()
-	l.currentConfigurationDirective.Name = ctx.GetText()
+	l.currentConfigurationDirective.SetName(ctx.GetText())
 	l.currentFunctionToAppendComment = l.currentConfigurationDirective.GetMetadata().SetComment
 	l.currentFunctionToSetParam = func(value string) {
 		l.currentConfigurationDirective.Parameter = value
@@ -288,7 +288,7 @@ func (l *ExtendedSeclangParserListener) EnterOperator_value(ctx *parsing.Operato
 
 func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx *parsing.String_engine_config_directiveContext) {
 	l.currentConfigurationDirective = types.NewConfigurationDirective()
-	l.currentConfigurationDirective.Name = ctx.GetText()
+	l.currentConfigurationDirective.SetName(ctx.GetText())
 	l.currentFunctionToAppendComment = l.currentConfigurationDirective.GetMetadata().SetComment
 	l.currentFunctionToAppendDirective = func() {
 		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentConfigurationDirective)
@@ -304,7 +304,10 @@ func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parsing.S
 	// fmt.Println("Sec marker directive: ", ctx.GetText())
 	// l.currentParameter = ctx.GetText()
 	l.currentConfigurationDirective = types.NewConfigurationDirective()
-	l.currentConfigurationDirective.Name = ctx.GetText()
+	err := l.currentConfigurationDirective.SetName(ctx.GetText())
+	if err != nil {
+		panic(err)
+	}
 	l.currentFunctionToAppendComment = l.currentConfigurationDirective.GetMetadata().SetComment
 	l.currentFunctionToSetParam = func(value string) {
 		l.currentConfigurationDirective.Parameter = value
