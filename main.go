@@ -109,7 +109,9 @@ func main() {
 
 	ToConcreteRepr2(loadedConfigList, "seclang.conf")
 
-	ToConcreteRepr3(configList, "crslang.yaml")
+	loadedConfigListAux := LoadConcreteRepr1()
+
+	ToConcreteRepr3(loadedConfigListAux, "crslang.yaml")
 }
 
 func ToSeclang(configs []exporters.ConfigurationWrapper) string {
@@ -146,15 +148,17 @@ func ToConcreteRepr1(configList types.ConfigurationList, filename string) {
 
 type YAMLLoader struct {
 	Marker     exporters.ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
-	Directives []YAMLLoaderAux     `yaml:"directives,omitempty"`
+	Directives []yaml.Node                             `yaml:"directives,omitempty"`
 }
 
-type YAMLLoaderAux struct {
-	*types.CommentMetadata `yaml:",inline"`
-	*types.ConfigurationDirective
-	*types.SecDefaultAction
-	*types.SecAction
-	*types.SecRule
+type DirectiveLoader struct {
+	types.SecRuleMetadata `yaml:"metadata,omitempty"`
+	types.Variables       `yaml:",inline"`
+	types.Transformations `yaml:",inline"`
+	types.Operator        `yaml:"operator"`
+	types.SeclangActions  `yaml:"actions"`
+	ScriptPath      string `yaml:"scriptpath"`
+	ChainedRule yaml.Node `yaml:"chainedRule"`
 }
 
 func LoadConcreteRepr1() types.ConfigurationList {
@@ -164,16 +168,15 @@ func LoadConcreteRepr1() types.ConfigurationList {
 	}
 	var configs []YAMLLoader
 	err = yaml.Unmarshal(yamlFile, &configs)
-	// fmt.Printf("Printing yaml %v\n", *configs[0].Directives[0].CommentMetadata)
 	var resultConfigs []types.Configuration
 	for _, config := range configs {
 		var directives []types.SeclangDirective
-		for _, directive := range config.Directives {
-			seclangDirective := ConcreteRepr1Aux(directive)
-			if seclangDirective == nil {
-				// panic("Unknown directive type")
+		for _, yamlDirective := range config.Directives {
+			directive := ConcreteRepr1Aux(yamlDirective)
+			if directive == nil {
+				panic("Unknown directive type")
 			} else {
-				directives = append(directives, seclangDirective)
+				directives = append(directives, directive)
 			}
 		}
 		resultConfigs = append(resultConfigs, types.Configuration{Marker: config.Marker.ConfigurationDirective, Directives: directives})
@@ -181,18 +184,122 @@ func LoadConcreteRepr1() types.ConfigurationList {
 	return types.ConfigurationList{Configurations: resultConfigs}
 }
 
+func ConcreteRepr1Aux(yamlDirective yaml.Node) types.SeclangDirective {
+	if yamlDirective.Kind != yaml.MappingNode {
+		panic("Unknown format type")
+	}
+	switch yamlDirective.Content[0].Value {
+	case "comment":
+		rawDirective, err := yaml.Marshal(yamlDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.CommentMetadata{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	case "configurationdirective":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.ConfigurationDirective{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	case "secdefaultaction":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecDefaultAction{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	case "secaction":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		loaderDirective := DirectiveLoader{}
+		err = yaml.Unmarshal(rawDirective, &loaderDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecAction{
+			SecRuleMetadata: loaderDirective.SecRuleMetadata,
+			Transformations: loaderDirective.Transformations,
+			SeclangActions:  loaderDirective.SeclangActions,
+		}
+		var chainedRule types.SeclangDirective
+		if len(loaderDirective.ChainedRule.Content) > 0 {
+			chainedRule = ConcreteRepr1Aux(loaderDirective.ChainedRule)
+			directive.ChainedRule = castChainableDirective(chainedRule)
+		}
+		return &directive
+	case "secrule":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		loaderDirective := DirectiveLoader{}
+		err = yaml.Unmarshal(rawDirective, &loaderDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecRule{
+			SecRuleMetadata: loaderDirective.SecRuleMetadata,
+			Variables:       loaderDirective.Variables,
+			Transformations: loaderDirective.Transformations,
+			Operator:        loaderDirective.Operator,
+			SeclangActions:  loaderDirective.SeclangActions,
+		}
+		var chainedRule types.SeclangDirective
+		if len(loaderDirective.ChainedRule.Content) > 0 {
+			chainedRule = ConcreteRepr1Aux(loaderDirective.ChainedRule)
+			directive.ChainedRule = castChainableDirective(chainedRule)
+		}
+		return &directive
+	case "secrulescript":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		loaderDirective := DirectiveLoader{}
+		err = yaml.Unmarshal(rawDirective, &loaderDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecRuleScript{
+			SecRuleMetadata: loaderDirective.SecRuleMetadata,
+			Transformations: loaderDirective.Transformations,
+			SeclangActions:  loaderDirective.SeclangActions,
+			ScriptPath:      loaderDirective.ScriptPath,
+		}
+		var chainedRule types.SeclangDirective
+		if len(loaderDirective.ChainedRule.Content) > 0 {
+			chainedRule = ConcreteRepr1Aux(loaderDirective.ChainedRule)
+			directive.ChainedRule = castChainableDirective(chainedRule)
+		}
+		return &directive
+	}
+	return nil
+}
 
-func ConcreteRepr1Aux(directive YAMLLoaderAux) types.SeclangDirective {
-	if directive.CommentMetadata != nil {
-		return *directive.CommentMetadata
-	} else if directive.ConfigurationDirective != nil {
-		return *directive.ConfigurationDirective
-	} else if directive.SecDefaultAction != nil {
-		return *directive.SecDefaultAction
-	} else if directive.SecAction != nil {
-		return *directive.SecAction
-	} else if directive.SecRule != nil {
-		return *directive.SecRule
+func castChainableDirective(directive types.SeclangDirective) types.ChainableDirective {
+	switch directive.(type) {
+	case *types.SecRule:
+		return directive.(*types.SecRule)
+	case *types.SecAction:
+		return directive.(*types.SecAction)
+	case *types.SecRuleScript:
+		return directive.(*types.SecRuleScript)
 	}
 	return nil
 }
@@ -206,7 +313,7 @@ func ToConcreteRepr2(configList types.ConfigurationList, filename string) {
 
 	for _, config := range configList.Configurations {
 		for _, directive := range config.Directives {
-				_, err = io.WriteString(f, directive.ToSeclang() + "\n")
+			_, err = io.WriteString(f, directive.ToSeclang()+"\n")
 			if err != nil {
 				panic(err)
 			}
