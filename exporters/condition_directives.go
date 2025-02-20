@@ -1,7 +1,10 @@
 package exporters
 
 import (
+	"os"
+
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
+	"gopkg.in/yaml.v3"
 )
 
 type Condition interface {
@@ -101,7 +104,7 @@ func RuleToCondition(directive types.ChainableDirective) RuleWithCondition {
 			nil,
 		}
 	case *types.SecAction:
-		action:= directive.(*types.SecAction)
+		action := directive.(*types.SecAction)
 		ruleWithCondition = RuleWithCondition{
 			action.SecRuleMetadata,
 			[]Condition{
@@ -113,7 +116,7 @@ func RuleToCondition(directive types.ChainableDirective) RuleWithCondition {
 			nil,
 		}
 	case *types.SecRuleScript:
-		script:= directive.(*types.SecRuleScript)
+		script := directive.(*types.SecRuleScript)
 		ruleWithCondition = RuleWithCondition{
 			script.SecRuleMetadata,
 			[]Condition{
@@ -138,4 +141,152 @@ func RuleToCondition(directive types.ChainableDirective) RuleWithCondition {
 		}
 	}
 	return ruleWithCondition
+}
+
+// yamlLoaderConditionRules is a auxiliary struct to load and iterate over the yaml file
+type yamlLoaderConditionRules struct {
+	Marker     ConfigurationDirectiveWrapper `yaml:"marker,omitempty"`
+	Directives []yaml.Node                   `yaml:"directives,omitempty"`
+}
+
+// conditionDirectiveLoader is a auxiliary struct to load condition directives
+type conditionDirectiveLoader struct {
+	types.SecRuleMetadata `yaml:"metadata,omitempty"`
+	Conditions            yaml.Node `yaml:"conditions,omitempty"`
+	types.SeclangActions  `yaml:"actions,omitempty"`
+	ChainedRule           yaml.Node `yaml:"chainedRule"`
+}
+
+// LoadDirectivesWithConditionsFromFile loads condition format directives from a yaml file
+func LoadDirectivesWithConditionsFromFile(filename string) ConfigurationListWrapper {
+	yamlFile, err := os.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	return LoadDirectivesWithConditions(yamlFile)
+}
+
+// LoadDirectivesWithConditions loads condition format directives from a yaml file
+func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationListWrapper {
+	var configs []yamlLoaderConditionRules
+	err := yaml.Unmarshal(yamlFile, &configs)
+	if err != nil {
+		panic(err)
+	}
+	var resultConfigs []ConfigurationWrapper
+	for _, config := range configs {
+		var directives []types.SeclangDirective
+		for _, yamlDirective := range config.Directives {
+			directive := loadConditionDirective(yamlDirective)
+			if directive == nil {
+				panic("Unknown directive type")
+			} else {
+				directives = append(directives, directive)
+			}
+		}
+		resultConfigs = append(resultConfigs, ConfigurationWrapper{Marker: config.Marker, Directives: directives})
+	}
+	return ConfigurationListWrapper{Configurations: resultConfigs}
+}
+
+// loadConditionDirective loads the different kind of directives
+func loadConditionDirective(yamlDirective yaml.Node) types.SeclangDirective {
+	if yamlDirective.Kind != yaml.MappingNode {
+		panic("Unknown format type")
+	}
+	switch yamlDirective.Content[0].Value {
+	case "comment":
+		rawDirective, err := yaml.Marshal(yamlDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := types.CommentMetadata{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
+	case "configurationdirective":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.ConfigurationDirective{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return ConfigurationDirectiveWrapper{directive} 
+	case "secdefaultaction":
+		rawDirective, err := yaml.Marshal(yamlDirective.Content[1])
+		if err != nil {
+			panic(err)
+		}
+		directive := types.SecDefaultAction{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return SecDefaultActionWrapper{directive}
+	case "rule":
+		return RuleWithConditionWrapper{loadRuleWithConditions(yamlDirective, false)}
+	}
+	return nil
+}
+
+// loadRuleWithConditions loads a rule with conditions in a recursive way
+func loadRuleWithConditions(yamlDirective yaml.Node, isChained bool) RuleWithCondition {
+	rawDirective := []byte{}
+	var err error
+
+	if !isChained {
+		rawDirective, err = yaml.Marshal(yamlDirective.Content[1])
+	} else {
+		rawDirective, err = yaml.Marshal(yamlDirective)
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	loaderDirective := conditionDirectiveLoader{}
+	err = yaml.Unmarshal(rawDirective, &loaderDirective)
+	if err != nil {
+		panic(err)
+	}
+	directive := RuleWithCondition{
+		SecRuleMetadata: loaderDirective.SecRuleMetadata,
+		SeclangActions:  loaderDirective.SeclangActions,
+	}
+	if loaderDirective.Conditions.Kind == yaml.SequenceNode {
+		for _, condition := range loaderDirective.Conditions.Content {
+			loadedCondition := castConditions(condition)
+			directive.Conditions = append(directive.Conditions, loadedCondition)
+		}
+	}
+	var loadedChainedRule RuleWithCondition
+	if len(loaderDirective.ChainedRule.Content) > 0 {
+		loadedChainedRule = loadRuleWithConditions(loaderDirective.ChainedRule, true)
+		directive.ChainedRule = &loadedChainedRule
+	}
+	return directive
+}
+
+// castConditions casts a directive condition to the correct type
+func castConditions(condition *yaml.Node) Condition {
+	switch condition.Content[0].Value {
+	case "alwaysMatch":
+		return SecActionCondition{AlwaysMatch: true}
+	case "script":
+		return ScriptCondition{Script: condition.Content[1].Value}
+	case "variables", "transformations", "operator":
+		rawDirective, err := yaml.Marshal(condition)
+		if err != nil {
+			panic(err)
+		}
+		ruleCondition := SecRuleCondition{}
+		err = yaml.Unmarshal(rawDirective, &ruleCondition)
+		return ruleCondition
+	}
+	return nil
 }

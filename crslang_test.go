@@ -1,8 +1,8 @@
 package main
 
 import (
-	"io"
 	"os"
+	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/exporters"
@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var files = []string{
+var testFiles = []string{
 	"seclang_parser/testdata/crs-setup.conf",
 	"seclang_parser/testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
 	"seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
@@ -40,9 +40,9 @@ var files = []string{
 	"seclang_parser/testdata/crs/RESPONSE-980-CORRELATION.conf",
 }
 
-func main() {
+func TestLoadCRS(t *testing.T) {
 	resultConfigs := []types.Configuration{}
-	for _, file := range files {
+	for _, file := range testFiles {
 		input, err := antlr.NewFileStream(file)
 		if err != nil {
 			panic("Error reading file" + file)
@@ -57,76 +57,28 @@ func main() {
 	}
 	configList := types.ConfigurationList{Configurations: resultConfigs}
 
-	err := printCRSLang(configList, "crslang.yaml")
-	if err != nil {
-		panic(err)
-	}
-
-	/* 	loadedConfigList := exporters.LoadDirectivesWithConditionsFromFile("crslang.yaml")
-	   	yamlFile, err := yaml.Marshal(loadedConfigList.Configurations)
-	   	if err != nil {
-	   		panic(err)
-	   	}
-
-	   	writeToFile(yamlFile, "crslang_loaded.yaml") */
-}
-
-// printDirectivesWithLabels writes alias format directives to a file
-func printDirectivesWithLabels(configList types.ConfigurationList, filename string) error {
-	wrappedConfigList := exporters.ToDirectivesWithLabels(configList)
-
-	yamlFile, err := yaml.Marshal(wrappedConfigList.Configurations)
-	if err != nil {
-		return err
-	}
-
-	err = writeToFile(yamlFile, filename)
-
-	return err
-}
-
-// printSeclang writes seclang format directives to a file
-func printSeclang(configList types.ConfigurationList, filename string) error {
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-
-	seclangDirectives := exporters.ToSeclang(configList)
-
-	_, err = io.WriteString(f, seclangDirectives)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// printCRSLang writes crslang format directives (directives with conditions) to a file
-func printCRSLang(configList types.ConfigurationList, filename string) error {
 	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
 
 	yamlFile, err := yaml.Marshal(configListWithConditions.Configurations)
 	if err != nil {
-		return err
+		t.Errorf("Error marshalling yaml: %v", err)
 	}
 
-	err = writeToFile(yamlFile, filename)
+	err = writeToFile(yamlFile, "tmp_crslang.yaml")
 
-	return err
-}
-
-func writeToFile(payload []byte, filename string) error {
-	f, err := os.Create(filename)
+	defer os.Remove("tmp_crslang.yaml")
+	
 	if err != nil {
-		return err
+		t.Errorf("Error writing file: %v", err)
 	}
-	defer f.Close()
 
-	_, err = io.WriteString(f, string(payload))
+	loadedConfigList := exporters.LoadDirectivesWithConditionsFromFile("tmp_crslang.yaml")
+	yamlLoadedFile, err := yaml.Marshal(loadedConfigList.Configurations)
 	if err != nil {
-		return err
+		t.Errorf("Error writing file: %v", err)
 	}
 
-	return nil
+	if string(yamlFile) != string(yamlLoadedFile) {
+		t.Errorf("Error: loaded file is different from original. Expected string length: %v, got: %v", len(string(yamlFile)), len(string(yamlLoadedFile)))
+	}
 }
