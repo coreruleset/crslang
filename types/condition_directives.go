@@ -11,8 +11,9 @@ type Condition interface {
 }
 
 type SecRuleCondition struct {
-	Variables       []Variable `yaml:"variables,omitempty"`
-	Operator        Operator   `yaml:",omitempty"`
+	Variables       []Variable   `yaml:"variables,omitempty"`
+	Collections     []Collection `yaml:"collections,omitempty"`
+	Operator        Operator     `yaml:"operator"`
 	Transformations `yaml:",inline,omitempty"`
 }
 
@@ -91,6 +92,7 @@ func RuleToCondition(directive ChainableDirective) RuleWithCondition {
 			[]Condition{
 				SecRuleCondition{
 					rule.Variables,
+					rule.Collections,
 					rule.Operator,
 					rule.Transformations,
 				},
@@ -286,7 +288,7 @@ func castConditions(condition *yaml.Node) Condition {
 		return ruleCondition
 	case "script":
 		return ScriptCondition{Script: condition.Content[1].Value}
-	case "variables":
+	case "variables", "collections":
 		rawDirective, err := yaml.Marshal(condition)
 		if err != nil {
 			panic(err)
@@ -343,6 +345,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 		case SecRuleCondition:
 			secruleDirective := new(SecRule)
 			secruleDirective.Variables = condition.(SecRuleCondition).Variables
+			secruleDirective.Collections = condition.(SecRuleCondition).Collections
 			secruleDirective.Transformations = condition.(SecRuleCondition).Transformations
 			secruleDirective.Operator = condition.(SecRuleCondition).Operator
 			if i == 0 {

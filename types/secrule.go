@@ -8,6 +8,7 @@ import (
 type SecRule struct {
 	Metadata        *SecRuleMetadata `yaml:"metadata,omitempty"`
 	Variables       []Variable       `yaml:"variables"`
+	Collections     []Collection     `yaml:"collections,omitempty"`
 	Transformations `yaml:",inline"`
 	Operator        `yaml:"operator"`
 	Actions         *SeclangActions    `yaml:"actions,omitempty"`
@@ -42,8 +43,16 @@ func (s SecRule) ToSeclangWithIdent(initialString string) string {
 
 	result := ""
 	result += s.Metadata.Comment + initialString + "SecRule "
-	result += VariablesToString(s.Variables) + " "
-	result += "\"" + s.Operator.ToString() + "\""
+	vars := VariablesToString(s.Variables)
+	colls := CollectionsToString(s.Collections)
+	if vars != "" && colls != "" {
+		result += vars + "|" + colls
+	} else if vars != "" {
+		result += vars
+	} else if colls != "" {
+		result += colls
+	}
+	result += " \"" + s.Operator.ToString() + "\""
 	if s.Metadata.Id != 0 {
 		auxSlice = append(auxSlice, "id:"+strconv.Itoa(s.Metadata.Id))
 	}

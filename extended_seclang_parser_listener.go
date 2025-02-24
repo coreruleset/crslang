@@ -22,6 +22,7 @@ type ExtendedSeclangParserListener struct {
 	currentComment                   string
 	currentFunctionToAppendComment   func(value string)
 	currentFunctionToSetParam        func(value string)
+	currentFunctionToAddVariable     func() error
 	currentFunctionToAppendDirective func()
 	currentConfigurationDirective    *types.ConfigurationDirective
 	currentDirective                 AuxDirective
@@ -260,14 +261,30 @@ func (l *ExtendedSeclangParserListener) EnterVar_stmt(ctx *parsing.Var_stmtConte
 
 func (l *ExtendedSeclangParserListener) EnterVariable_enum(ctx *parsing.Variable_enumContext) {
 	l.varName = ctx.GetText()
+	l.currentFunctionToAddVariable = func() error {
+		err := l.currentDirective.(*types.SecRule).AddVariable(l.varName)
+		return err
+	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterVariable_value(ctx *parsing.Variable_valueContext) {
+func (l *ExtendedSeclangParserListener) EnterCollection_enum(ctx *parsing.Collection_enumContext) {
+	l.varName = ctx.GetText()
+	l.currentFunctionToAddVariable = func() error {
+		err := l.currentDirective.(*types.SecRule).AddCollection(l.varName, "")
+		return err
+	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterCollection_value(ctx *parsing.Collection_valueContext) {
 	l.varValue = ctx.GetText()
+	l.currentFunctionToAddVariable = func() error {
+		err := l.currentDirective.(*types.SecRule).AddCollection(l.varName, l.varValue)
+		return err
+	}
 }
 
 func (l *ExtendedSeclangParserListener) ExitVar_stmt(ctx *parsing.Var_stmtContext) {
-	err := l.currentDirective.(*types.SecRule).AddVariable(l.varName, l.varValue)
+	err := l.currentFunctionToAddVariable()
 	if err != nil {
 		panic(err)
 	}

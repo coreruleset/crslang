@@ -244,6 +244,78 @@ SecRule REQUEST_LINE "!@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?
 	if secRule.Actions.DisruptiveAction.Action != "block" {
 		t.Errorf("Expected disruptive action block, got %s", secRule.Actions.DisruptiveAction.Action)
 	}
+	if len(secRule.Variables) != 1 {
+		t.Errorf("Expected 1 variable, got %d", len(secRule.Variables))
+	}
+	if secRule.Variables[0] != "REQUEST_LINE" {
+		t.Errorf("Expected variable REQUEST_LINE, got %s", secRule.Variables[0])
+	}
+}
+
+func TestLoadSecRuleWithCollection(t *testing.T) {
+	testPayload := `
+#
+# -=[ Exclusion rule for 942440 ]=-
+#
+# Prevent FPs against Facebook click identifier
+#
+SecRule ARGS_GET:fbclid "@rx [a-zA-Z0-9_-]{61,61}" \
+    "id:942441,\
+    phase:2,\
+    pass,\
+    t:none,t:urlDecodeUni,\
+    nolog,\
+    tag:'OWASP_CRS',\
+    ctl:ruleRemoveTargetById=942440;ARGS:fbclid,\
+    ver:'OWASP_CRS/4.0.1-dev'"`
+
+	resultConfigs := []types.DirectiveList{}
+	input := antlr.NewInputStream(testPayload)
+	lexer := parsing.NewSecLangLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, 0)
+	p := parsing.NewSecLangParser(stream)
+	start := p.Configuration()
+	var listener ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
+
+	if len(resultConfigs) != 1 {
+		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
+	}
+	if len(resultConfigs[0].Directives) != 1 {
+		t.Errorf("Expected 1 directive, got %d", len(resultConfigs[0].Directives))
+	}
+	secRule, ok := resultConfigs[0].Directives[0].(*types.SecRule)
+	if !ok {
+		t.Errorf("Expected SecRule, got %T", resultConfigs[0].Directives[0])
+	}
+	if secRule.Metadata.Id != 942441 {
+		t.Errorf("Expected id 942441, got %d", secRule.Metadata.Id)
+	}
+	if secRule.Metadata.Phase != "2" {
+		t.Errorf("Expected phase 2, got %s", secRule.Metadata.Phase)
+	}
+	if secRule.Metadata.Tags[0] != "OWASP_CRS" {
+		t.Errorf("Expected tag OWASP_CRS, got %s", secRule.Metadata.Tags[0])
+	}
+	if secRule.Metadata.Ver != "OWASP_CRS/4.0.1-dev" {
+		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", secRule.Metadata.Ver)
+	}
+	if slices.Contains(secRule.Actions.GetActionKeys(), "nolog") == false {
+		t.Errorf("Expected nolog action, not found")
+	}
+	if secRule.Actions.DisruptiveAction.Action != "pass" {
+		t.Errorf("Expected disruptive action pass, got %s", secRule.Actions.DisruptiveAction.Action)
+	}
+	if len(secRule.Collections) != 1 {
+		t.Errorf("Expected 1 collection, got %d", len(secRule.Collections))
+	}
+	if secRule.Collections[0].Name != "ARGS_GET" {
+		t.Errorf("Expected variable ARGS_GET, got %s", secRule.Collections[0].Name)
+	}
+	if secRule.Collections[0].Argument != "fbclid" {
+		t.Errorf("Expected argument fbclid, got %s", secRule.Collections[0].Argument)
+	}
 }
 
 func TestLoadChain(t *testing.T) {
