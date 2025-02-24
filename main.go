@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/antlr4-go/antlr/v4"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/exporters"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 	"gopkg.in/yaml.v3"
@@ -41,7 +40,7 @@ var files = []string{
 }
 
 func main() {
-	resultConfigs := []types.Configuration{}
+	resultConfigs := []types.DirectiveList{}
 	for _, file := range files {
 		input, err := antlr.NewFileStream(file)
 		if err != nil {
@@ -53,36 +52,22 @@ func main() {
 		start := p.Configuration()
 		var listener ExtendedSeclangParserListener
 		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-		resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+		resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
 	}
-	configList := types.ConfigurationList{Configurations: resultConfigs}
+	configList := types.ConfigurationList{DirectiveList: resultConfigs}
 
 	err := printCRSLang(configList, "crslang.yaml")
 	if err != nil {
 		panic(err)
 	}
 
-	/* 	loadedConfigList := exporters.LoadDirectivesWithConditionsFromFile("crslang.yaml")
+	/* 	loadedConfigList := types.LoadDirectivesWithConditionsFromFile("crslang.yaml")
 	   	yamlFile, err := yaml.Marshal(loadedConfigList.Configurations)
 	   	if err != nil {
 	   		panic(err)
 	   	}
 
 	   	writeToFile(yamlFile, "crslang_loaded.yaml") */
-}
-
-// printDirectivesWithLabels writes alias format directives to a file
-func printDirectivesWithLabels(configList types.ConfigurationList, filename string) error {
-	wrappedConfigList := exporters.ToDirectivesWithLabels(configList)
-
-	yamlFile, err := yaml.Marshal(wrappedConfigList.Configurations)
-	if err != nil {
-		return err
-	}
-
-	err = writeToFile(yamlFile, filename)
-
-	return err
 }
 
 // printSeclang writes seclang format directives to a file
@@ -92,7 +77,7 @@ func printSeclang(configList types.ConfigurationList, filename string) error {
 		return err
 	}
 
-	seclangDirectives := exporters.ToSeclang(configList)
+	seclangDirectives := types.ToSeclang(configList)
 
 	_, err = io.WriteString(f, seclangDirectives)
 	if err != nil {
@@ -104,9 +89,9 @@ func printSeclang(configList types.ConfigurationList, filename string) error {
 
 // printCRSLang writes crslang format directives (directives with conditions) to a file
 func printCRSLang(configList types.ConfigurationList, filename string) error {
-	configListWithConditions := exporters.ToDirectiveWithConditions(configList)
+	configListWithConditions := types.ToDirectiveWithConditions(configList)
 
-	yamlFile, err := yaml.Marshal(configListWithConditions.Configurations)
+	yamlFile, err := yaml.Marshal(configListWithConditions.DirectiveList)
 	if err != nil {
 		return err
 	}

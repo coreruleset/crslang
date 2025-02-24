@@ -25,7 +25,7 @@ func TestLoadComment(t *testing.T) {
 #
 `
 
-	resultConfigs := []types.Configuration{}
+	resultConfigs := []types.DirectiveList{}
 	input := antlr.NewInputStream(testPayload)
 	lexer := parsing.NewSecLangLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, 0)
@@ -33,7 +33,7 @@ func TestLoadComment(t *testing.T) {
 	start := p.Configuration()
 	var listener ExtendedSeclangParserListener
 	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -55,7 +55,7 @@ func TestLoadConfigurationDirective(t *testing.T) {
 SecRuleEngine On
 `
 
-	resultConfigs := []types.Configuration{}
+	resultConfigs := []types.DirectiveList{}
 	input := antlr.NewInputStream(testPayload)
 	lexer := parsing.NewSecLangLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, 0)
@@ -63,7 +63,7 @@ SecRuleEngine On
 	start := p.Configuration()
 	var listener ExtendedSeclangParserListener
 	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -75,8 +75,8 @@ SecRuleEngine On
 	if !ok {
 		t.Errorf("Expected configuration directive, got %T", resultConfigs[0].Directives[0])
 	}
-	if configDirective.DirectiveName != "SecRuleEngine" {
-		t.Errorf("Expected directive SecRuleEngine, got %s", configDirective.DirectiveName)
+	if configDirective.Name != "SecRuleEngine" {
+		t.Errorf("Expected directive SecRuleEngine, got %s", configDirective.Name)
 	}
 	if configDirective.Parameter != "On" {
 		t.Errorf("Expected parameter On, got %s", configDirective.Parameter)
@@ -119,7 +119,7 @@ SecAction \
     setvar:'tx.outbound_anomaly_score_pl4=0',\
     setvar:'tx.anomaly_score=0'"`
 
-	resultConfigs := []types.Configuration{}
+	resultConfigs := []types.DirectiveList{}
 	input := antlr.NewInputStream(testPayload)
 	lexer := parsing.NewSecLangLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, 0)
@@ -127,7 +127,7 @@ SecAction \
 	start := p.Configuration()
 	var listener ExtendedSeclangParserListener
 	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -139,23 +139,23 @@ SecAction \
 	if !ok {
 		t.Errorf("Expected SecAction, got %T", resultConfigs[0].Directives[0])
 	}
-	if secAction.Id != 901200 {
-		t.Errorf("Expected id 901200, got %d", secAction.Id)
+	if secAction.Metadata.Id != 901200 {
+		t.Errorf("Expected id 901200, got %d", secAction.Metadata.Id)
 	}
-	if secAction.Phase != "1" {
-		t.Errorf("Expected phase 1, got %s", secAction.Phase)
+	if secAction.Metadata.Phase != "1" {
+		t.Errorf("Expected phase 1, got %s", secAction.Metadata.Phase)
 	}
-	if secAction.Tags[0] != "OWASP_CRS" {
-		t.Errorf("Expected tag OWASP_CRS, got %s", secAction.Tags[0])
+	if secAction.Metadata.Tags[0] != "OWASP_CRS" {
+		t.Errorf("Expected tag OWASP_CRS, got %s", secAction.Metadata.Tags[0])
 	}
-	if secAction.Ver != "OWASP_CRS/4.0.1-dev" {
-		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", secAction.Ver)
+	if secAction.Metadata.Ver != "OWASP_CRS/4.0.1-dev" {
+		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", secAction.Metadata.Ver)
 	}
-	if slices.Contains(secAction.GetActionKeys(), "nolog") == false {
+	if slices.Contains(secAction.Actions.GetActionKeys(), "nolog") == false {
 		t.Errorf("Expected nolog action, not found")
 	}
-	if secAction.DisruptiveAction.Action != "pass" {
-		t.Errorf("Expected disruptive action pass, got %s", secAction.DisruptiveAction.Action)
+	if secAction.Actions.DisruptiveAction.Action != "pass" {
+		t.Errorf("Expected disruptive action pass, got %s", secAction.Actions.DisruptiveAction.Action)
 	}
 }
 
@@ -200,7 +200,7 @@ SecRule REQUEST_LINE "!@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?
     severity:'WARNING',\
     setvar:'tx.inbound_anomaly_score_pl1=+%{tx.warning_anomaly_score}'"`
 
-	resultConfigs := []types.Configuration{}
+	resultConfigs := []types.DirectiveList{}
 	input := antlr.NewInputStream(testPayload)
 	lexer := parsing.NewSecLangLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, 0)
@@ -208,7 +208,7 @@ SecRule REQUEST_LINE "!@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?
 	start := p.Configuration()
 	var listener ExtendedSeclangParserListener
 	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -220,29 +220,29 @@ SecRule REQUEST_LINE "!@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?
 	if !ok {
 		t.Errorf("Expected SecRule, got %T", resultConfigs[0].Directives[0])
 	}
-	if secRule.Id != 920100 {
-		t.Errorf("Expected id 920100, got %d", secRule.Id)
+	if secRule.Metadata.Id != 920100 {
+		t.Errorf("Expected id 920100, got %d", secRule.Metadata.Id)
 	}
-	if secRule.Phase != "1" {
-		t.Errorf("Expected phase 1, got %s", secRule.Phase)
+	if secRule.Metadata.Phase != "1" {
+		t.Errorf("Expected phase 1, got %s", secRule.Metadata.Phase)
 	}
-	if secRule.Tags[0] != "application-multi" {
-		t.Errorf("Expected tag application-multi, got %s", secRule.Tags[0])
+	if secRule.Metadata.Tags[0] != "application-multi" {
+		t.Errorf("Expected tag application-multi, got %s", secRule.Metadata.Tags[0])
 	}
-	if secRule.Ver != "OWASP_CRS/4.0.1-dev" {
-		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", secRule.Ver)
+	if secRule.Metadata.Ver != "OWASP_CRS/4.0.1-dev" {
+		t.Errorf("Expected version OWASP_CRS/4.0.1-dev, got %s", secRule.Metadata.Ver)
 	}
-	if secRule.Msg != "Invalid HTTP Request Line" {
-		t.Errorf("Expected message Invalid HTTP Request Line, got %s", secRule.Msg)
+	if secRule.Metadata.Msg != "Invalid HTTP Request Line" {
+		t.Errorf("Expected message Invalid HTTP Request Line, got %s", secRule.Metadata.Msg)
 	}
-	if secRule.Severity != "WARNING" {
-		t.Errorf("Expected severity WARNING, got %s", secRule.Severity)
+	if secRule.Metadata.Severity != "WARNING" {
+		t.Errorf("Expected severity WARNING, got %s", secRule.Metadata.Severity)
 	}
-	if slices.Contains(secRule.GetActionKeys(), "logdata") == false {
+	if slices.Contains(secRule.Actions.GetActionKeys(), "logdata") == false {
 		t.Errorf("Expected logdata action, not found")
 	}
-	if secRule.DisruptiveAction.Action != "block" {
-		t.Errorf("Expected disruptive action block, got %s", secRule.DisruptiveAction.Action)
+	if secRule.Actions.DisruptiveAction.Action != "block" {
+		t.Errorf("Expected disruptive action block, got %s", secRule.Actions.DisruptiveAction.Action)
 	}
 }
 
@@ -270,7 +270,7 @@ SecRule REQUEST_LINE "@streq GET /" \
         ctl:ruleRemoveByTag=OWASP_CRS,\
         ctl:auditEngine=Off"`
 
-	resultConfigs := []types.Configuration{}
+	resultConfigs := []types.DirectiveList{}
 	input := antlr.NewInputStream(testPayload)
 	lexer := parsing.NewSecLangLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, 0)
@@ -278,7 +278,7 @@ SecRule REQUEST_LINE "@streq GET /" \
 	start := p.Configuration()
 	var listener ExtendedSeclangParserListener
 	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.Configurations...)
+	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -290,22 +290,22 @@ SecRule REQUEST_LINE "@streq GET /" \
 	if !ok {
 		t.Errorf("Expected SecRule, got %T", resultConfigs[0].Directives[0])
 	}
-	if secRule.Id != 905100 {
-		t.Errorf("Expected id 905100, got %d", secRule.Id)
+	if secRule.Metadata.Id != 905100 {
+		t.Errorf("Expected id 905100, got %d", secRule.Metadata.Id)
 	}
-	if secRule.Phase != "1" {
-		t.Errorf("Expected phase 1, got %s", secRule.Phase)
+	if secRule.Metadata.Phase != "1" {
+		t.Errorf("Expected phase 1, got %s", secRule.Metadata.Phase)
 	}
-	if secRule.Tags[0] != "application-multi" {
-		t.Errorf("Expected tag application-multi, got %s", secRule.Tags[0])
+	if secRule.Metadata.Tags[0] != "application-multi" {
+		t.Errorf("Expected tag application-multi, got %s", secRule.Metadata.Tags[0])
 	}
-	if secRule.Ver != "OWASP_CRS/4.6.0-dev" {
-		t.Errorf("Expected version OWASP_CRS/4.6.0-dev, got %s", secRule.Ver)
+	if secRule.Metadata.Ver != "OWASP_CRS/4.6.0-dev" {
+		t.Errorf("Expected version OWASP_CRS/4.6.0-dev, got %s", secRule.Metadata.Ver)
 	}
-	if secRule.DisruptiveAction.Action != "pass" {
-		t.Errorf("Expected disruptive action pass, got %s", secRule.DisruptiveAction.Action)
+	if secRule.Actions.DisruptiveAction.Action != "pass" {
+		t.Errorf("Expected disruptive action pass, got %s", secRule.Actions.DisruptiveAction.Action)
 	}
-	if slices.Contains(secRule.GetActionKeys(), "chain") == false {
+	if slices.Contains(secRule.Actions.GetActionKeys(), "chain") == false {
 		t.Errorf("Expected chain action, not found")
 	}
 	chainedRule, ok := secRule.ChainedRule.(*types.SecRule)
@@ -318,7 +318,7 @@ SecRule REQUEST_LINE "@streq GET /" \
 	if chainedRule.Operator.Value != "127.0.0.1,::1" {
 		t.Errorf("Expected operator value 127.0.0.1,::1, got %s", chainedRule.Operator.Value)
 	}
-	if slices.Contains(chainedRule.GetActionKeys(), "ctl") == false {
+	if slices.Contains(chainedRule.Actions.GetActionKeys(), "ctl") == false {
 		t.Errorf("Expected ctl action, not found")
 	}
 }
