@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 )
@@ -366,7 +364,6 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rules(ctx *parsing.Remove_ru
 		}
 	}
 	l.currentFunctionToAppendDirective = func() {
-		fmt.Printf("Remove directive: %v\n", l.removeDirective)
-		fmt.Printf("Remove directive to seclang: %v\n", l.removeDirective.ToSeclang())
+		l.Configuration.Directives = append(l.Configuration.Directives, l.removeDirective)
 	}
 }

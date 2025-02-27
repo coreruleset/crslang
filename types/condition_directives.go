@@ -63,15 +63,13 @@ func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList 
 					Kind:     CommentKind,
 					Metadata: directive.(CommentMetadata),
 				}
-			case DefaultAction:
-				directiveWrapper = directive
 			case *SecAction:
 				directiveWrapper = RuleToCondition(directive.(*SecAction))
 			case *SecRule:
 				directiveWrapper = RuleToCondition(directive.(*SecRule))
 			case *SecRuleScript:
 				directiveWrapper = RuleToCondition(directive.(*SecRuleScript))
-			case ConfigurationDirective:
+			default:
 				directiveWrapper = directive
 			}
 			configWrapper.Directives = append(configWrapper.Directives, directiveWrapper)
@@ -232,6 +230,17 @@ func loadConditionDirective(yamlDirective yaml.Node) SeclangDirective {
 		return directive
 	case "rule":
 		return loadRuleWithConditions(yamlDirective)
+	case "remove":
+		rawDirective, err := yaml.Marshal(yamlDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := RemoveRuleDirective{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
 	}
 	return nil
 }
