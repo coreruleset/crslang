@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 )
@@ -27,6 +29,7 @@ type ExtendedSeclangParserListener struct {
 	currentConfigurationDirective    *types.ConfigurationDirective
 	currentDirective                 AuxDirective
 	previousDirective                AuxDirective
+	removeDirective                  types.RemoveRuleDirective
 	varName                          string
 	varValue                         string
 	currentParameter                 string
@@ -339,4 +342,31 @@ func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parsing.S
 
 func (l *ExtendedSeclangParserListener) EnterComment(ctx *parsing.CommentContext) {
 	l.currentComment = ctx.GetText()
+}
+
+func (l *ExtendedSeclangParserListener) EnterRemove_rules(ctx *parsing.Remove_rulesContext) {
+	l.removeDirective = types.RemoveRuleDirective{
+		Kind: types.Remove,
+	}
+	l.currentFunctionToAppendComment = func(comment string) {
+		l.removeDirective.Metadata.Comment = comment
+	}
+	switch ctx.GetText() {
+	case "SecRuleRemoveByID":
+		l.currentFunctionToSetParam = func(value string) {
+			l.removeDirective.IdRanges = append(l.removeDirective.IdRanges, value)
+		}
+	case "SecRuleRemoveByTag":
+		l.currentFunctionToSetParam = func(value string) {
+			l.removeDirective.Tags = append(l.removeDirective.Tags, value)
+		}
+	case "SecRuleRemoveByMsg":
+		l.currentFunctionToSetParam = func(value string) {
+			l.removeDirective.Msgs = append(l.removeDirective.Msgs, value)
+		}
+	}
+	l.currentFunctionToAppendDirective = func() {
+		fmt.Printf("Remove directive: %v\n", l.removeDirective)
+		fmt.Printf("Remove directive to seclang: %v\n", l.removeDirective.ToSeclang())
+	}
 }
