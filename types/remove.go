@@ -25,26 +25,26 @@ func (r IdRange) ToString() string {
 }
 
 func (d RemoveRuleDirective) ToSeclang() string {
-	result := ""
+	results := ""
 	if len(d.Ids) > 0 || len(d.IdRanges) > 0 {
-		result += "SecRuleRemoveById"
+		results += "SecRuleRemoveById"
 		for _, id := range d.Ids {
-			result += " " + strconv.Itoa(id)
+			results += " " + strconv.Itoa(id)
 		}
 		for _, idRange := range d.IdRanges {
-			result += " " + idRange.ToString()
+			results += " " + idRange.ToString()
 		}
-		result += "\n"
+		results += "\n"
 	}
 	if len(d.Tags) > 0 {
 		for _, tag := range d.Tags {
-			result += "SecRuleRemoveByTag " + tag + "\n"
+			results += "SecRuleRemoveByTag " + tag + "\n"
 		}
 	}
 	if len(d.Msgs) > 0 {
 		for _, msg := range d.Msgs {
-			result += "SecRuleRemoveByMsg " + msg + "\n"
+			results += "SecRuleRemoveByMsg " + msg + "\n"
 		}
 	}
-	return result
+	return results
 }
