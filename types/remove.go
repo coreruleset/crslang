@@ -9,8 +9,8 @@ type RemoveRuleDirective struct {
 	Metadata CommentMetadata `yaml:"metadata,omitempty"`
 	Ids      []int           `yaml:"ids,omitempty"`
 	IdRanges []IdRange       `yaml:"id_ranges,omitempty"`
-	Tags     []string        `yaml:"tag,omitempty"`
-	Msgs     []string        `yaml:"msg,omitempty"`
+	Tags     []string        `yaml:"tags,omitempty"`
+	Msgs     []string        `yaml:"msgs,omitempty"`
 }
 
 type IdRange struct {
