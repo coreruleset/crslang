@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strconv"
+
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 )
@@ -28,6 +30,7 @@ type ExtendedSeclangParserListener struct {
 	currentDirective                 AuxDirective
 	previousDirective                AuxDirective
 	removeDirective                  types.RemoveRuleDirective
+	idRange                          types.IdRange
 	varName                          string
 	varValue                         string
 	currentParameter                 string
@@ -342,28 +345,76 @@ func (l *ExtendedSeclangParserListener) EnterComment(ctx *parsing.CommentContext
 	l.currentComment = ctx.GetText()
 }
 
-func (l *ExtendedSeclangParserListener) EnterRemove_rules(ctx *parsing.Remove_rulesContext) {
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_msg(ctx *parsing.Remove_rule_by_msgContext) {
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
 	l.currentFunctionToAppendComment = func(comment string) {
 		l.removeDirective.Metadata.Comment = comment
 	}
-	switch ctx.GetText() {
-	case "SecRuleRemoveByID":
-		l.currentFunctionToSetParam = func(value string) {
-			l.removeDirective.IdRanges = append(l.removeDirective.IdRanges, value)
-		}
-	case "SecRuleRemoveByTag":
-		l.currentFunctionToSetParam = func(value string) {
-			l.removeDirective.Tags = append(l.removeDirective.Tags, value)
-		}
-	case "SecRuleRemoveByMsg":
-		l.currentFunctionToSetParam = func(value string) {
-			l.removeDirective.Msgs = append(l.removeDirective.Msgs, value)
-		}
+	l.currentFunctionToSetParam = func(value string) {
+		l.removeDirective.Msgs = append(l.removeDirective.Msgs, value)
 	}
 	l.currentFunctionToAppendDirective = func() {
 		l.Configuration.Directives = append(l.Configuration.Directives, l.removeDirective)
 	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_tag(ctx *parsing.Remove_rule_by_tagContext) {
+	l.removeDirective = types.RemoveRuleDirective{
+		Kind: types.Remove,
+	}
+	l.currentFunctionToAppendComment = func(comment string) {
+		l.removeDirective.Metadata.Comment = comment
+	}
+	l.currentFunctionToSetParam = func(value string) {
+		l.removeDirective.Tags = append(l.removeDirective.Tags, value)
+	}
+	l.currentFunctionToAppendDirective = func() {
+		l.Configuration.Directives = append(l.Configuration.Directives, l.removeDirective)
+	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id(ctx *parsing.Remove_rule_by_idContext) {
+	l.removeDirective = types.RemoveRuleDirective{
+		Kind: types.Remove,
+	}
+	l.currentFunctionToAppendComment = func(comment string) {
+		l.removeDirective.Metadata.Comment = comment
+	}
+	l.currentFunctionToAppendDirective = func() {
+		l.Configuration.Directives = append(l.Configuration.Directives, l.removeDirective)
+	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id_int(ctx *parsing.Remove_rule_by_id_intContext) {
+	id, err := strconv.Atoi(ctx.GetText())
+	if err != nil {
+		panic(err)
+	}
+	l.removeDirective.Ids = append(l.removeDirective.Ids, id)
+}
+
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id_int_range(ctx *parsing.Remove_rule_by_id_int_rangeContext) {
+	l.idRange = types.IdRange{}
+}
+
+func (l *ExtendedSeclangParserListener) EnterRange_start(ctx *parsing.Range_startContext) {
+	start, err := strconv.Atoi(ctx.GetText())
+	if err != nil {
+		panic(err)
+	}
+	l.idRange.Start = start
+}
+
+func (l *ExtendedSeclangParserListener) EnterRange_end(ctx *parsing.Range_endContext) {
+	end, err := strconv.Atoi(ctx.GetText())
+	if err != nil {
+		panic(err)
+	}
+	l.idRange.End = end
+}
+
+func (l *ExtendedSeclangParserListener) ExitRemove_rule_by_id_int_range(ctx *parsing.Remove_rule_by_id_int_rangeContext) {
+	l.removeDirective.IdRanges = append(l.removeDirective.IdRanges, l.idRange.ToString())
 }
