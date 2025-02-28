@@ -416,5 +416,5 @@ func (l *ExtendedSeclangParserListener) EnterRange_end(ctx *parsing.Range_endCon
 }
 
 func (l *ExtendedSeclangParserListener) ExitRemove_rule_by_id_int_range(ctx *parsing.Remove_rule_by_id_int_rangeContext) {
-	l.removeDirective.IdRanges = append(l.removeDirective.IdRanges, l.idRange.ToString())
+	l.removeDirective.IdRanges = append(l.removeDirective.IdRanges, l.idRange)
 }

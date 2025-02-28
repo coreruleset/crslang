@@ -8,10 +8,9 @@ type RemoveRuleDirective struct {
 	Kind     Kind            `yaml:"kind"`
 	Metadata CommentMetadata `yaml:"metadata,omitempty"`
 	Ids      []int           `yaml:"ids,omitempty"`
-	IdRanges []string        `yaml:"id_ranges,omitempty"`
-	// IdRanges []IdRange       `yaml:"id_ranges,omitempty"`
-	Tags []string `yaml:"tag,omitempty"`
-	Msgs []string `yaml:"msg,omitempty"`
+	IdRanges []IdRange       `yaml:"id_ranges,omitempty"`
+	Tags     []string        `yaml:"tag,omitempty"`
+	Msgs     []string        `yaml:"msg,omitempty"`
 }
 
 type IdRange struct {
@@ -25,7 +24,6 @@ func (r IdRange) ToString() string {
 	return start + "-" + end
 }
 
-// TODO: adjust
 func (d RemoveRuleDirective) ToSeclang() string {
 	result := ""
 	if len(d.Ids) > 0 || len(d.IdRanges) > 0 {
@@ -34,8 +32,7 @@ func (d RemoveRuleDirective) ToSeclang() string {
 			result += " " + strconv.Itoa(id)
 		}
 		for _, idRange := range d.IdRanges {
-			/* 			ruleContent += " " + idRange.ToString() */
-			result += " " + idRange
+			result += " " + idRange.ToString()
 		}
 		result += "\n"
 	}
