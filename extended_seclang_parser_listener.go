@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
@@ -12,6 +13,11 @@ type AuxDirective interface {
 	GetActions() *types.SeclangActions
 	AddTransformation(transformation string) error
 	AppendChainedDirective(directive types.ChainableDirective)
+}
+
+type TargetDirective interface {
+	AddVariable(variable string) error
+	AddCollection(collection, value string) error
 }
 
 type AuxChainableDirective interface {
@@ -27,10 +33,12 @@ type ExtendedSeclangParserListener struct {
 	currentFunctionToAddVariable     func() error
 	currentFunctionToAppendDirective func()
 	currentConfigurationDirective    *types.ConfigurationDirective
+	targetDirective                  TargetDirective
 	currentDirective                 AuxDirective
 	previousDirective                AuxDirective
 	removeDirective                  types.RemoveRuleDirective
 	idRange                          types.IdRange
+	updateTargetDirective            *types.UpdateTargetDirective
 	varName                          string
 	varValue                         string
 	currentParameter                 string
@@ -266,7 +274,7 @@ func (l *ExtendedSeclangParserListener) EnterVar_stmt(ctx *parsing.Var_stmtConte
 func (l *ExtendedSeclangParserListener) EnterVariable_enum(ctx *parsing.Variable_enumContext) {
 	l.varName = ctx.GetText()
 	l.currentFunctionToAddVariable = func() error {
-		err := l.currentDirective.(*types.SecRule).AddVariable(l.varName)
+		err := l.targetDirective.AddVariable(l.varName)
 		return err
 	}
 }
@@ -274,7 +282,7 @@ func (l *ExtendedSeclangParserListener) EnterVariable_enum(ctx *parsing.Variable
 func (l *ExtendedSeclangParserListener) EnterCollection_enum(ctx *parsing.Collection_enumContext) {
 	l.varName = ctx.GetText()
 	l.currentFunctionToAddVariable = func() error {
-		err := l.currentDirective.(*types.SecRule).AddCollection(l.varName, "")
+		err := l.targetDirective.AddCollection(l.varName, "")
 		return err
 	}
 }
@@ -282,7 +290,7 @@ func (l *ExtendedSeclangParserListener) EnterCollection_enum(ctx *parsing.Collec
 func (l *ExtendedSeclangParserListener) EnterCollection_value(ctx *parsing.Collection_valueContext) {
 	l.varValue = ctx.GetText()
 	l.currentFunctionToAddVariable = func() error {
-		err := l.currentDirective.(*types.SecRule).AddCollection(l.varName, l.varValue)
+		err := l.targetDirective.AddCollection(l.varName, l.varValue)
 		return err
 	}
 }
@@ -294,6 +302,10 @@ func (l *ExtendedSeclangParserListener) ExitVar_stmt(ctx *parsing.Var_stmtContex
 	}
 	l.varName = ""
 	l.varValue = ""
+}
+
+func (l *ExtendedSeclangParserListener) EnterVariables(ctx *parsing.VariablesContext) {
+	l.targetDirective = l.currentDirective.(*types.SecRule)
 }
 
 func (l *ExtendedSeclangParserListener) EnterOperator_name(ctx *parsing.Operator_nameContext) {
@@ -417,4 +429,43 @@ func (l *ExtendedSeclangParserListener) EnterRange_end(ctx *parsing.Range_endCon
 
 func (l *ExtendedSeclangParserListener) ExitRemove_rule_by_id_int_range(ctx *parsing.Remove_rule_by_id_int_rangeContext) {
 	l.removeDirective.IdRanges = append(l.removeDirective.IdRanges, l.idRange)
+}
+
+func (l *ExtendedSeclangParserListener) EnterUpdate_target_rules(ctx *parsing.Update_target_rulesContext) {
+	l.updateTargetDirective = types.NewUpdateTargetDirective()
+	l.currentFunctionToAppendComment = func(comment string) {
+		l.updateTargetDirective.Metadata.Comment = comment
+	}
+	switch ctx.GetText() {
+	case "SecRuleUpdateTargetById":
+		l.currentFunctionToSetParam = func(value string) {
+			id, err := strconv.Atoi(value)
+			if err != nil {
+				panic(err)
+			}
+			l.updateTargetDirective.Ids = append(l.updateTargetDirective.Ids, id)
+		}
+	case "SecRuleUpdateTargetByTag":
+		l.currentFunctionToSetParam = func(value string) {
+			l.updateTargetDirective.Tags = append(l.updateTargetDirective.Tags, value)
+		}
+	case "SecRuleUpdateTargetByMsg":
+		l.currentFunctionToSetParam = func(value string) {
+			l.updateTargetDirective.Msgs = append(l.updateTargetDirective.Msgs, value)
+		}
+	}
+
+	l.currentFunctionToAppendDirective = func() {
+		// l.Configuration.Directives = append(l.Configuration.Directives, l.updateTargetDirective)
+		fmt.Printf("Update target directive: %v\n", l.updateTargetDirective.ToSeclang())
+	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterUpdate_target_rules_values(ctx *parsing.Update_target_rules_valuesContext) {
+	l.currentFunctionToSetParam(ctx.GetText())
+	l.currentFunctionToSetParam = doNothingFuncString
+}
+
+func (l *ExtendedSeclangParserListener) EnterUpdate_variables(ctx *parsing.Update_variablesContext) {
+	l.targetDirective = l.updateTargetDirective
 }

@@ -68,7 +68,7 @@ var (
 	}
 )
 
-func CollectionsToString(collections []Collection) string {
+func CollectionsToString(collections []Collection, separator string) string {
 	result := ""
 	for i, collection := range collections {
 		result += string(collection.Name)
@@ -76,17 +76,27 @@ func CollectionsToString(collections []Collection) string {
 			result += ":" + collection.Argument
 		}
 		if i != len(collections)-1 {
-			result += "|"
+			result += separator
 		}
 	}
 	return result
 }
 
+// TODO: Add a collection check function
 func (s *SecRule) AddCollection(name, value string) error {
 	constCollection, exists := allCollections[name]
 	if !exists {
 		return fmt.Errorf("Invalid collection value: %s", name)
 	}
 	s.Collections = append(s.Collections, Collection{Name: constCollection, Argument: value})
+	return nil
+}
+
+func (d UpdateTargetDirective) AddCollection(name, value string) error {
+	constCollection, exists := allCollections[name]
+	if !exists {
+		return fmt.Errorf("Invalid collection value: %s", name)
+	}
+	d.Collections = append(d.Collections, Collection{Name: constCollection, Argument: value})
 	return nil
 }

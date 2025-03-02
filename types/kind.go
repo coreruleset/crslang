@@ -8,4 +8,5 @@ const (
 	DefaultActionKind Kind = "defaultaction"
 	RuleKind          Kind = "rule"
 	Remove            Kind = "remove"
+	UpdateTarget      Kind = "update_target"
 )

@@ -43,8 +43,8 @@ func (s SecRule) ToSeclangWithIdent(initialString string) string {
 
 	result := ""
 	result += s.Metadata.Comment + initialString + "SecRule "
-	vars := VariablesToString(s.Variables)
-	colls := CollectionsToString(s.Collections)
+	vars := VariablesToString(s.Variables, "|")
+	colls := CollectionsToString(s.Collections, "|")
 	if vars != "" && colls != "" {
 		result += vars + "|" + colls
 	} else if vars != "" {
