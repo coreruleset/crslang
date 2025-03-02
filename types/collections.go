@@ -92,7 +92,7 @@ func (s *SecRule) AddCollection(name, value string) error {
 	return nil
 }
 
-func (d UpdateTargetDirective) AddCollection(name, value string) error {
+func (d *UpdateTargetDirective) AddCollection(name, value string) error {
 	constCollection, exists := allCollections[name]
 	if !exists {
 		return fmt.Errorf("Invalid collection value: %s", name)

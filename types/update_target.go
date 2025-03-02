@@ -6,7 +6,7 @@ import (
 
 type UpdateTargetDirective struct {
 	Kind        Kind             `yaml:"kind"`
-	Metadata    *CommentMetadata `yaml:"metadata,omitempty"`
+	Metadata    *CommentMetadata `yaml:",inline"`
 	Ids         []int            `yaml:"ids,omitempty"`
 	Tags        []string         `yaml:"tags,omitempty"`
 	Msgs        []string         `yaml:"msgs,omitempty"`
@@ -21,7 +21,7 @@ func NewUpdateTargetDirective() *UpdateTargetDirective {
 	return directive
 }
 
-func (d UpdateTargetDirective) ToSeclang() string {
+func (d *UpdateTargetDirective) ToSeclang() string {
 	varResult := ""
 	vars := VariablesToString(d.Variables, ",")
 	colls := CollectionsToString(d.Collections, ",")

@@ -241,7 +241,7 @@ func (s *SecRule) AddVariable(name string) error {
 	return nil
 }
 
-func (d UpdateTargetDirective) AddVariable(name string) error {
+func (d *UpdateTargetDirective) AddVariable(name string) error {
 	constVariable, exists := allVariables[name]
 	if !exists {
 		return fmt.Errorf("Invalid variable value: %s", name)
