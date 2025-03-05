@@ -1,9 +1,13 @@
 package types
 
 type UpdateActionDirective struct {
-	Kind            Kind `yaml:"kind"`
-	CommentMetadata `yaml:",inline"`
-	Id              int                   `yaml:"id,omitempty"`
+	Kind    Kind         `yaml:"kind"`
+	Comment string       `yaml:"comment,omitempty"`
+	Id      int          `yaml:"id,omitempty"`
+	Modify  ModifyAction `yaml:"modify"`
+}
+
+type ModifyAction struct {
 	Metadata        *UpdateActionMetadata `yaml:"metadata,omitempty"`
 	Transformations `yaml:",inline"`
 	Actions         *SeclangActions `yaml:"actions,omitempty"`
@@ -21,17 +25,21 @@ type UpdateActionMetadata struct {
 func NewUpdateActionDirective() *UpdateActionDirective {
 	directive := new(UpdateActionDirective)
 	directive.Kind = UpdateAction
-	directive.Metadata = new(UpdateActionMetadata)
-	directive.Actions = new(SeclangActions)
+	directive.Modify.Metadata = new(UpdateActionMetadata)
+	directive.Modify.Actions = new(SeclangActions)
 	return directive
 }
 
 func (d UpdateActionDirective) GetMetadata() Metadata {
-	return d.Metadata
+	return d.Modify.Metadata
 }
 
 func (d UpdateActionDirective) GetActions() *SeclangActions {
-	return d.Actions
+	return d.Modify.Actions
+}
+
+func (d UpdateActionDirective) AddTransformation(t string) error {
+	return d.Modify.AddTransformation(t)
 }
 
 func (d UpdateActionDirective) AppendChainedDirective(directive ChainableDirective) {
