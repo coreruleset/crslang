@@ -7,4 +7,5 @@ const (
 	ConfigurationKind Kind = "configuration"
 	DefaultActionKind Kind = "defaultaction"
 	RuleKind          Kind = "rule"
+	Remove            Kind = "remove"
 )
