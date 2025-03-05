@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
@@ -489,8 +488,8 @@ func (l *ExtendedSeclangParserListener) EnterUpdate_variables(ctx *parsing.Updat
 func (l *ExtendedSeclangParserListener) EnterUpdate_action_rule(ctx *parsing.Update_action_ruleContext) {
 	l.currentDirective = types.NewUpdateActionDirective()
 	l.currentFunctionToAppendDirective = func() {
-		fmt.Printf("Appending directive: %v\n", l.currentDirective)
-		// l.Configuration.Directives = append(l.Configuration.Directives, l.currentDirective.(*types.UpdateActionDirective))
+		// fmt.Printf("Appending directive: %v\n", l.currentDirective)
+		l.Configuration.Directives = append(l.Configuration.Directives, l.currentDirective.(*types.UpdateActionDirective))
 	}
 	l.currentFunctionToAppendComment = func(comment string) {
 		l.currentDirective.(*types.UpdateActionDirective).Comment = comment
