@@ -9,4 +9,5 @@ const (
 	RuleKind          Kind = "rule"
 	Remove            Kind = "remove"
 	UpdateTarget      Kind = "update_target"
+	UpdateAction      Kind = "update_action"
 )
