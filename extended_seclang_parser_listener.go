@@ -430,32 +430,46 @@ func (l *ExtendedSeclangParserListener) ExitRemove_rule_by_id_int_range(ctx *par
 	l.removeDirective.IdRanges = append(l.removeDirective.IdRanges, l.idRange)
 }
 
-func (l *ExtendedSeclangParserListener) EnterUpdate_target_rules(ctx *parsing.Update_target_rulesContext) {
+func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_id(ctx *parsing.Update_target_by_idContext) {
 	l.updateTargetDirective = types.NewUpdateTargetDirective()
 	l.currentFunctionToAppendComment = func(comment string) {
 		l.updateTargetDirective.Metadata.Comment = comment
 	}
-	switch ctx.GetText() {
-	case "SecRuleUpdateTargetById":
-		l.currentFunctionToSetParam = func(value string) {
-			id, err := strconv.Atoi(value)
-			if err != nil {
-				panic(err)
-			}
-			l.updateTargetDirective.Ids = append(l.updateTargetDirective.Ids, id)
-		}
-	case "SecRuleUpdateTargetByTag":
-		l.currentFunctionToSetParam = func(value string) {
-			l.updateTargetDirective.Tags = append(l.updateTargetDirective.Tags, value)
-		}
-	case "SecRuleUpdateTargetByMsg":
-		l.currentFunctionToSetParam = func(value string) {
-			l.updateTargetDirective.Msgs = append(l.updateTargetDirective.Msgs, value)
-		}
-	}
-
 	l.currentFunctionToAppendDirective = func() {
 		l.Configuration.Directives = append(l.Configuration.Directives, l.updateTargetDirective)
+	}
+	l.currentFunctionToSetParam = func(value string) {
+		id, err := strconv.Atoi(value)
+		if err != nil {
+			panic(err)
+		}
+		l.updateTargetDirective.Ids = append(l.updateTargetDirective.Ids, id)
+	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_tag(ctx *parsing.Update_target_by_tagContext) {
+	l.updateTargetDirective = types.NewUpdateTargetDirective()
+	l.currentFunctionToAppendComment = func(comment string) {
+		l.updateTargetDirective.Metadata.Comment = comment
+	}
+	l.currentFunctionToAppendDirective = func() {
+		l.Configuration.Directives = append(l.Configuration.Directives, l.updateTargetDirective)
+	}
+	l.currentFunctionToSetParam = func(value string) {
+		l.updateTargetDirective.Tags = append(l.updateTargetDirective.Tags, value)
+	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_msg(ctx *parsing.Update_target_by_msgContext) {
+	l.updateTargetDirective = types.NewUpdateTargetDirective()
+	l.currentFunctionToAppendComment = func(comment string) {
+		l.updateTargetDirective.Metadata.Comment = comment
+	}
+	l.currentFunctionToAppendDirective = func() {
+		l.Configuration.Directives = append(l.Configuration.Directives, l.updateTargetDirective)
+	}
+	l.currentFunctionToSetParam = func(value string) {
+		l.updateTargetDirective.Msgs = append(l.updateTargetDirective.Msgs, value)
 	}
 }
 
