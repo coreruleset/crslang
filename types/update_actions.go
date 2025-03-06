@@ -1,9 +1,11 @@
 package types
 
+import "strconv"
+
 type UpdateActionDirective struct {
 	Kind    Kind         `yaml:"kind"`
 	Comment string       `yaml:"comment,omitempty"`
-	Id      int          `yaml:"id,omitempty"`
+	Id      int          `yaml:"id"`
 	Modify  ModifyAction `yaml:"modify"`
 }
 
@@ -38,8 +40,24 @@ func (d UpdateActionDirective) GetActions() *SeclangActions {
 	return d.Modify.Actions
 }
 
-func (d UpdateActionDirective) AddTransformation(t string) error {
+func (d *UpdateActionDirective) AddTransformation(t string) error {
 	return d.Modify.AddTransformation(t)
+}
+
+func (d UpdateActionDirective) ToSeclang() string {
+	result := d.Comment + "SecRuleUpdateActionById " + strconv.Itoa(d.Id) + " \""
+	actionString := ""
+	actionString += d.Modify.Metadata.ToString()
+	if actionString != "" {
+		actionString += ","
+	}
+	actionString += d.Modify.Transformations.ToString()
+	if actionString != "" {
+		actionString += ","
+	}
+	actionString += d.Modify.Actions.ToString()
+	result += actionString + "\"\n"
+	return result
 }
 
 func (d UpdateActionDirective) AppendChainedDirective(directive ChainableDirective) {
@@ -80,4 +98,24 @@ func (m *UpdateActionMetadata) AddTag(value string) {
 
 func (m *UpdateActionMetadata) SetVer(value string) {
 	m.Ver = value
+}
+
+func (s *UpdateActionMetadata) ToString() string {
+	result := ""
+	if s.Msg != "" {
+		result += "msg:'" + s.Msg + "'"
+	}
+	if s.Maturity != "" {
+		result += ", maturity:'" + s.Maturity + "'"
+	}
+	if s.Rev != "" {
+		result += ", rev:'" + s.Rev + "'"
+	}
+	if s.Severity != "" {
+		result += ", severity:'" + s.Severity + "'"
+	}
+	if s.Ver != "" {
+		result += ", ver:'" + s.Ver + "'"
+	}
+	return result
 }
