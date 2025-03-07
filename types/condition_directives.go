@@ -11,8 +11,9 @@ type Condition interface {
 }
 
 type SecRuleCondition struct {
-	Variables       []Variable `yaml:"variables,omitempty"`
-	Operator        Operator   `yaml:",omitempty"`
+	Variables       []Variable   `yaml:"variables,omitempty"`
+	Collections     []Collection `yaml:"collections,omitempty"`
+	Operator        Operator     `yaml:"operator"`
 	Transformations `yaml:",inline,omitempty"`
 }
 
@@ -62,15 +63,13 @@ func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList 
 					Kind:     CommentKind,
 					Metadata: directive.(CommentMetadata),
 				}
-			case DefaultAction:
-				directiveWrapper = directive
 			case *SecAction:
 				directiveWrapper = RuleToCondition(directive.(*SecAction))
 			case *SecRule:
 				directiveWrapper = RuleToCondition(directive.(*SecRule))
 			case *SecRuleScript:
 				directiveWrapper = RuleToCondition(directive.(*SecRuleScript))
-			case ConfigurationDirective:
+			default:
 				directiveWrapper = directive
 			}
 			configWrapper.Directives = append(configWrapper.Directives, directiveWrapper)
@@ -91,6 +90,7 @@ func RuleToCondition(directive ChainableDirective) RuleWithCondition {
 			[]Condition{
 				SecRuleCondition{
 					rule.Variables,
+					rule.Collections,
 					rule.Operator,
 					rule.Transformations,
 				},
@@ -230,6 +230,17 @@ func loadConditionDirective(yamlDirective yaml.Node) SeclangDirective {
 		return directive
 	case "rule":
 		return loadRuleWithConditions(yamlDirective)
+	case "remove":
+		rawDirective, err := yaml.Marshal(yamlDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := RemoveRuleDirective{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return directive
 	}
 	return nil
 }
@@ -286,7 +297,7 @@ func castConditions(condition *yaml.Node) Condition {
 		return ruleCondition
 	case "script":
 		return ScriptCondition{Script: condition.Content[1].Value}
-	case "variables":
+	case "variables", "collections":
 		rawDirective, err := yaml.Marshal(condition)
 		if err != nil {
 			panic(err)
@@ -343,6 +354,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 		case SecRuleCondition:
 			secruleDirective := new(SecRule)
 			secruleDirective.Variables = condition.(SecRuleCondition).Variables
+			secruleDirective.Collections = condition.(SecRuleCondition).Collections
 			secruleDirective.Transformations = condition.(SecRuleCondition).Transformations
 			secruleDirective.Operator = condition.(SecRuleCondition).Operator
 			if i == 0 {
