@@ -6,6 +6,7 @@ type Collection struct {
 	Name     CollectionName `yaml:"name,omitempty"`
 	Argument string         `yaml:"argument,omitempty"`
 	Excluded bool           `yaml:"excluded,omitempty"`
+	Count    bool           `yaml:"count,omitempty"`
 }
 
 type CollectionName string

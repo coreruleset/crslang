@@ -30,12 +30,12 @@ func (d *UpdateTargetDirective) AddVariable(name string, excluded bool) error {
 	return nil
 }
 
-func (d *UpdateTargetDirective) AddCollection(name, value string, excluded bool) error {
+func (d *UpdateTargetDirective) AddCollection(name, value string, excluded, asCount bool) error {
 	col, err := GetCollection(name)
 	if err != nil {
 		return err
 	}
-	d.Collections = append(d.Collections, Collection{Name: col, Argument: value, Excluded: excluded})
+	d.Collections = append(d.Collections, Collection{Name: col, Argument: value, Excluded: excluded, Count: asCount})
 	return nil
 }
 

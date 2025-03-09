@@ -14,7 +14,7 @@ type BaseDirective interface {
 
 type TargetDirective interface {
 	AddVariable(variable string, excluded bool) error
-	AddCollection(collection, value string, excluded bool) error
+	AddCollection(collection, value string, excluded bool, asCount bool) error
 }
 
 type BaseChainableDirective interface {
@@ -38,6 +38,8 @@ type ExtendedSeclangParserListener struct {
 	updateTargetDirective  *types.UpdateTargetDirective
 	varName                string
 	varValue               string
+	varExcluded            bool
+	varCount               bool
 	parameter              string
 	DirectiveList          *types.DirectiveList
 	ConfigurationList      types.ConfigurationList
