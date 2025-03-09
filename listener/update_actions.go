@@ -10,11 +10,11 @@ import (
 
 func (l *ExtendedSeclangParserListener) EnterUpdate_action_rule(ctx *parsing.Update_action_ruleContext) {
 	l.currentDirective = types.NewUpdateActionDirective()
-	l.currentFunctionToAppendDirective = func() {
+	l.appendDirective = func() {
 		fmt.Printf("Appending directive: %v\n", l.currentDirective.(*types.UpdateActionDirective).ToSeclang())
-		l.Configuration.Directives = append(l.Configuration.Directives, l.currentDirective.(*types.UpdateActionDirective))
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.currentDirective.(*types.UpdateActionDirective))
 	}
-	l.currentFunctionToAppendComment = func(comment string) {
+	l.appendComment = func(comment string) {
 		l.currentDirective.(*types.UpdateActionDirective).Comment = comment
 	}
 }

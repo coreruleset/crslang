@@ -6,64 +6,63 @@ import (
 )
 
 func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_with_param(ctx *parsing.Engine_config_directive_with_paramContext) {
-	// fmt.Println("String engine config directive: ", ctx.GetText())
-	l.currentConfigurationDirective = types.NewConfigurationDirective()
-	l.currentConfigurationDirective.SetName(ctx.GetText())
-	l.currentFunctionToAppendComment = l.currentConfigurationDirective.GetMetadata().SetComment
-	l.currentFunctionToAppendDirective = func() {
-		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentConfigurationDirective)
+	l.configurationDirective = types.NewConfigurationDirective()
+	l.configurationDirective.SetName(ctx.GetText())
+	l.appendComment = l.configurationDirective.GetMetadata().SetComment
+	l.appendDirective = func() {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, *l.configurationDirective)
 	}
-	l.currentFunctionToSetParam = func(value string) {
-		l.currentConfigurationDirective.Parameter = value
-		l.currentFunctionToSetParam = doNothingFuncString
+	l.setParam = func(value string) {
+		l.configurationDirective.Parameter = value
+		l.setParam = doNothingFuncString
 	}
 }
 
 func (l *ExtendedSeclangParserListener) EnterEngine_config_sec_cache_transformations(ctx *parsing.Engine_config_sec_cache_transformationsContext) {
-	l.currentConfigurationDirective = types.NewConfigurationDirective()
-	l.currentConfigurationDirective.SetName(ctx.GetText())
-	l.currentFunctionToAppendComment = l.currentConfigurationDirective.GetMetadata().SetComment
-	l.currentFunctionToSetParam = func(value string) {
-		l.currentConfigurationDirective.Parameter = value
-		l.currentFunctionToSetParam = func(value2 string) {
-			l.currentConfigurationDirective.Parameter += " " + value2
-			l.currentFunctionToSetParam = doNothingFuncString
+	l.configurationDirective = types.NewConfigurationDirective()
+	l.configurationDirective.SetName(ctx.GetText())
+	l.appendComment = l.configurationDirective.GetMetadata().SetComment
+	l.setParam = func(value string) {
+		l.configurationDirective.Parameter = value
+		l.setParam = func(value2 string) {
+			l.configurationDirective.Parameter += " " + value2
+			l.setParam = doNothingFuncString
 		}
 	}
 }
 
 func (l *ExtendedSeclangParserListener) EnterOption_list(ctx *parsing.Option_listContext) {
-	l.currentFunctionToSetParam(ctx.GetText())
+	l.setParam(ctx.GetText())
 }
 
 func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx *parsing.String_engine_config_directiveContext) {
-	l.currentConfigurationDirective = types.NewConfigurationDirective()
-	l.currentConfigurationDirective.SetName(ctx.GetText())
-	l.currentFunctionToAppendComment = l.currentConfigurationDirective.GetMetadata().SetComment
-	l.currentFunctionToAppendDirective = func() {
-		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentConfigurationDirective)
+	l.configurationDirective = types.NewConfigurationDirective()
+	l.configurationDirective.SetName(ctx.GetText())
+	l.appendComment = l.configurationDirective.GetMetadata().SetComment
+	l.appendDirective = func() {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, *l.configurationDirective)
 	}
-	l.currentFunctionToSetParam = func(value string) {
-		l.currentConfigurationDirective.Parameter = value
-		l.currentFunctionToSetParam = doNothingFuncString
+	l.setParam = func(value string) {
+		l.configurationDirective.Parameter = value
+		l.setParam = doNothingFuncString
 	}
 }
 
 // SecMarker
 func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parsing.Sec_marker_directiveContext) {
-	l.currentConfigurationDirective = types.NewConfigurationDirective()
-	err := l.currentConfigurationDirective.SetName(ctx.GetText())
+	l.configurationDirective = types.NewConfigurationDirective()
+	err := l.configurationDirective.SetName(ctx.GetText())
 	if err != nil {
 		panic(err)
 	}
-	l.currentFunctionToAppendComment = l.currentConfigurationDirective.GetMetadata().SetComment
-	l.currentFunctionToSetParam = func(value string) {
-		l.currentConfigurationDirective.Parameter = value
-		l.currentFunctionToSetParam = doNothingFuncString
+	l.appendComment = l.configurationDirective.GetMetadata().SetComment
+	l.setParam = func(value string) {
+		l.configurationDirective.Parameter = value
+		l.setParam = doNothingFuncString
 	}
-	l.currentFunctionToAppendDirective = func() {
-		l.ConfigurationList.DirectiveList = append(l.ConfigurationList.DirectiveList, *l.Configuration)
-		l.Configuration = new(types.DirectiveList)
-		l.Configuration.Marker = *l.currentConfigurationDirective
+	l.appendDirective = func() {
+		l.ConfigurationList.DirectiveList = append(l.ConfigurationList.DirectiveList, *l.DirectiveList)
+		l.DirectiveList = new(types.DirectiveList)
+		l.DirectiveList.Marker = *l.configurationDirective
 	}
 }

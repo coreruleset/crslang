@@ -11,14 +11,14 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_msg(ctx *parsing.Rem
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
-	l.currentFunctionToAppendComment = func(comment string) {
+	l.appendComment = func(comment string) {
 		l.removeDirective.Metadata.Comment = comment
 	}
-	l.currentFunctionToSetParam = func(value string) {
+	l.setParam = func(value string) {
 		l.removeDirective.Msgs = append(l.removeDirective.Msgs, value)
 	}
-	l.currentFunctionToAppendDirective = func() {
-		l.Configuration.Directives = append(l.Configuration.Directives, l.removeDirective)
+	l.appendDirective = func() {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.removeDirective)
 	}
 }
 
@@ -26,14 +26,14 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_tag(ctx *parsing.Rem
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
-	l.currentFunctionToAppendComment = func(comment string) {
+	l.appendComment = func(comment string) {
 		l.removeDirective.Metadata.Comment = comment
 	}
-	l.currentFunctionToSetParam = func(value string) {
+	l.setParam = func(value string) {
 		l.removeDirective.Tags = append(l.removeDirective.Tags, value)
 	}
-	l.currentFunctionToAppendDirective = func() {
-		l.Configuration.Directives = append(l.Configuration.Directives, l.removeDirective)
+	l.appendDirective = func() {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.removeDirective)
 	}
 }
 
@@ -41,11 +41,11 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id(ctx *parsing.Remo
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
-	l.currentFunctionToAppendComment = func(comment string) {
+	l.appendComment = func(comment string) {
 		l.removeDirective.Metadata.Comment = comment
 	}
-	l.currentFunctionToAppendDirective = func() {
-		l.Configuration.Directives = append(l.Configuration.Directives, l.removeDirective)
+	l.appendDirective = func() {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.removeDirective)
 	}
 }
 

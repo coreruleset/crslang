@@ -8,10 +8,10 @@ import (
 // SecDefaultAction
 func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_default_action(ctx *parsing.Config_dir_sec_default_actionContext) {
 	l.currentDirective = types.NewDefaultAction()
-	l.currentFunctionToAppendDirective = func() {
-		l.Configuration.Directives = append(l.Configuration.Directives, *l.currentDirective.(*types.DefaultAction))
+	l.appendDirective = func() {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, *l.currentDirective.(*types.DefaultAction))
 	}
-	l.currentFunctionToAppendComment = l.currentDirective.GetMetadata().SetComment
+	l.appendComment = l.currentDirective.GetMetadata().SetComment
 }
 
 // SecAction
@@ -21,9 +21,9 @@ func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_action(ctx *parsing.
 		l.previousDirective.AppendChainedDirective(l.currentDirective.(*types.SecAction))
 		l.previousDirective = nil
 	} else {
-		l.currentFunctionToAppendDirective = func() {
-			l.Configuration.Directives = append(l.Configuration.Directives, l.currentDirective.(*types.SecAction))
+		l.appendDirective = func() {
+			l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.currentDirective.(*types.SecAction))
 		}
 	}
-	l.currentFunctionToAppendComment = l.currentDirective.GetMetadata().SetComment
+	l.appendComment = l.currentDirective.GetMetadata().SetComment
 }

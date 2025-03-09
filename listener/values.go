@@ -6,13 +6,13 @@ import (
 )
 
 func (l *ExtendedSeclangParserListener) EnterValues(ctx *parsing.ValuesContext) {
-	l.currentFunctionToSetParam(ctx.GetText())
+	l.setParam(ctx.GetText())
 }
 
 func (l *ExtendedSeclangParserListener) EnterString_literal(ctx *parsing.String_literalContext) {
-	if l.currentFunctionToSetParam != nil {
-		l.currentFunctionToSetParam(ctx.GetText())
-		l.currentFunctionToSetParam = doNothingFuncString
+	if l.setParam != nil {
+		l.setParam(ctx.GetText())
+		l.setParam = doNothingFuncString
 	}
 }
 

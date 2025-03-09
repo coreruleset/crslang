@@ -5,7 +5,7 @@ import (
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 )
 
-type AuxDirective interface {
+type BaseDirective interface {
 	GetMetadata() types.Metadata
 	GetActions() *types.SeclangActions
 	AddTransformation(transformation string) error
@@ -17,30 +17,30 @@ type TargetDirective interface {
 	AddCollection(collection, value string) error
 }
 
-type AuxChainableDirective interface {
-	AuxDirective
+type BaseChainableDirective interface {
+	BaseDirective
 	types.ChainableDirective
 }
 
 type ExtendedSeclangParserListener struct {
 	*parsing.BaseSecLangParserListener
-	currentComment                   string
-	currentFunctionToAppendComment   func(value string)
-	currentFunctionToSetParam        func(value string)
-	currentFunctionToAddVariable     func() error
-	currentFunctionToAppendDirective func()
-	currentConfigurationDirective    *types.ConfigurationDirective
-	targetDirective                  TargetDirective
-	currentDirective                 AuxDirective
-	previousDirective                AuxDirective
-	removeDirective                  types.RemoveRuleDirective
-	idRange                          types.IdRange
-	updateTargetDirective            *types.UpdateTargetDirective
-	varName                          string
-	varValue                         string
-	currentParameter                 string
-	Configuration                    *types.DirectiveList
-	ConfigurationList                types.ConfigurationList
+	comment                string
+	appendComment          func(value string)
+	setParam               func(value string)
+	addVariable            func() error
+	appendDirective        func()
+	configurationDirective *types.ConfigurationDirective
+	targetDirective        TargetDirective
+	currentDirective       BaseDirective
+	previousDirective      BaseDirective
+	removeDirective        types.RemoveRuleDirective
+	idRange                types.IdRange
+	updateTargetDirective  *types.UpdateTargetDirective
+	varName                string
+	varValue               string
+	parameter              string
+	DirectiveList          *types.DirectiveList
+	ConfigurationList      types.ConfigurationList
 }
 
 func doNothingFunc() {}
@@ -48,31 +48,31 @@ func doNothingFunc() {}
 func doNothingFuncString(value string) {}
 
 func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parsing.ConfigurationContext) {
-	l.Configuration = new(types.DirectiveList)
-	l.currentFunctionToSetParam = doNothingFuncString
-	l.currentFunctionToAppendDirective = doNothingFunc
-	l.currentFunctionToAppendComment = func(value string) {
-		l.Configuration.Directives = append(l.Configuration.Directives, types.CommentMetadata{Comment: value})
+	l.DirectiveList = new(types.DirectiveList)
+	l.setParam = doNothingFuncString
+	l.appendDirective = doNothingFunc
+	l.appendComment = func(value string) {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, types.CommentMetadata{Comment: value})
 	}
 	l.previousDirective = nil
 }
 
 func (l *ExtendedSeclangParserListener) ExitConfiguration(ctx *parsing.ConfigurationContext) {
-	l.ConfigurationList.DirectiveList = append(l.ConfigurationList.DirectiveList, *l.Configuration)
+	l.ConfigurationList.DirectiveList = append(l.ConfigurationList.DirectiveList, *l.DirectiveList)
 }
 
 func (l *ExtendedSeclangParserListener) ExitStmt(ctx *parsing.StmtContext) {
-	if l.currentComment != "" {
-		l.currentFunctionToAppendComment(l.currentComment)
-		l.currentComment = ""
+	if l.comment != "" {
+		l.appendComment(l.comment)
+		l.comment = ""
 	}
-	l.currentFunctionToAppendComment = func(value string) {
-		l.Configuration.Directives = append(l.Configuration.Directives, types.CommentMetadata{Comment: value})
+	l.appendComment = func(value string) {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, types.CommentMetadata{Comment: value})
 	}
-	l.currentFunctionToAppendDirective()
-	l.currentFunctionToAppendDirective = doNothingFunc
+	l.appendDirective()
+	l.appendDirective = doNothingFunc
 }
 
 func (l *ExtendedSeclangParserListener) EnterComment(ctx *parsing.CommentContext) {
-	l.currentComment = ctx.GetText()
+	l.comment = ctx.GetText()
 }

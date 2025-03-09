@@ -12,11 +12,11 @@ func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parsing.Rules_
 		l.previousDirective.AppendChainedDirective(l.currentDirective.(*types.SecRule))
 		l.previousDirective = nil
 	} else {
-		l.currentFunctionToAppendDirective = func() {
-			l.Configuration.Directives = append(l.Configuration.Directives, l.currentDirective.(*types.SecRule))
+		l.appendDirective = func() {
+			l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.currentDirective.(*types.SecRule))
 		}
 	}
-	l.currentFunctionToAppendComment = l.currentDirective.GetMetadata().SetComment
+	l.appendComment = l.currentDirective.GetMetadata().SetComment
 }
 
 func (l *ExtendedSeclangParserListener) EnterVariables(ctx *parsing.VariablesContext) {
