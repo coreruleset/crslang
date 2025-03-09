@@ -5,6 +5,7 @@ import "fmt"
 type Collection struct {
 	Name     CollectionName `yaml:"name,omitempty"`
 	Argument string         `yaml:"argument,omitempty"`
+	Excluded bool           `yaml:"excluded,omitempty"`
 }
 
 type CollectionName string
@@ -83,20 +84,20 @@ func CollectionsToString(collections []Collection, separator string) string {
 }
 
 // TODO: Add a collection check function
-func (s *SecRule) AddCollection(name, value string) error {
+func (s *SecRule) AddCollection(name, value string, excluded bool) error {
 	constCollection, exists := allCollections[name]
 	if !exists {
 		return fmt.Errorf("Invalid collection value: %s", name)
 	}
-	s.Collections = append(s.Collections, Collection{Name: constCollection, Argument: value})
+	s.Collections = append(s.Collections, Collection{Name: constCollection, Argument: value, Excluded: excluded})
 	return nil
 }
 
-func (d *UpdateTargetDirective) AddCollection(name, value string) error {
+func (d *UpdateTargetDirective) AddCollection(name, value string, excluded bool) error {
 	constCollection, exists := allCollections[name]
 	if !exists {
 		return fmt.Errorf("Invalid collection value: %s", name)
 	}
-	d.Collections = append(d.Collections, Collection{Name: constCollection, Argument: value})
+	d.Collections = append(d.Collections, Collection{Name: constCollection, Argument: value, Excluded: excluded})
 	return nil
 }

@@ -14,7 +14,7 @@ type BaseDirective interface {
 
 type TargetDirective interface {
 	AddVariable(variable string, excluded bool) error
-	AddCollection(collection, value string) error
+	AddCollection(collection, value string, excluded bool) error
 }
 
 type BaseChainableDirective interface {

@@ -18,7 +18,7 @@ func (l *ExtendedSeclangParserListener) EnterVariable_enum(ctx *parsing.Variable
 func (l *ExtendedSeclangParserListener) EnterCollection_enum(ctx *parsing.Collection_enumContext) {
 	l.varName = ctx.GetText()
 	l.addVariable = func() error {
-		err := l.targetDirective.AddCollection(l.varName, "")
+		err := l.targetDirective.AddCollection(l.varName, "", false)
 		return err
 	}
 }
@@ -26,7 +26,7 @@ func (l *ExtendedSeclangParserListener) EnterCollection_enum(ctx *parsing.Collec
 func (l *ExtendedSeclangParserListener) EnterCollection_value(ctx *parsing.Collection_valueContext) {
 	l.varValue = ctx.GetText()
 	l.addVariable = func() error {
-		err := l.targetDirective.AddCollection(l.varName, l.varValue)
+		err := l.targetDirective.AddCollection(l.varName, l.varValue, false)
 		return err
 	}
 }
