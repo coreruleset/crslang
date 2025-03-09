@@ -21,6 +21,24 @@ func NewUpdateTargetDirective() *UpdateTargetDirective {
 	return directive
 }
 
+func (d *UpdateTargetDirective) AddVariable(name string, excluded bool) error {
+	variable, err := GetVariable(name)
+	if err != nil {
+		return err
+	}
+	d.Variables = append(d.Variables, Variable{Name: variable, Excluded: false})
+	return nil
+}
+
+func (d *UpdateTargetDirective) AddCollection(name, value string, excluded bool) error {
+	col, err := GetCollection(name)
+	if err != nil {
+		return err
+	}
+	d.Collections = append(d.Collections, Collection{Name: col, Argument: value, Excluded: excluded})
+	return nil
+}
+
 func (d *UpdateTargetDirective) ToSeclang() string {
 	varResult := ""
 	vars := VariablesToString(d.Variables, ",")

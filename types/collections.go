@@ -83,21 +83,10 @@ func CollectionsToString(collections []Collection, separator string) string {
 	return result
 }
 
-// TODO: Add a collection check function
-func (s *SecRule) AddCollection(name, value string, excluded bool) error {
-	constCollection, exists := allCollections[name]
+func GetCollection(name string) (CollectionName, error) {
+	col, exists := allCollections[name]
 	if !exists {
-		return fmt.Errorf("Invalid collection value: %s", name)
+		return "", fmt.Errorf("Invalid collection name: %s", name)
 	}
-	s.Collections = append(s.Collections, Collection{Name: constCollection, Argument: value, Excluded: excluded})
-	return nil
-}
-
-func (d *UpdateTargetDirective) AddCollection(name, value string, excluded bool) error {
-	constCollection, exists := allCollections[name]
-	if !exists {
-		return fmt.Errorf("Invalid collection value: %s", name)
-	}
-	d.Collections = append(d.Collections, Collection{Name: constCollection, Argument: value, Excluded: excluded})
-	return nil
+	return col, nil
 }

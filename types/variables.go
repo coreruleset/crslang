@@ -239,21 +239,10 @@ func VariablesToString(variables []Variable, separator string) string {
 	return result
 }
 
-// TODO: make a checkVar function
-func (s *SecRule) AddVariable(name string, excluded bool) error {
-	constVariable, exists := allVariables[name]
+func GetVariable(name string) (VariableName, error) {
+	variable, exists := allVariables[name]
 	if !exists {
-		return fmt.Errorf("Invalid variable value: %s", name)
+		return "", fmt.Errorf("Invalid variable name: %s", name)
 	}
-	s.Variables = append(s.Variables, Variable{Name: constVariable, Excluded: false})
-	return nil
-}
-
-func (d *UpdateTargetDirective) AddVariable(name string, excluded bool) error {
-	constVariable, exists := allVariables[name]
-	if !exists {
-		return fmt.Errorf("Invalid variable value: %s", name)
-	}
-	d.Variables = append(d.Variables, Variable{Name: constVariable, Excluded: false})
-	return nil
+	return variable, nil
 }

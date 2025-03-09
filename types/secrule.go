@@ -30,6 +30,24 @@ func (d SecRule) GetActions() *SeclangActions {
 	return d.Actions
 }
 
+func (s *SecRule) AddVariable(name string, excluded bool) error {
+	variable, err := GetVariable(name)
+	if err != nil {
+		return err
+	}
+	s.Variables = append(s.Variables, Variable{Name: variable, Excluded: false})
+	return nil
+}
+
+func (s *SecRule) AddCollection(name, value string, excluded bool) error {
+	col, err := GetCollection(name)
+	if err != nil {
+		return err
+	}
+	s.Collections = append(s.Collections, Collection{Name: col, Argument: value, Excluded: excluded})
+	return nil
+}
+
 func (s SecRule) ToSeclang() string {
 	return s.ToSeclangWithIdent("")
 }
