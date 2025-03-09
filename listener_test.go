@@ -248,8 +248,8 @@ SecRule REQUEST_LINE "!@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?
 	if len(secRule.Variables) != 1 {
 		t.Errorf("Expected 1 variable, got %d", len(secRule.Variables))
 	}
-	if secRule.Variables[0] != "REQUEST_LINE" {
-		t.Errorf("Expected variable REQUEST_LINE, got %s", secRule.Variables[0])
+	if secRule.Variables[0].Name != "REQUEST_LINE" {
+		t.Errorf("Expected variable REQUEST_LINE, got %s", secRule.Variables[0].Name)
 	}
 }
 

@@ -13,7 +13,7 @@ type BaseDirective interface {
 }
 
 type TargetDirective interface {
-	AddVariable(variable string) error
+	AddVariable(variable string, excluded bool) error
 	AddCollection(collection, value string) error
 }
 

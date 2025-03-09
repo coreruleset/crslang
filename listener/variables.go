@@ -10,7 +10,7 @@ func (l *ExtendedSeclangParserListener) EnterVar_stmt(ctx *parsing.Var_stmtConte
 func (l *ExtendedSeclangParserListener) EnterVariable_enum(ctx *parsing.Variable_enumContext) {
 	l.varName = ctx.GetText()
 	l.addVariable = func() error {
-		err := l.targetDirective.AddVariable(l.varName)
+		err := l.targetDirective.AddVariable(l.varName, false)
 		return err
 	}
 }
