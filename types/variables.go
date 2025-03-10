@@ -220,22 +220,32 @@ var (
 	}
 )
 
-func VariablesToString(variables []Variable) string {
+func VariablesToString(variables []Variable, separator string) string {
 	result := ""
 	for i, variable := range variables {
 		result += string(variable)
 		if i != len(variables)-1 {
-			result += "|"
+			result += separator
 		}
 	}
 	return result
 }
 
+// TODO: make a checkVar function
 func (s *SecRule) AddVariable(name string) error {
 	constVariable, exists := allVariables[name]
 	if !exists {
 		return fmt.Errorf("Invalid variable value: %s", name)
 	}
 	s.Variables = append(s.Variables, constVariable)
+	return nil
+}
+
+func (d *UpdateTargetDirective) AddVariable(name string) error {
+	constVariable, exists := allVariables[name]
+	if !exists {
+		return fmt.Errorf("Invalid variable value: %s", name)
+	}
+	d.Variables = append(d.Variables, constVariable)
 	return nil
 }
