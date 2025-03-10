@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
+	"gitlab.fing.edu.uy/gsi/seclang/crslang/listener"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 )
@@ -31,9 +32,9 @@ func TestLoadComment(t *testing.T) {
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	p := parsing.NewSecLangParser(stream)
 	start := p.Configuration()
-	var listener ExtendedSeclangParserListener
-	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
+	var seclangListener listener.ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+	resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -61,9 +62,9 @@ SecRuleEngine On
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	p := parsing.NewSecLangParser(stream)
 	start := p.Configuration()
-	var listener ExtendedSeclangParserListener
-	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
+	var seclangListener listener.ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+	resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -125,9 +126,9 @@ SecAction \
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	p := parsing.NewSecLangParser(stream)
 	start := p.Configuration()
-	var listener ExtendedSeclangParserListener
-	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
+	var seclangListener listener.ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+	resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -206,9 +207,9 @@ SecRule REQUEST_LINE "!@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	p := parsing.NewSecLangParser(stream)
 	start := p.Configuration()
-	var listener ExtendedSeclangParserListener
-	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
+	var seclangListener listener.ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+	resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -275,9 +276,9 @@ SecRule ARGS_GET:fbclid "@rx [a-zA-Z0-9_-]{61,61}" \
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	p := parsing.NewSecLangParser(stream)
 	start := p.Configuration()
-	var listener ExtendedSeclangParserListener
-	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
+	var seclangListener listener.ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+	resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
@@ -348,9 +349,9 @@ SecRule REQUEST_LINE "@streq GET /" \
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	p := parsing.NewSecLangParser(stream)
 	start := p.Configuration()
-	var listener ExtendedSeclangParserListener
-	antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-	resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
+	var seclangListener listener.ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+	resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
 
 	if len(resultConfigs) != 1 {
 		t.Errorf("Expected 1 configuration, got %d", len(resultConfigs))
