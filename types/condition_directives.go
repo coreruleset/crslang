@@ -252,6 +252,17 @@ func loadConditionDirective(yamlDirective yaml.Node) SeclangDirective {
 			panic(err)
 		}
 		return &directive
+	case "update_action":
+		rawDirective, err := yaml.Marshal(yamlDirective)
+		if err != nil {
+			panic(err)
+		}
+		directive := UpdateActionDirective{}
+		err = yaml.Unmarshal(rawDirective, &directive)
+		if err != nil {
+			panic(err)
+		}
+		return &directive
 	}
 	return nil
 }

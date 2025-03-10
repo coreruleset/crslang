@@ -67,8 +67,9 @@ const (
 type DataAction string
 
 const (
-	Data  DataAction = "data"
-	XLMNS DataAction = "xmlns"
+	Data   DataAction = "data"
+	Status DataAction = "status"
+	XLMNS  DataAction = "xmlns"
 )
 
 type NonDisruptiveAction string
@@ -119,8 +120,9 @@ var (
 	}
 
 	dataActions = map[string]DataAction{
-		"data":  Data,
-		"xmlns": XLMNS,
+		"data":   Data,
+		"status": Status,
+		"xmlns":  XLMNS,
 	}
 
 	nonDisruptiveActions = map[string]NonDisruptiveAction{

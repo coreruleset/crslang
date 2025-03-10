@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
+	"gitlab.fing.edu.uy/gsi/seclang/crslang/listener"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 	"gopkg.in/yaml.v3"
@@ -50,9 +51,9 @@ func TestLoadCRS(t *testing.T) {
 		stream := antlr.NewCommonTokenStream(lexer, 0)
 		p := parsing.NewSecLangParser(stream)
 		start := p.Configuration()
-		var listener ExtendedSeclangParserListener
-		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-		resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
+		var seclangListener listener.ExtendedSeclangParserListener
+		antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+		resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
 	}
 	configList := types.ConfigurationList{DirectiveList: resultConfigs}
 
@@ -93,9 +94,9 @@ func TestFromCRSLangToSeclang(t *testing.T) {
 		stream := antlr.NewCommonTokenStream(lexer, 0)
 		p := parsing.NewSecLangParser(stream)
 		start := p.Configuration()
-		var listener ExtendedSeclangParserListener
-		antlr.ParseTreeWalkerDefault.Walk(&listener, start)
-		resultConfigs = append(resultConfigs, listener.ConfigurationList.DirectiveList...)
+		var seclangListener listener.ExtendedSeclangParserListener
+		antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+		resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
 	}
 	configList := types.ConfigurationList{DirectiveList: resultConfigs}
 
