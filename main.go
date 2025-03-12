@@ -3,6 +3,9 @@ package main
 import (
 	"io"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/listener"
@@ -11,50 +14,35 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var files = []string{
-	"seclang_parser/testdata/crs-setup.conf",
-	"seclang_parser/testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
-	"seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
-	"seclang_parser/testdata/crs/REQUEST-905-COMMON-EXCEPTIONS.conf",
-	"seclang_parser/testdata/crs/REQUEST-911-METHOD-ENFORCEMENT.conf",
-	"seclang_parser/testdata/crs/REQUEST-913-SCANNER-DETECTION.conf",
-	"seclang_parser/testdata/crs/REQUEST-920-PROTOCOL-ENFORCEMENT.conf",
-	"seclang_parser/testdata/crs/REQUEST-921-PROTOCOL-ATTACK.conf",
-	"seclang_parser/testdata/crs/REQUEST-922-MULTIPART-ATTACK.conf",
-	"seclang_parser/testdata/crs/REQUEST-930-APPLICATION-ATTACK-LFI.conf",
-	"seclang_parser/testdata/crs/REQUEST-931-APPLICATION-ATTACK-RFI.conf",
-	"seclang_parser/testdata/crs/REQUEST-932-APPLICATION-ATTACK-RCE.conf",
-	"seclang_parser/testdata/crs/REQUEST-933-APPLICATION-ATTACK-PHP.conf",
-	"seclang_parser/testdata/crs/REQUEST-934-APPLICATION-ATTACK-GENERIC.conf",
-	"seclang_parser/testdata/crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf",
-	"seclang_parser/testdata/crs/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
-	"seclang_parser/testdata/crs/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf",
-	"seclang_parser/testdata/crs/REQUEST-944-APPLICATION-ATTACK-JAVA.conf",
-	"seclang_parser/testdata/crs/REQUEST-949-BLOCKING-EVALUATION.conf",
-	"seclang_parser/testdata/crs/RESPONSE-950-DATA-LEAKAGES.conf",
-	"seclang_parser/testdata/crs/RESPONSE-951-DATA-LEAKAGES-SQL.conf",
-	"seclang_parser/testdata/crs/RESPONSE-952-DATA-LEAKAGES-JAVA.conf",
-	"seclang_parser/testdata/crs/RESPONSE-953-DATA-LEAKAGES-PHP.conf",
-	"seclang_parser/testdata/crs/RESPONSE-954-DATA-LEAKAGES-IIS.conf",
-	"seclang_parser/testdata/crs/RESPONSE-959-BLOCKING-EVALUATION.conf",
-	"seclang_parser/testdata/crs/RESPONSE-980-CORRELATION.conf",
-}
+var files = "seclang_parser/testdata/crs"
 
 func main() {
 	resultConfigs := []types.DirectiveList{}
-	for _, file := range files {
-		input, err := antlr.NewFileStream(file)
+	filepath.Walk(files, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			panic("Error reading file" + file)
+			return err
 		}
-		lexer := parsing.NewSecLangLexer(input)
-		stream := antlr.NewCommonTokenStream(lexer, 0)
-		p := parsing.NewSecLangParser(stream)
-		start := p.Configuration()
-		var seclangListener listener.ExtendedSeclangParserListener
-		antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
-		resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
-	}
+		if !info.IsDir() && filepath.Ext(info.Name()) == ".conf" {
+			input, err := antlr.NewFileStream(path)
+			if err != nil {
+				panic("Error reading file" + path)
+			}
+			lexer := parsing.NewSecLangLexer(input)
+			stream := antlr.NewCommonTokenStream(lexer, 0)
+			p := parsing.NewSecLangParser(stream)
+			start := p.Configuration()
+			var seclangListener listener.ExtendedSeclangParserListener
+			antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+			for i := range seclangListener.ConfigurationList.DirectiveList {
+				seclangListener.ConfigurationList.DirectiveList[i].Id = strings.TrimSuffix(filepath.Base(info.Name()), filepath.Ext(info.Name()))
+				if i > 0 {
+					seclangListener.ConfigurationList.DirectiveList[i].Id += "_" + strconv.Itoa(i+1)
+				}
+			}
+			resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
+		}
+		return nil
+	})
 	configList := types.ConfigurationList{DirectiveList: resultConfigs}
 
 	err := printCRSLang(configList, "crslang.yaml")

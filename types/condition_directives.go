@@ -54,6 +54,7 @@ func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList 
 	result := new(ConfigurationList)
 	for _, config := range configList.DirectiveList {
 		configWrapper := new(DirectiveList)
+		configWrapper.Id = config.Id
 		configWrapper.Marker = config.Marker
 		for _, directive := range config.Directives {
 			var directiveWrapper SeclangDirective
