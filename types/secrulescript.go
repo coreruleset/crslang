@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"slices"
 	"strconv"
 )
@@ -164,4 +165,42 @@ func (s *SecRuleScript) AppendChainedDirective(chainedDirective ChainableDirecti
 
 func (s SecRuleScript) NonDisruptiveActionsCount() int {
 	return len(s.Actions.NonDisruptiveActions)
+}
+
+func (s SecRuleScript) Equal(s2 SecRuleScript) error {
+	err := s.Metadata.Equal(*s2.Metadata)
+	if err != nil {
+		return err
+	}
+	err = s.Transformations.Equal(s2.Transformations)
+	if err != nil {
+		return err
+	}
+	if s.ScriptPath != s2.ScriptPath {
+		return fmt.Errorf("Expected script path: %s, got: %s", s.ScriptPath, s2.ScriptPath)
+	}
+	err = s.Actions.Equal(*s2.Actions)
+	if err != nil {
+		return err
+	}
+	if s.ChainedRule == nil && s2.ChainedRule != nil || s.ChainedRule != nil && s2.ChainedRule == nil {
+		return fmt.Errorf("Expected chained rule: %s, got: %s", s.ChainedRule, s2.ChainedRule)
+	}
+	if c, ok := s.ChainedRule.(*SecRule); ok {
+		if c2, ok := s2.ChainedRule.(*SecRule); ok {
+			err = c.Equal(*c2)
+		}
+	} else if c, ok := s.ChainedRule.(*SecAction); ok {
+		if c2, ok := s2.ChainedRule.(*SecAction); ok {
+			err = c.Equal(*c2)
+		}
+	} else if c, ok := s.ChainedRule.(*SecRuleScript); ok {
+		if c2, ok := s2.ChainedRule.(*SecRuleScript); ok {
+			err = c.Equal(*c2)
+		}
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }

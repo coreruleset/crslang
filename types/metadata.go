@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -58,6 +59,13 @@ func (c *CommentMetadata) SetVer(value string) {
 
 func (c CommentMetadata) ToSeclang() string {
 	return c.Comment
+}
+
+func (c CommentMetadata) Equal(c2 CommentMetadata) error {
+	if c.Comment != c2.Comment {
+		return fmt.Errorf("Expected comment: %s, got: %s", c.Comment, c2.Comment)
+	}
+	return nil
 }
 
 type SecRuleMetadata struct {
@@ -133,6 +141,17 @@ func (s *SecRuleMetadata) ToString() string {
 	return result
 }
 
+func (m OnlyPhaseMetadata) Equal(m2 OnlyPhaseMetadata) error {
+	err := m.CommentMetadata.Equal(m2.CommentMetadata)
+	if err != nil {
+		return err
+	}
+	if m.Phase != m2.Phase {
+		return fmt.Errorf("Expected phase: %s, got: %s", m.Phase, m2.Phase)
+	}
+	return nil
+}
+
 func CopySecRuleMetadata(s SecRuleMetadata) *SecRuleMetadata {
 	copy := new(SecRuleMetadata)
 	copy.OnlyPhaseMetadata = s.OnlyPhaseMetadata
@@ -183,4 +202,38 @@ func (s *SecRuleMetadata) AddTag(value string) {
 
 func (s *SecRuleMetadata) SetVer(value string) {
 	s.Ver = value
+}
+
+func (s SecRuleMetadata) Equal(s2 SecRuleMetadata) error {
+	err := s.OnlyPhaseMetadata.Equal(s2.OnlyPhaseMetadata)
+	if err != nil {
+		return err
+	}
+	if s.Id != s2.Id {
+		return fmt.Errorf("Expected id: got %d, got: %d", s.Id, s2.Id)
+	}
+	if s.Msg != s2.Msg {
+		return fmt.Errorf("Expected message: got %s, got: %s", s.Msg, s2.Msg)
+	}
+	if s.Maturity != s2.Maturity {
+		return fmt.Errorf("Expected maturity: got %s, got: %s", s.Maturity, s2.Maturity)
+	}
+	if s.Rev != s2.Rev {
+		return fmt.Errorf("Expected revision: got %s, got: %s", s.Rev, s2.Rev)
+	}
+	if s.Severity != s2.Severity {
+		return fmt.Errorf("Expected severity: got %s, got: %s", s.Severity, s2.Severity)
+	}
+	if s.Ver != s2.Ver {
+		return fmt.Errorf("Expected version: %s, got: %s", s.Ver, s2.Ver)
+	}
+	if len(s.Tags) != len(s2.Tags) {
+		return fmt.Errorf("Expected tags: %v, got %v", s.Tags, s2.Tags)
+	}
+	for i, tag := range s.Tags {
+		if tag != s2.Tags[i] {
+			return fmt.Errorf("Expected tag: %s, got: %s", tag, s2.Tags[i])
+		}
+	}
+	return nil
 }

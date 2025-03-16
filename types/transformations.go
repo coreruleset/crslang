@@ -101,6 +101,18 @@ func (t *Transformations) AddTransformation(transformation string) error {
 	return nil
 }
 
+func (t Transformations) Equal(t2 Transformations) error {
+	if len(t.Transformations) != len(t2.Transformations) {
+		return fmt.Errorf("Expected transformations: %s, got: %s", t, t2)
+	}
+	for i, value := range t.Transformations {
+		if value != t2.Transformations[i] {
+			return fmt.Errorf("Expected transformation in position %d: %s, got %s", i, value, t2.Transformations[i])
+		}
+	}
+	return nil
+}
+
 func (t *Transformations) ToString() string {
 	results := []string{}
 	for _, transformation := range t.Transformations {
