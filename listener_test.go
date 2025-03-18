@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/stretchr/testify/require"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/listener"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
@@ -67,7 +68,7 @@ SecRuleEngine On
 				DirectiveList: []types.DirectiveList{
 					{
 						Directives: []types.SeclangDirective{
-							&types.ConfigurationDirective{
+							types.ConfigurationDirective{
 								Kind:      types.ConfigurationKind,
 								Metadata:  &types.CommentMetadata{},
 								Name:      "SecRuleEngine",
@@ -547,53 +548,6 @@ func TestLoadSecLang(t *testing.T) {
 		antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
 		got = seclangListener.ConfigurationList
 
-		if len(got.DirectiveList) != len(test.expected.DirectiveList) {
-			t.Errorf("Expected %d configuration, got %d", len(test.expected.DirectiveList), len(got.DirectiveList))
-		}
-		for i, expectedList := range test.expected.DirectiveList {
-			if len(got.DirectiveList[i].Directives) != len(expectedList.Directives) {
-				t.Errorf("Expected %d directive, got %d", len(expectedList.Directives), len(got.DirectiveList[i].Directives))
-			}
-			for j, expectedDirective := range expectedList.Directives {
-				switch expectedDirective.(type) {
-				case types.CommentMetadata:
-					if expectedDirective.(types.CommentMetadata).Comment != got.DirectiveList[i].Directives[j].(types.CommentMetadata).Comment {
-						t.Errorf("Expected comment %s, got %s", expectedDirective.(types.CommentMetadata).Comment, got.DirectiveList[i].Directives[j].(types.CommentMetadata).Comment)
-					}
-				case types.ConfigurationDirective:
-					if _, ok := got.DirectiveList[i].Directives[j].(types.ConfigurationDirective); !ok {
-						t.Errorf("Expected ConfigurationDirective, got %T", got.DirectiveList[i].Directives[j])
-					}
-					err := expectedDirective.(types.ConfigurationDirective).Equal(got.DirectiveList[i].Directives[j].(types.ConfigurationDirective))
-					if err != nil {
-						t.Error(err)
-					}
-				case *types.SecAction:
-					if _, ok := got.DirectiveList[i].Directives[j].(*types.SecAction); !ok {
-						t.Errorf("Expected SecAction, got %T", got.DirectiveList[i].Directives[j])
-					}
-					err := expectedDirective.(*types.SecAction).Equal(*got.DirectiveList[i].Directives[j].(*types.SecAction))
-					if err != nil {
-						t.Error(err)
-					}
-				case *types.SecRule:
-					if _, ok := got.DirectiveList[i].Directives[j].(*types.SecRule); !ok {
-						t.Errorf("Expected SecRule, got %T", got.DirectiveList[i].Directives[j])
-					}
-					err := expectedDirective.(*types.SecRule).Equal(*got.DirectiveList[i].Directives[j].(*types.SecRule))
-					if err != nil {
-						t.Error(err)
-					}
-				case *types.SecRuleScript:
-					if _, ok := got.DirectiveList[i].Directives[j].(*types.SecRuleScript); !ok {
-						t.Errorf("Expected SecRuleScript, got %T", got.DirectiveList[i].Directives[j])
-					}
-					err := expectedDirective.(*types.SecRuleScript).Equal(*got.DirectiveList[i].Directives[j].(*types.SecRuleScript))
-					if err != nil {
-						t.Error(err)
-					}
-				}
-			}
-		}
+		require.Equalf(t, got, test.expected, test.name)
 	}
 }
