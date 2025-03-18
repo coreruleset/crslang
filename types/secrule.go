@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"slices"
 	"strconv"
 )
@@ -176,63 +175,4 @@ func (s *SecRule) AppendChainedDirective(chainedDirective ChainableDirective) {
 
 func (s SecRule) NonDisruptiveActionsCount() int {
 	return len(s.Actions.NonDisruptiveActions)
-}
-
-func (s SecRule) Equal(s2 SecRule) error {
-	err := s.Metadata.Equal(*s2.Metadata)
-	if err != nil {
-		return err
-	}
-	err = s.Transformations.Equal(s2.Transformations)
-	if err != nil {
-		return err
-	}
-	if s.Operator.Name != s2.Operator.Name {
-		return fmt.Errorf("Expected operator name: %s, got: %s", s.Operator.Name, s2.Operator.Name)
-	}
-	if s.Operator.Value != s2.Operator.Value {
-		return fmt.Errorf("Expected operator value: %s, got: %s", s.Operator.Value, s2.Operator.Value)
-	}
-	if len(s.Variables) != len(s2.Variables) {
-		return fmt.Errorf("Expected variables: %s, got: %s", s.Variables, s2.Variables)
-	}
-	for i, v := range s.Variables {
-		if v != s2.Variables[i] {
-			return fmt.Errorf("Expected variable: %s, got: %s", v, s2.Variables[i])
-		}
-	}
-	if len(s.Collections) != len(s2.Collections) {
-		return fmt.Errorf("Expected collections: %s, got: %s", s.Collections, s2.Collections)
-	}
-	for i, c := range s.Collections {
-		if c.Name != s2.Collections[i].Name {
-			return fmt.Errorf("Expected collection name: %s, got: %s", c.Name, s2.Collections[i].Name)
-		} else if c.Argument != s2.Collections[i].Argument {
-			return fmt.Errorf("Expected collection argument: %s, got: %s", c.Argument, s2.Collections[i].Argument)
-		}
-	}
-	err = s.Actions.Equal(*s2.Actions)
-	if err != nil {
-		return err
-	}
-	if s.ChainedRule == nil && s2.ChainedRule != nil || s.ChainedRule != nil && s2.ChainedRule == nil {
-		return fmt.Errorf("Expected chained rule: %s, got: %s", s.ChainedRule, s2.ChainedRule)
-	}
-	if c, ok := s.ChainedRule.(*SecRule); ok {
-		if c2, ok := s2.ChainedRule.(*SecRule); ok {
-			err = c.Equal(*c2)
-		}
-	} else if c, ok := s.ChainedRule.(*SecAction); ok {
-		if c2, ok := s2.ChainedRule.(*SecAction); ok {
-			err = c.Equal(*c2)
-		}
-	} else if c, ok := s.ChainedRule.(*SecRuleScript); ok {
-		if c2, ok := s2.ChainedRule.(*SecRuleScript); ok {
-			err = c.Equal(*c2)
-		}
-	}
-	if err != nil {
-		return err
-	}
-	return nil
 }

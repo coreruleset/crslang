@@ -305,34 +305,3 @@ func (s *SeclangActions) GetActionsByKey(key string) []Action {
 	}
 	return actions
 }
-
-func (a SeclangActions) Equal(a2 SeclangActions) error {
-	if a.DisruptiveAction != a2.DisruptiveAction {
-		return fmt.Errorf("Expected disruptive action: %s, got: %s", a.DisruptiveAction, a2.DisruptiveAction)
-	}
-	if len(a.NonDisruptiveActions) != len(a2.NonDisruptiveActions) {
-		return fmt.Errorf("Expected non-disruptive actions: %v, got: %v", a.NonDisruptiveActions, a2.NonDisruptiveActions)
-	}
-	for i, action := range a.NonDisruptiveActions {
-		if action != a2.NonDisruptiveActions[i] {
-			return fmt.Errorf("Expected non-disruptive action: %v, got: %v", action, a2.NonDisruptiveActions[i])
-		}
-	}
-	if len(a.FlowActions) != len(a2.FlowActions) {
-		return fmt.Errorf("Expected flow actions: %v, got: %v", a.FlowActions, a2.FlowActions)
-	}
-	for i, action := range a.FlowActions {
-		if action != a2.FlowActions[i] {
-			return fmt.Errorf("Expected flow action: %v, got: %v", action, a2.FlowActions[i])
-		}
-	}
-	if len(a.DataActions) != len(a2.DataActions) {
-		return fmt.Errorf("Expected data actions: %v, got: %v", a.DataActions, a2.DataActions)
-	}
-	for i, action := range a.DataActions {
-		if action != a2.DataActions[i] {
-			return fmt.Errorf("Expected data action: %v, got: %v", action, a2.DataActions[i])
-		}
-	}
-	return nil
-}

@@ -199,20 +199,3 @@ func (c ConfigurationDirective) GetMetadata() Metadata {
 func (c ConfigurationDirective) ToSeclang() string {
 	return c.Metadata.Comment + string(c.Name) + " " + c.Parameter + "\n"
 }
-
-func (c ConfigurationDirective) Equal(c2 ConfigurationDirective) error {
-	if c.Kind != c2.Kind {
-		return fmt.Errorf("Expected kind: %s, got: %s", c.Kind, c2.Kind)
-	}
-	err := c.Metadata.Equal(*c2.Metadata)
-	if err != nil {
-		return err
-	}
-	if c.Name != c2.Name {
-		return fmt.Errorf("Expected name: %s, got: %s", c.Name, c2.Name)
-	}
-	if c.Parameter != c2.Parameter {
-		return fmt.Errorf("Expected parameter: %s, got: %s", c.Parameter, c2.Parameter)
-	}
-	return nil
-}
