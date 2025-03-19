@@ -35,7 +35,17 @@ func (s *SecRule) AddVariable(name string, excluded bool) error {
 	if err != nil {
 		return err
 	}
-	s.Variables = append(s.Variables, Variable{Name: variable, Excluded: false})
+	if excluded {
+		vars := []Variable{}
+		for _, v := range s.Variables {
+			if v.Name != variable {
+				vars = append(vars, v)
+			}
+		}
+		s.Variables = vars
+	} else {
+		s.Variables = append(s.Variables, Variable{Name: variable, Excluded: false})
+	}
 	return nil
 }
 

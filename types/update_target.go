@@ -26,7 +26,17 @@ func (d *UpdateTargetDirective) AddVariable(name string, excluded bool) error {
 	if err != nil {
 		return err
 	}
-	d.Variables = append(d.Variables, Variable{Name: variable, Excluded: false})
+	if excluded {
+		vars := []Variable{}
+		for _, v := range d.Variables {
+			if v.Name != variable {
+				vars = append(vars, v)
+			}
+		}
+		d.Variables = vars
+	} else {
+		d.Variables = append(d.Variables, Variable{Name: variable, Excluded: false})
+	}
 	return nil
 }
 
