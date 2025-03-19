@@ -35,7 +35,36 @@ func (d *UpdateTargetDirective) AddCollection(name, value string, excluded, asCo
 	if err != nil {
 		return err
 	}
-	d.Collections = append(d.Collections, Collection{Name: col, Argument: value, Excluded: excluded, Count: asCount})
+	if excluded && !asCount {
+		results := []Collection{}
+		for _, collection := range d.Collections {
+			if collection.Name != col {
+				results = append(results, collection)
+			} else if value != "" && !collection.Count {
+				for i, arg := range collection.Arguments {
+					if arg == value {
+						collection.Arguments = append(collection.Arguments[:i], collection.Arguments[i+1:]...)
+					}
+				}
+				collection.Excluded = append(collection.Excluded, value)
+				results = append(results, collection)
+			}
+		}
+		d.Collections = results
+	} else if value != "" && !asCount {
+		i := len(d.Collections) - 1
+		for i >= 0 && !(!d.Collections[i].Count && d.Collections[i].Name == col) {
+			i--
+		}
+		if i >= 0 {
+			d.Collections[i].Arguments = append(d.Collections[i].Arguments, value)
+		} else {
+			d.Collections = append(d.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
+		}
+	} else {
+		d.Collections = append(d.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
+	}
+
 	return nil
 }
 

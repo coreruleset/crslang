@@ -3,10 +3,10 @@ package types
 import "fmt"
 
 type Collection struct {
-	Name     CollectionName `yaml:"name,omitempty"`
-	Argument string         `yaml:"argument,omitempty"`
-	Excluded bool           `yaml:"excluded,omitempty"`
-	Count    bool           `yaml:"count,omitempty"`
+	Name      CollectionName `yaml:"name,omitempty"`
+	Arguments []string       `yaml:"arguments,omitempty"`
+	Excluded  []string       `yaml:"excludeds,omitempty"`
+	Count     bool           `yaml:"count,omitempty"`
 }
 
 type CollectionName string
@@ -73,9 +73,27 @@ var (
 func CollectionsToString(collections []Collection, separator string) string {
 	result := ""
 	for i, collection := range collections {
-		result += string(collection.Name)
-		if collection.Argument != "" {
-			result += ":" + collection.Argument
+		if len(collection.Arguments) == 0 && len(collection.Excluded) == 0 {
+			if collection.Count {
+				result += "&"
+			}
+			result += string(collection.Name)
+		} else {
+			for _, arg := range collection.Arguments {
+				if collection.Count {
+					result += "&"
+				}
+				result += string(collection.Name) + ":" + arg
+				if i != len(collection.Arguments)-1 || len(collection.Excluded) > 0 {
+					result += separator
+				}
+			}
+			for _, excluded := range collection.Excluded {
+				result += "!" + string(collection.Name) + ":" + excluded
+				if i != len(collection.Excluded)-1 {
+					result += separator
+				}
+			}
 		}
 		if i != len(collections)-1 {
 			result += separator

@@ -44,7 +44,36 @@ func (s *SecRule) AddCollection(name, value string, excluded, asCount bool) erro
 	if err != nil {
 		return err
 	}
-	s.Collections = append(s.Collections, Collection{Name: col, Argument: value, Excluded: excluded, Count: asCount})
+	if excluded && !asCount {
+		results := []Collection{}
+		for _, collection := range s.Collections {
+			if collection.Name != col {
+				results = append(results, collection)
+			} else if value != "" && !collection.Count {
+				for i, arg := range collection.Arguments {
+					if arg == value {
+						collection.Arguments = append(collection.Arguments[:i], collection.Arguments[i+1:]...)
+					}
+				}
+				collection.Excluded = append(collection.Excluded, value)
+				results = append(results, collection)
+			}
+		}
+		s.Collections = results
+	} else if value != "" && !asCount {
+		i := len(s.Collections) - 1
+		for i >= 0 && !(!s.Collections[i].Count && s.Collections[i].Name == col) {
+			i--
+		}
+		if i >= 0 {
+			s.Collections[i].Arguments = append(s.Collections[i].Arguments, value)
+		} else {
+			s.Collections = append(s.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
+		}
+	} else {
+		s.Collections = append(s.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
+	}
+
 	return nil
 }
 
