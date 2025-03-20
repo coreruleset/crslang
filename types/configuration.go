@@ -6,8 +6,8 @@ type ConfigurationList struct {
 
 type DirectiveList struct {
 	Id         string                 `yaml:"id"`
-	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 	Directives []SeclangDirective     `yaml:"directives,omitempty"`
+	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 }
 
 func ToSeclang(configList ConfigurationList) string {
