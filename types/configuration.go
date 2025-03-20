@@ -16,6 +16,9 @@ func ToSeclang(configList ConfigurationList) string {
 		for _, directive := range config.Directives {
 			result += directive.ToSeclang() + "\n"
 		}
+		if config.Marker.Name != "" {
+			result += config.Marker.ToSeclang() + "\n"
+		}
 	}
 	return result
 }
