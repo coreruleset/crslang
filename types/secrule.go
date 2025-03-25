@@ -72,7 +72,7 @@ func (s *SecRule) AddCollection(name, value string, excluded, asCount bool) erro
 		s.Collections = results
 	} else if value != "" && !asCount {
 		i := len(s.Collections) - 1
-		for i >= 0 && !(!s.Collections[i].Count && s.Collections[i].Name == col && len(s.Collections[i].Arguments) == 0) {
+		for i >= 0 && !(!s.Collections[i].Count && s.Collections[i].Name == col && len(s.Collections[i].Arguments) > 0 && len(s.Collections[i].Excluded) == 0) {
 			i--
 		}
 		if i >= 0 {
@@ -80,8 +80,10 @@ func (s *SecRule) AddCollection(name, value string, excluded, asCount bool) erro
 		} else {
 			s.Collections = append(s.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
 		}
-	} else {
+	} else if value != "" {
 		s.Collections = append(s.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
+	} else {
+		s.Collections = append(s.Collections, Collection{Name: col, Arguments: []string{}, Excluded: []string{}, Count: asCount})
 	}
 
 	return nil

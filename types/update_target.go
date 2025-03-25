@@ -63,7 +63,7 @@ func (d *UpdateTargetDirective) AddCollection(name, value string, excluded, asCo
 		d.Collections = results
 	} else if value != "" && !asCount {
 		i := len(d.Collections) - 1
-		for i >= 0 && !(!d.Collections[i].Count && d.Collections[i].Name == col && len(d.Collections[i].Arguments) == 0) {
+		for i >= 0 && !(!d.Collections[i].Count && d.Collections[i].Name == col && len(d.Collections[i].Arguments) > 0 && len(d.Collections[i].Excluded) == 0) {
 			i--
 		}
 		if i >= 0 {
@@ -71,8 +71,10 @@ func (d *UpdateTargetDirective) AddCollection(name, value string, excluded, asCo
 		} else {
 			d.Collections = append(d.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
 		}
-	} else {
+	} else if value != "" {
 		d.Collections = append(d.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
+	} else {
+		d.Collections = append(d.Collections, Collection{Name: col, Arguments: []string{}, Excluded: []string{}, Count: asCount})
 	}
 
 	return nil
