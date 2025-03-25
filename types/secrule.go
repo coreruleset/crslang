@@ -72,7 +72,7 @@ func (s *SecRule) AddCollection(name, value string, excluded, asCount bool) erro
 		s.Collections = results
 	} else if value != "" && !asCount {
 		i := len(s.Collections) - 1
-		for i >= 0 && !(!s.Collections[i].Count && s.Collections[i].Name == col) {
+		for i >= 0 && !(!s.Collections[i].Count && s.Collections[i].Name == col && len(s.Collections[i].Arguments) == 0) {
 			i--
 		}
 		if i >= 0 {

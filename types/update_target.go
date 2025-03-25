@@ -63,7 +63,7 @@ func (d *UpdateTargetDirective) AddCollection(name, value string, excluded, asCo
 		d.Collections = results
 	} else if value != "" && !asCount {
 		i := len(d.Collections) - 1
-		for i >= 0 && !(!d.Collections[i].Count && d.Collections[i].Name == col) {
+		for i >= 0 && !(!d.Collections[i].Count && d.Collections[i].Name == col && len(d.Collections[i].Arguments) == 0) {
 			i--
 		}
 		if i >= 0 {
