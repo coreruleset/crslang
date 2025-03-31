@@ -533,6 +533,42 @@ SecRule REQUEST_LINE "@streq GET /" \
 				},
 			},
 		},
+		{
+			name: "LoadRemoveRules",
+			payload: `
+SecRuleRemoveByID 1 2 9000-9010
+
+SecRuleRemoveByTag "attack-sqli"
+
+SecRuleRemoveByMsg FAIL 
+`,
+			expected: types.ConfigurationList{
+				DirectiveList: []types.DirectiveList{
+					{
+						Directives: []types.SeclangDirective{
+							types.RemoveRuleDirective{
+								Kind: types.Remove,
+								Ids:  []int{1, 2},
+								IdRanges: []types.IdRange{
+									{
+										Start: 9000,
+										End:   9010,
+									},
+								},
+							},
+							types.RemoveRuleDirective{
+								Kind: types.Remove,
+								Tags: []string{"attack-sqli"},
+							},
+							types.RemoveRuleDirective{
+								Kind: types.Remove,
+								Msgs: []string{"FAIL"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 )
 
