@@ -3,8 +3,9 @@ package types
 import "fmt"
 
 type Operator struct {
-	Name  OperatorType `yaml:"name"`
-	Value string       `yaml:",omitempty"`
+	Negate bool         `yaml:"negate,omitempty"`
+	Name   OperatorType `yaml:"name"`
+	Value  string       `yaml:",omitempty"`
 }
 
 type OperatorType string
@@ -107,6 +108,10 @@ func (o *Operator) SetOperatorName(name string) error {
 
 func (o *Operator) SetOperatorValue(value string) {
 	o.Value = value
+}
+
+func (o *Operator) SetOperatorNot(not bool) {
+	o.Negate = not
 }
 
 func (o *Operator) ToString() string {

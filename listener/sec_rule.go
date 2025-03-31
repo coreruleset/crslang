@@ -33,3 +33,7 @@ func (l *ExtendedSeclangParserListener) EnterOperator_name(ctx *parsing.Operator
 func (l *ExtendedSeclangParserListener) EnterOperator_value(ctx *parsing.Operator_valueContext) {
 	l.currentDirective.(*types.SecRule).SetOperatorValue(ctx.GetText())
 }
+
+func (l *ExtendedSeclangParserListener) EnterOperator_not(ctx *parsing.Operator_notContext) {
+	l.currentDirective.(*types.SecRule).SetOperatorNot(true)
+}
