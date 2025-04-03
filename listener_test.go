@@ -429,6 +429,88 @@ SecRule ARGS_GET:fbclid "@rx [a-zA-Z0-9_-]{61,61}" \
 			},
 		},
 		{
+			name: "Load SecRule with differents exclusions",
+			payload: `
+SecRule ARGS_GET:fbclid|!ARGS_GET|ARGS_GET:fbclid|!ARGS_GET:fbclid|ARGS_GET:test "@rx test" \
+    "id:942441,\
+    phase:2,\
+    pass"`,
+			expected: types.ConfigurationList{
+				DirectiveList: []types.DirectiveList{
+					{
+						Directives: []types.SeclangDirective{
+							&types.SecRule{
+								Metadata: &types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										CommentMetadata: types.CommentMetadata{},
+										Phase:           "2",
+									},
+									Id: 942441,
+								},
+								Collections: []types.Collection{
+									{
+										Name:      types.ARGS_GET,
+										Arguments: []string{"test"},
+										Excluded:  []string{},
+									},
+								},
+								Operator: types.Operator{
+									Name:  types.Rx,
+									Value: "test",
+								},
+								Actions: &types.SeclangActions{
+									DisruptiveAction: types.Action{
+										Action: string(types.Pass),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Load SecRule with collections and excluded values",
+			payload: `
+SecRule ARGS:/^id_/|!ARGS:id_1 "@rx test" \
+    "id:942441,\
+    phase:2,\
+    pass"`,
+			expected: types.ConfigurationList{
+				DirectiveList: []types.DirectiveList{
+					{
+						Directives: []types.SeclangDirective{
+							&types.SecRule{
+								Metadata: &types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										CommentMetadata: types.CommentMetadata{},
+										Phase:           "2",
+									},
+									Id: 942441,
+								},
+								Collections: []types.Collection{
+									{
+										Name:      types.ARGS,
+										Arguments: []string{"/^id_/"},
+										Excluded:  []string{"id_1"},
+									},
+								},
+								Operator: types.Operator{
+									Name:  types.Rx,
+									Value: "test",
+								},
+								Actions: &types.SeclangActions{
+									DisruptiveAction: types.Action{
+										Action: string(types.Pass),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "LoadChain",
 			payload: `
 # This file is used as an exception mechanism to remove common false positives
