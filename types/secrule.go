@@ -59,14 +59,19 @@ func (s *SecRule) AddCollection(name, value string, excluded, asCount bool) erro
 		for _, collection := range s.Collections {
 			if collection.Name != col {
 				results = append(results, collection)
+			} else if value != "" && !collection.Count && len(collection.Arguments) == 0 {
+				collection.Excluded = append(collection.Excluded, value)
+				results = append(results, collection)
 			} else if value != "" && !collection.Count {
 				for i, arg := range collection.Arguments {
 					if arg == value {
 						collection.Arguments = append(collection.Arguments[:i], collection.Arguments[i+1:]...)
 					}
 				}
-				collection.Excluded = append(collection.Excluded, value)
-				results = append(results, collection)
+				if len(collection.Arguments) > 0 {
+					collection.Excluded = append(collection.Excluded, value)
+					results = append(results, collection)
+				}
 			}
 		}
 		s.Collections = results
