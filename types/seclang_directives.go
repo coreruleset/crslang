@@ -196,6 +196,7 @@ func (c ConfigurationDirective) GetMetadata() Metadata {
 	return c.Metadata
 }
 
+// TODO: add quotes around the value when the parameter is a string
 func (c ConfigurationDirective) ToSeclang() string {
 	return c.Metadata.Comment + string(c.Name) + " " + c.Parameter + "\n"
 }
