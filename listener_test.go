@@ -652,6 +652,67 @@ SecRuleRemoveByMsg FAIL
 				},
 			},
 		},
+		{
+			name: "Load SecRule with negated operator",
+			payload: `
+# Force body variable
+SecRule REQBODY_PROCESSOR "!@rx (?:URLENCODED|MULTIPART|XML|JSON)" \
+    "id:901340,\
+    phase:1,\
+    pass,\
+    nolog,\
+    noauditlog,\
+    msg:'Enabling body inspection',\
+    ctl:forceRequestBodyVariable=On,\
+    ver:'OWASP_CRS/4.0.0-rc1'"`,
+			expected: types.ConfigurationList{
+				DirectiveList: []types.DirectiveList{
+					{
+						Directives: []types.SeclangDirective{
+							&types.SecRule{
+								Metadata: &types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										CommentMetadata: types.CommentMetadata{
+											Comment: `# Force body variable
+`,
+										},
+										Phase: "1",
+									},
+									Id:  901340,
+									Msg: "Enabling body inspection",
+									Ver: "OWASP_CRS/4.0.0-rc1",
+								},
+								Variables: []types.Variable{
+									{Name: types.REQBODY_PROCESSOR},
+								},
+								Operator: types.Operator{
+									Negate: true,
+									Name:   types.Rx,
+									Value:  "(?:URLENCODED|MULTIPART|XML|JSON)",
+								},
+								Actions: &types.SeclangActions{
+									DisruptiveAction: types.Action{
+										Action: string(types.Pass),
+									},
+									NonDisruptiveActions: []types.Action{
+										{
+											Action: string(types.NoLog),
+										},
+										{
+											Action: string(types.NoAuditLog),
+										},
+										{
+											Action: string(types.Ctl),
+											Param:  "forceRequestBodyVariable=On",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 )
 
