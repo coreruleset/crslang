@@ -22,7 +22,7 @@ compile:
   script:
     - apt-get update && apt-get install -y default-jre
     - go run mage.go build
-    - ./crslang
+    - ./crslang seclang_parser/testdata/crs
 
 tests:
   stage: test
