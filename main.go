@@ -65,7 +65,7 @@ Flags:
 				antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
 				for i := range seclangListener.ConfigurationList.DirectiveList {
 					seclangListener.ConfigurationList.DirectiveList[i].Id = strings.TrimSuffix(filepath.Base(info.Name()), filepath.Ext(info.Name()))
-					if i > 0 {
+					if len(seclangListener.ConfigurationList.DirectiveList) > 1 {
 						seclangListener.ConfigurationList.DirectiveList[i].Id += "_" + strconv.Itoa(i+1)
 					}
 				}
