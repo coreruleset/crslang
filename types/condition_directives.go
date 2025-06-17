@@ -337,6 +337,7 @@ func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationList) *Co
 	result := new(ConfigurationList)
 	for _, config := range configListWrapped.DirectiveList {
 		configList := new(DirectiveList)
+		configList.Id = config.Id
 		configList.Marker = config.Marker
 		for _, directiveWrapped := range config.Directives {
 			var directive SeclangDirective

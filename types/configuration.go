@@ -10,6 +10,17 @@ type DirectiveList struct {
 	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 }
 
+func (d DirectiveList) ToSeclang() string {
+	result := ""
+	for _, directive := range d.Directives {
+		result += directive.ToSeclang() + "\n"
+	}
+	if d.Marker.Name != "" {
+		result += d.Marker.ToSeclang() + "\n"
+	}
+	return result
+}
+
 func ToSeclang(configList ConfigurationList) string {
 	result := ""
 	for _, config := range configList.DirectiveList {
