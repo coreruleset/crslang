@@ -30,6 +30,70 @@ func (d SecRule) GetActions() *SeclangActions {
 	return d.Actions
 }
 
+func (s *SecRule) AddVariable(name string, excluded bool) error {
+	variable, err := GetVariable(name)
+	if err != nil {
+		return err
+	}
+	if excluded {
+		vars := []Variable{}
+		for _, v := range s.Variables {
+			if v.Name != variable {
+				vars = append(vars, v)
+			}
+		}
+		s.Variables = vars
+	} else {
+		s.Variables = append(s.Variables, Variable{Name: variable, Excluded: false})
+	}
+	return nil
+}
+
+func (s *SecRule) AddCollection(name, value string, excluded, asCount bool) error {
+	col, err := GetCollection(name)
+	if err != nil {
+		return err
+	}
+	if excluded && !asCount {
+		results := []Collection{}
+		for _, collection := range s.Collections {
+			if collection.Name != col {
+				results = append(results, collection)
+			} else if value != "" && !collection.Count && len(collection.Arguments) == 0 {
+				collection.Excluded = append(collection.Excluded, value)
+				results = append(results, collection)
+			} else if value != "" && !collection.Count {
+				for i, arg := range collection.Arguments {
+					if arg == value {
+						collection.Arguments = append(collection.Arguments[:i], collection.Arguments[i+1:]...)
+					}
+				}
+				if len(collection.Arguments) > 0 {
+					collection.Excluded = append(collection.Excluded, value)
+					results = append(results, collection)
+				}
+			}
+		}
+		s.Collections = results
+	} else if value != "" && !asCount {
+		i := len(s.Collections) - 1
+		for i >= 0 && !(!s.Collections[i].Count && s.Collections[i].Name == col && len(s.Collections[i].Arguments) > 0 && len(s.Collections[i].Excluded) == 0) {
+			i--
+		}
+		if i >= 0 {
+			s.Collections[i].Arguments = append(s.Collections[i].Arguments, value)
+		} else {
+			s.Collections = append(s.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
+		}
+	} else if value != "" {
+		s.Collections = append(s.Collections, Collection{Name: col, Arguments: []string{value}, Excluded: []string{}, Count: asCount})
+	} else {
+		s.Collections = append(s.Collections, Collection{Name: col, Arguments: []string{}, Excluded: []string{}, Count: asCount})
+	}
+
+	return nil
+}
+
 func (s SecRule) ToSeclang() string {
 	return s.ToSeclangWithIdent("")
 }

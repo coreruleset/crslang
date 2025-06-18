@@ -321,7 +321,7 @@ SecRule REQUEST_LINE "@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:
 									Severity: "WARNING",
 								},
 								Variables: []types.Variable{
-									types.REQUEST_LINE,
+									{Name: types.REQUEST_LINE},
 								},
 								Operator: types.Operator{
 									Name:  types.Rx,
@@ -393,8 +393,9 @@ SecRule ARGS_GET:fbclid "@rx [a-zA-Z0-9_-]{61,61}" \
 								},
 								Collections: []types.Collection{
 									{
-										Name:     types.ARGS_GET,
-										Argument: "fbclid",
+										Name:      types.ARGS_GET,
+										Arguments: []string{"fbclid"},
+										Excluded:  []string{},
 									},
 								},
 								Operator: types.Operator{
@@ -419,6 +420,88 @@ SecRule ARGS_GET:fbclid "@rx [a-zA-Z0-9_-]{61,61}" \
 											Action: string(types.Ctl),
 											Param:  "ruleRemoveTargetById=942440;ARGS:fbclid",
 										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Load SecRule with differents exclusions",
+			payload: `
+SecRule ARGS_GET:fbclid|!ARGS_GET|ARGS_GET:fbclid|!ARGS_GET:fbclid|ARGS_GET:test "@rx test" \
+    "id:942441,\
+    phase:2,\
+    pass"`,
+			expected: types.ConfigurationList{
+				DirectiveList: []types.DirectiveList{
+					{
+						Directives: []types.SeclangDirective{
+							&types.SecRule{
+								Metadata: &types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										CommentMetadata: types.CommentMetadata{},
+										Phase:           "2",
+									},
+									Id: 942441,
+								},
+								Collections: []types.Collection{
+									{
+										Name:      types.ARGS_GET,
+										Arguments: []string{"test"},
+										Excluded:  []string{},
+									},
+								},
+								Operator: types.Operator{
+									Name:  types.Rx,
+									Value: "test",
+								},
+								Actions: &types.SeclangActions{
+									DisruptiveAction: types.Action{
+										Action: string(types.Pass),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Load SecRule with collections and excluded values",
+			payload: `
+SecRule ARGS:/^id_/|!ARGS:id_1 "@rx test" \
+    "id:942441,\
+    phase:2,\
+    pass"`,
+			expected: types.ConfigurationList{
+				DirectiveList: []types.DirectiveList{
+					{
+						Directives: []types.SeclangDirective{
+							&types.SecRule{
+								Metadata: &types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										CommentMetadata: types.CommentMetadata{},
+										Phase:           "2",
+									},
+									Id: 942441,
+								},
+								Collections: []types.Collection{
+									{
+										Name:      types.ARGS,
+										Arguments: []string{"/^id_/"},
+										Excluded:  []string{"id_1"},
+									},
+								},
+								Operator: types.Operator{
+									Name:  types.Rx,
+									Value: "test",
+								},
+								Actions: &types.SeclangActions{
+									DisruptiveAction: types.Action{
+										Action: string(types.Pass),
 									},
 								},
 							},
@@ -474,7 +557,7 @@ SecRule REQUEST_LINE "@streq GET /" \
 									Ver:  "OWASP_CRS/4.6.0-dev",
 								},
 								Variables: []types.Variable{
-									types.REQUEST_LINE,
+									{Name: types.REQUEST_LINE},
 								},
 								Operator: types.Operator{
 									Name:  types.StrEq,
@@ -503,7 +586,7 @@ SecRule REQUEST_LINE "@streq GET /" \
 								ChainedRule: &types.SecRule{
 									Metadata: &types.SecRuleMetadata{},
 									Variables: []types.Variable{
-										types.REMOTE_ADDR,
+										{Name: types.REMOTE_ADDR},
 									},
 									Operator: types.Operator{
 										Name:  types.IpMatch,

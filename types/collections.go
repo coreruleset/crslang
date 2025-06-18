@@ -3,8 +3,10 @@ package types
 import "fmt"
 
 type Collection struct {
-	Name     CollectionName `yaml:"name,omitempty"`
-	Argument string         `yaml:"argument,omitempty"`
+	Name      CollectionName `yaml:"name,omitempty"`
+	Arguments []string       `yaml:"arguments,omitempty"`
+	Excluded  []string       `yaml:"excludeds,omitempty"`
+	Count     bool           `yaml:"count,omitempty"`
 }
 
 type CollectionName string
@@ -71,9 +73,27 @@ var (
 func CollectionsToString(collections []Collection, separator string) string {
 	result := ""
 	for i, collection := range collections {
-		result += string(collection.Name)
-		if collection.Argument != "" {
-			result += ":" + collection.Argument
+		if len(collection.Arguments) == 0 && len(collection.Excluded) == 0 {
+			if collection.Count {
+				result += "&"
+			}
+			result += string(collection.Name)
+		} else {
+			for _, arg := range collection.Arguments {
+				if collection.Count {
+					result += "&"
+				}
+				result += string(collection.Name) + ":" + arg
+				if i != len(collection.Arguments)-1 || len(collection.Excluded) > 0 {
+					result += separator
+				}
+			}
+			for _, excluded := range collection.Excluded {
+				result += "!" + string(collection.Name) + ":" + excluded
+				if i != len(collection.Excluded)-1 {
+					result += separator
+				}
+			}
 		}
 		if i != len(collections)-1 {
 			result += separator
@@ -82,21 +102,10 @@ func CollectionsToString(collections []Collection, separator string) string {
 	return result
 }
 
-// TODO: Add a collection check function
-func (s *SecRule) AddCollection(name, value string) error {
-	constCollection, exists := allCollections[name]
+func GetCollection(name string) (CollectionName, error) {
+	col, exists := allCollections[name]
 	if !exists {
-		return fmt.Errorf("Invalid collection value: %s", name)
+		return "", fmt.Errorf("Invalid collection name: %s", name)
 	}
-	s.Collections = append(s.Collections, Collection{Name: constCollection, Argument: value})
-	return nil
-}
-
-func (d *UpdateTargetDirective) AddCollection(name, value string) error {
-	constCollection, exists := allCollections[name]
-	if !exists {
-		return fmt.Errorf("Invalid collection value: %s", name)
-	}
-	d.Collections = append(d.Collections, Collection{Name: constCollection, Argument: value})
-	return nil
+	return col, nil
 }
