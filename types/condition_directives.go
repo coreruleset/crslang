@@ -54,6 +54,7 @@ func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList 
 	result := new(ConfigurationList)
 	for _, config := range configList.DirectiveList {
 		configWrapper := new(DirectiveList)
+		configWrapper.Id = config.Id
 		configWrapper.Marker = config.Marker
 		for _, directive := range config.Directives {
 			var directiveWrapper SeclangDirective
@@ -143,8 +144,9 @@ func RuleToCondition(directive ChainableDirective) RuleWithCondition {
 
 // yamlLoaderConditionRules is a auxiliary struct to load and iterate over the yaml file
 type yamlLoaderConditionRules struct {
-	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
+	Id         string                 `yaml:"id"`
 	Directives []yaml.Node            `yaml:"directives,omitempty"`
+	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 }
 
 // conditionDirectiveLoader is a auxiliary struct to load condition directives
@@ -184,7 +186,7 @@ func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationList {
 				directives = append(directives, directive)
 			}
 		}
-		resultConfigs = append(resultConfigs, DirectiveList{Marker: config.Marker, Directives: directives})
+		resultConfigs = append(resultConfigs, DirectiveList{Id: config.Id, Directives: directives, Marker: config.Marker})
 	}
 	return ConfigurationList{DirectiveList: resultConfigs}
 }
@@ -335,6 +337,7 @@ func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationList) *Co
 	result := new(ConfigurationList)
 	for _, config := range configListWrapped.DirectiveList {
 		configList := new(DirectiveList)
+		configList.Id = config.Id
 		configList.Marker = config.Marker
 		for _, directiveWrapped := range config.Directives {
 			var directive SeclangDirective

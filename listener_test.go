@@ -713,6 +713,45 @@ SecRule REQBODY_PROCESSOR "!@rx (?:URLENCODED|MULTIPART|XML|JSON)" \
 				},
 			},
 		},
+		{
+			name: "Load directive lists with markers",
+			payload: `
+SecCollectionTimeout 600
+
+SecMarker "END-TEST"
+
+SecComponentSignature "OWASP_CRS/4.0.1-dev"`,
+			expected: types.ConfigurationList{
+				DirectiveList: []types.DirectiveList{
+					{
+						Directives: []types.SeclangDirective{
+							types.ConfigurationDirective{
+								Kind:      types.ConfigurationKind,
+								Metadata:  &types.CommentMetadata{},
+								Name:      "SecCollectionTimeout",
+								Parameter: "600",
+							},
+						},
+						Marker: types.ConfigurationDirective{
+							Kind:      types.ConfigurationKind,
+							Metadata:  &types.CommentMetadata{},
+							Name:      "SecMarker",
+							Parameter: "END-TEST",
+						},
+					},
+					{
+						Directives: []types.SeclangDirective{
+							types.ConfigurationDirective{
+								Kind:      types.ConfigurationKind,
+								Metadata:  &types.CommentMetadata{},
+								Name:      "SecComponentSignature",
+								Parameter: "OWASP_CRS/4.0.1-dev",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 )
 

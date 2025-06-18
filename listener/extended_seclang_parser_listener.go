@@ -60,7 +60,9 @@ func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parsing.Configur
 }
 
 func (l *ExtendedSeclangParserListener) ExitConfiguration(ctx *parsing.ConfigurationContext) {
-	l.ConfigurationList.DirectiveList = append(l.ConfigurationList.DirectiveList, *l.DirectiveList)
+	if l.DirectiveList != nil && (len(l.DirectiveList.Directives) > 0 || l.DirectiveList.Marker.Name != "") {
+		l.ConfigurationList.DirectiveList = append(l.ConfigurationList.DirectiveList, *l.DirectiveList)
+	}
 }
 
 func (l *ExtendedSeclangParserListener) ExitStmt(ctx *parsing.StmtContext) {

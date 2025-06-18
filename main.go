@@ -1,8 +1,14 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"io"
+	"log"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"gitlab.fing.edu.uy/gsi/seclang/crslang/listener"
@@ -11,68 +17,107 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var files = []string{
-	"seclang_parser/testdata/crs-setup.conf",
-	"seclang_parser/testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
-	"seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
-	"seclang_parser/testdata/crs/REQUEST-905-COMMON-EXCEPTIONS.conf",
-	"seclang_parser/testdata/crs/REQUEST-911-METHOD-ENFORCEMENT.conf",
-	"seclang_parser/testdata/crs/REQUEST-913-SCANNER-DETECTION.conf",
-	"seclang_parser/testdata/crs/REQUEST-920-PROTOCOL-ENFORCEMENT.conf",
-	"seclang_parser/testdata/crs/REQUEST-921-PROTOCOL-ATTACK.conf",
-	"seclang_parser/testdata/crs/REQUEST-922-MULTIPART-ATTACK.conf",
-	"seclang_parser/testdata/crs/REQUEST-930-APPLICATION-ATTACK-LFI.conf",
-	"seclang_parser/testdata/crs/REQUEST-931-APPLICATION-ATTACK-RFI.conf",
-	"seclang_parser/testdata/crs/REQUEST-932-APPLICATION-ATTACK-RCE.conf",
-	"seclang_parser/testdata/crs/REQUEST-933-APPLICATION-ATTACK-PHP.conf",
-	"seclang_parser/testdata/crs/REQUEST-934-APPLICATION-ATTACK-GENERIC.conf",
-	"seclang_parser/testdata/crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf",
-	"seclang_parser/testdata/crs/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
-	"seclang_parser/testdata/crs/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf",
-	"seclang_parser/testdata/crs/REQUEST-944-APPLICATION-ATTACK-JAVA.conf",
-	"seclang_parser/testdata/crs/REQUEST-949-BLOCKING-EVALUATION.conf",
-	"seclang_parser/testdata/crs/RESPONSE-950-DATA-LEAKAGES.conf",
-	"seclang_parser/testdata/crs/RESPONSE-951-DATA-LEAKAGES-SQL.conf",
-	"seclang_parser/testdata/crs/RESPONSE-952-DATA-LEAKAGES-JAVA.conf",
-	"seclang_parser/testdata/crs/RESPONSE-953-DATA-LEAKAGES-PHP.conf",
-	"seclang_parser/testdata/crs/RESPONSE-954-DATA-LEAKAGES-IIS.conf",
-	"seclang_parser/testdata/crs/RESPONSE-959-BLOCKING-EVALUATION.conf",
-	"seclang_parser/testdata/crs/RESPONSE-980-CORRELATION.conf",
-}
+var (
+	progName = filepath.Base(os.Args[0])
+)
 
 func main() {
-	resultConfigs := []types.DirectiveList{}
-	for _, file := range files {
-		input, err := antlr.NewFileStream(file)
-		if err != nil {
-			panic("Error reading file" + file)
+	toSeclang := flag.Bool("s", false, "Transalates the specified CRSLang file to Seclang files, instead of the default Seclang to CRSLang.")
+	output := flag.String("o", "", "Output file name used in translation from Seclang to CRSLang. Output folder used in translation from CRSLang to Seclang.")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, `usage:
+	%s [flags] filepath
+ 
+Flags:
+`, progName)
+		flag.PrintDefaults()
+	}
+
+	flag.Parse()
+	args := flag.Args()
+	var pathArg string
+	switch len(args) {
+	case 0:
+		log.Fatal("filepath is required")
+	case 1:
+		pathArg = args[0]
+	default:
+		log.Fatal("Only filepath is allowed")
+	}
+
+	if !*toSeclang {
+		resultConfigs := []types.DirectiveList{}
+		filepath.Walk(pathArg, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && filepath.Ext(info.Name()) == ".conf" {
+				input, err := antlr.NewFileStream(path)
+				if err != nil {
+					panic("Error reading file" + path)
+				}
+				lexer := parsing.NewSecLangLexer(input)
+				stream := antlr.NewCommonTokenStream(lexer, 0)
+				p := parsing.NewSecLangParser(stream)
+				start := p.Configuration()
+				var seclangListener listener.ExtendedSeclangParserListener
+				antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+				for i := range seclangListener.ConfigurationList.DirectiveList {
+					seclangListener.ConfigurationList.DirectiveList[i].Id = strings.TrimSuffix(filepath.Base(info.Name()), filepath.Ext(info.Name()))
+					if len(seclangListener.ConfigurationList.DirectiveList) > 1 {
+						seclangListener.ConfigurationList.DirectiveList[i].Id += "_" + strconv.Itoa(i+1)
+					}
+				}
+				resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
+			}
+			return nil
+		})
+		configList := types.ConfigurationList{DirectiveList: resultConfigs}
+
+		if *output == "" {
+			*output = "crslang"
 		}
-		lexer := parsing.NewSecLangLexer(input)
-		stream := antlr.NewCommonTokenStream(lexer, 0)
-		p := parsing.NewSecLangParser(stream)
-		start := p.Configuration()
-		var seclangListener listener.ExtendedSeclangParserListener
-		antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
-		resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
+		err := printCRSLang(configList, *output+".yaml")
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	} else {
+		if filepath.Ext(pathArg) != ".yaml" {
+			log.Fatal("Only .yaml files are allowed")
+		}
+
+		configList := types.LoadDirectivesWithConditionsFromFile(pathArg)
+
+		err := printSeclang(configList, *output)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 	}
-	configList := types.ConfigurationList{DirectiveList: resultConfigs}
-
-	err := printCRSLang(configList, "crslang.yaml")
-	if err != nil {
-		panic(err)
-	}
-
-	/* 	loadedConfigList := types.LoadDirectivesWithConditionsFromFile("crslang.yaml")
-	   	yamlFile, err := yaml.Marshal(loadedConfigList.DirectiveList)
-	   	if err != nil {
-	   		panic(err)
-	   	}
-
-	   	writeToFile(yamlFile, "crslang_loaded.yaml") */
 }
 
-// printSeclang writes seclang format directives to a file
-func printSeclang(configList types.ConfigurationList, filename string) error {
+// printSeclang writes seclang directives to files specified in directive list ids.
+func printSeclang(configList types.ConfigurationList, dir string) error {
+	unfDirs := types.FromCRSLangToUnformattedDirectives(configList)
+
+	for _, dirList := range unfDirs.DirectiveList {
+		f, err := os.Create(dir + dirList.Id + ".conf")
+		if err != nil {
+			return err
+		}
+		seclangDirectives := dirList.ToSeclang()
+
+		_, err = io.WriteString(f, seclangDirectives)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// printSeclangToFile writes seclang format directives to a file
+func printSeclangToFile(configList types.ConfigurationList, filename string) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
