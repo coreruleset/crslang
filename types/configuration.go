@@ -5,8 +5,20 @@ type ConfigurationList struct {
 }
 
 type DirectiveList struct {
-	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
+	Id         string                 `yaml:"id"`
 	Directives []SeclangDirective     `yaml:"directives,omitempty"`
+	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
+}
+
+func (d DirectiveList) ToSeclang() string {
+	result := ""
+	for _, directive := range d.Directives {
+		result += directive.ToSeclang() + "\n"
+	}
+	if d.Marker.Name != "" {
+		result += d.Marker.ToSeclang() + "\n"
+	}
+	return result
 }
 
 func ToSeclang(configList ConfigurationList) string {
@@ -14,6 +26,9 @@ func ToSeclang(configList ConfigurationList) string {
 	for _, config := range configList.DirectiveList {
 		for _, directive := range config.Directives {
 			result += directive.ToSeclang() + "\n"
+		}
+		if config.Marker.Name != "" {
+			result += config.Marker.ToSeclang() + "\n"
 		}
 	}
 	return result
