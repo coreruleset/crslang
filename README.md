@@ -12,7 +12,7 @@ The goal is to abstract OWASP CRS from the specifics of the Seclang language in 
 - Loads Seclang rule information stored in the CRS files, including comments.
 - Defines a new representation for the rules and translates them into it.
 
-## Install?
+## Usage
 
 Initialize the repo and its submodule:
 
@@ -20,17 +20,20 @@ Initialize the repo and its submodule:
 git clone --recurse-submodules https://gitlab.fing.edu.uy/gsi/seclang/crslang.git
 ```
 
-## Usage
-
-Generate the ANTLR parser code:
+Generate the ANTLR parser code and build the project:
 
 ```bash
-go run mage.go generate
+go run mage.go build
 ```
 
-Load and translate to the new representation:
-(In progress, paths are hardcoded)
+Load and translate the Seclang OWASP CRS files to the new representation:
 
 ```bash
-go run main.go -i <input_file> -o <output_file>
+./crslang seclang_parser/testdata/crs
+```
+
+Run the tests:
+
+```bash
+go test -v
 ```
