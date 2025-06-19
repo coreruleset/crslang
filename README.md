@@ -29,7 +29,13 @@ go run mage.go build
 Load and translate the Seclang OWASP CRS files to the new representation:
 
 ```bash
-./crslang seclang_parser/testdata/crs
+./crslang -o crs seclang_parser/testdata/crs
+```
+
+Load and translate the CRSLang back to Seclang:
+
+```bash
+./crslang -s crs.yaml
 ```
 
 Run the tests:
