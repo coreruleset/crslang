@@ -17,7 +17,7 @@ The goal is to abstract OWASP CRS from the specifics of the Seclang language in 
 Initialize the repo and its submodule:
 
 ```bash
-git clone --recurse-submodules https://gitlab.fing.edu.uy/gsi/seclang/crslang.git
+git clone --recurse-submodules https://github.com/coreruleset/crslang.git
 ```
 
 Generate the ANTLR parser code and build the project:

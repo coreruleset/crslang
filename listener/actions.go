@@ -1,6 +1,6 @@
 package listener
 
-import "gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
+import "github.com/coreruleset/crslang/parsing"
 
 func (l *ExtendedSeclangParserListener) EnterDisruptive_action_only(ctx *parsing.Disruptive_action_onlyContext) {
 	l.currentDirective.GetActions().SetDisruptiveActionOnly(ctx.GetText())
