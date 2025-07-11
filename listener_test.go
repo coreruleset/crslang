@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/coreruleset/crslang/listener"
+	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/crslang/types"
 	"github.com/stretchr/testify/require"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/listener"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
 )
 
 type testCase struct {

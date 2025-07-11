@@ -1,7 +1,7 @@
 package listener
 
 import (
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
+	"github.com/coreruleset/crslang/parsing"
 )
 
 func (l *ExtendedSeclangParserListener) EnterVar_stmt(ctx *parsing.Var_stmtContext) {

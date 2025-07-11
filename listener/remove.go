@@ -3,8 +3,8 @@ package listener
 import (
 	"strconv"
 
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
+	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/crslang/types"
 )
 
 func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_msg(ctx *parsing.Remove_rule_by_msgContext) {

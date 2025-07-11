@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/listener"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
+	"github.com/coreruleset/crslang/listener"
+	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/crslang/types"
 	"gopkg.in/yaml.v3"
 )
 

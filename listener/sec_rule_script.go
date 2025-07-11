@@ -1,8 +1,8 @@
 package listener
 
 import (
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
+	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/crslang/types"
 )
 
 func (l *ExtendedSeclangParserListener) EnterRule_script_directive(ctx *parsing.Rule_script_directiveContext) {

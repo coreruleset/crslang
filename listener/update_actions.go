@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/types"
+	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/crslang/types"
 )
 
 func (l *ExtendedSeclangParserListener) EnterUpdate_action_rule(ctx *parsing.Update_action_ruleContext) {

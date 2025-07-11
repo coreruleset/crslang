@@ -1,4 +1,4 @@
-module gitlab.fing.edu.uy/gsi/seclang/crslang
+module github.com/coreruleset/crslang
 
 go 1.22.2
 

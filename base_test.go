@@ -10,9 +10,8 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/stretchr/testify/require"
 
-	"gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
+	"github.com/coreruleset/crslang/parsing"
 )
-
 
 type CustomErrorListener struct {
 	*antlr.DefaultErrorListener
@@ -270,7 +269,6 @@ var genericTests = map[string]struct {
 	},
 }
 
-
 /* func TestLexerMinimal(t *testing.T) {
 	file := "seclang_parser/testdata/test1.conf"
 	t.Logf("Testing file %s", file)
@@ -333,7 +331,6 @@ func TestSecLang(t *testing.T) {
 		lexer.RemoveErrorListeners()
 		lexer.AddErrorListener(lexerErrors)
 
-		
 		parserErrors := NewCustomErrorListenerV2()
 		stream := antlr.NewCommonTokenStream(lexer, 0)
 		p := parsing.NewSecLangParser(stream)
@@ -419,7 +416,6 @@ func TestCRSLang(t *testing.T) {
 		require.Equalf(t, 0, (len(lexerErrors.Errors) + len(parserErrors.Errors)), "Error count mismatch for file %s -> we want no errors\n", file)
 	}
 }
-
 
 func TestPlugins(t *testing.T) {
 	for _, file := range pluginsTestFiles {

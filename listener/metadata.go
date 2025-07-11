@@ -1,6 +1,6 @@
 package listener
 
-import "gitlab.fing.edu.uy/gsi/seclang/crslang/parsing"
+import "github.com/coreruleset/crslang/parsing"
 
 func (l *ExtendedSeclangParserListener) EnterACTION_ID(ctx *parsing.ACTION_IDContext) {
 	l.setParam = l.currentDirective.GetMetadata().SetId
