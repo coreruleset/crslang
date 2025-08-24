@@ -5,7 +5,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/coreruleset/crslang/listener"
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 	"github.com/stretchr/testify/require"
 )
@@ -759,9 +759,9 @@ func TestLoadSecLang(t *testing.T) {
 	for _, test := range listenerTestCases {
 		got := types.ConfigurationList{}
 		input := antlr.NewInputStream(test.payload)
-		lexer := parsing.NewSecLangLexer(input)
+		lexer := parser.NewSecLangLexer(input)
 		stream := antlr.NewCommonTokenStream(lexer, 0)
-		p := parsing.NewSecLangParser(stream)
+		p := parser.NewSecLangParser(stream)
 		start := p.Configuration()
 		var seclangListener listener.ExtendedSeclangParserListener
 		antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)

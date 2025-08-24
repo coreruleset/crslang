@@ -3,11 +3,11 @@ package listener
 import (
 	"strconv"
 
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 )
 
-func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_msg(ctx *parsing.Remove_rule_by_msgContext) {
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_msg(ctx *parser.Remove_rule_by_msgContext) {
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
@@ -22,7 +22,7 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_msg(ctx *parsing.Rem
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_tag(ctx *parsing.Remove_rule_by_tagContext) {
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_tag(ctx *parser.Remove_rule_by_tagContext) {
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
@@ -37,7 +37,7 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_tag(ctx *parsing.Rem
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id(ctx *parsing.Remove_rule_by_idContext) {
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id(ctx *parser.Remove_rule_by_idContext) {
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
@@ -49,7 +49,7 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id(ctx *parsing.Remo
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id_int(ctx *parsing.Remove_rule_by_id_intContext) {
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id_int(ctx *parser.Remove_rule_by_id_intContext) {
 	id, err := strconv.Atoi(ctx.GetText())
 	if err != nil {
 		panic(err)
@@ -57,11 +57,11 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id_int(ctx *parsing.
 	l.removeDirective.Ids = append(l.removeDirective.Ids, id)
 }
 
-func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id_int_range(ctx *parsing.Remove_rule_by_id_int_rangeContext) {
+func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id_int_range(ctx *parser.Remove_rule_by_id_int_rangeContext) {
 	l.idRange = types.IdRange{}
 }
 
-func (l *ExtendedSeclangParserListener) EnterRange_start(ctx *parsing.Range_startContext) {
+func (l *ExtendedSeclangParserListener) EnterRange_start(ctx *parser.Range_startContext) {
 	start, err := strconv.Atoi(ctx.GetText())
 	if err != nil {
 		panic(err)
@@ -69,7 +69,7 @@ func (l *ExtendedSeclangParserListener) EnterRange_start(ctx *parsing.Range_star
 	l.idRange.Start = start
 }
 
-func (l *ExtendedSeclangParserListener) EnterRange_end(ctx *parsing.Range_endContext) {
+func (l *ExtendedSeclangParserListener) EnterRange_end(ctx *parser.Range_endContext) {
 	end, err := strconv.Atoi(ctx.GetText())
 	if err != nil {
 		panic(err)
@@ -77,6 +77,6 @@ func (l *ExtendedSeclangParserListener) EnterRange_end(ctx *parsing.Range_endCon
 	l.idRange.End = end
 }
 
-func (l *ExtendedSeclangParserListener) ExitRemove_rule_by_id_int_range(ctx *parsing.Remove_rule_by_id_int_rangeContext) {
+func (l *ExtendedSeclangParserListener) ExitRemove_rule_by_id_int_range(ctx *parser.Remove_rule_by_id_int_rangeContext) {
 	l.removeDirective.IdRanges = append(l.removeDirective.IdRanges, l.idRange)
 }

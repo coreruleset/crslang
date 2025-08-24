@@ -1,7 +1,7 @@
 package listener
 
 import (
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 )
 
@@ -23,7 +23,7 @@ type BaseChainableDirective interface {
 }
 
 type ExtendedSeclangParserListener struct {
-	*parsing.BaseSecLangParserListener
+	*parser.BaseSecLangParserListener
 	comment                string
 	appendComment          func(value string)
 	setParam               func(value string)
@@ -49,7 +49,7 @@ func doNothingFunc() {}
 
 func doNothingFuncString(value string) {}
 
-func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parsing.ConfigurationContext) {
+func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parser.ConfigurationContext) {
 	l.DirectiveList = new(types.DirectiveList)
 	l.setParam = doNothingFuncString
 	l.appendDirective = doNothingFunc
@@ -59,13 +59,13 @@ func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parsing.Configur
 	l.previousDirective = nil
 }
 
-func (l *ExtendedSeclangParserListener) ExitConfiguration(ctx *parsing.ConfigurationContext) {
+func (l *ExtendedSeclangParserListener) ExitConfiguration(ctx *parser.ConfigurationContext) {
 	if l.DirectiveList != nil && (len(l.DirectiveList.Directives) > 0 || l.DirectiveList.Marker.Name != "") {
 		l.ConfigurationList.DirectiveList = append(l.ConfigurationList.DirectiveList, *l.DirectiveList)
 	}
 }
 
-func (l *ExtendedSeclangParserListener) ExitStmt(ctx *parsing.StmtContext) {
+func (l *ExtendedSeclangParserListener) ExitStmt(ctx *parser.StmtContext) {
 	if l.comment != "" {
 		l.appendComment(l.comment)
 		l.comment = ""
@@ -77,6 +77,6 @@ func (l *ExtendedSeclangParserListener) ExitStmt(ctx *parsing.StmtContext) {
 	l.appendDirective = doNothingFunc
 }
 
-func (l *ExtendedSeclangParserListener) EnterComment(ctx *parsing.CommentContext) {
+func (l *ExtendedSeclangParserListener) EnterComment(ctx *parser.CommentContext) {
 	l.comment = ctx.GetText()
 }

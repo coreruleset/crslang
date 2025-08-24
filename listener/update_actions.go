@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 )
 
-func (l *ExtendedSeclangParserListener) EnterUpdate_action_rule(ctx *parsing.Update_action_ruleContext) {
+func (l *ExtendedSeclangParserListener) EnterUpdate_action_rule(ctx *parser.Update_action_ruleContext) {
 	l.currentDirective = types.NewUpdateActionDirective()
 	l.appendDirective = func() {
 		fmt.Printf("Appending directive: %v\n", l.currentDirective.(*types.UpdateActionDirective).ToSeclang())
@@ -19,7 +19,7 @@ func (l *ExtendedSeclangParserListener) EnterUpdate_action_rule(ctx *parsing.Upd
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterId(ctx *parsing.IdContext) {
+func (l *ExtendedSeclangParserListener) EnterId(ctx *parser.IdContext) {
 	id, err := strconv.Atoi(ctx.GetText())
 	if err != nil {
 		panic(err)
