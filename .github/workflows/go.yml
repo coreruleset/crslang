@@ -14,17 +14,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      with:
-        submodules: true
 
     - name: Set up Go
       uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
       with:
-        go-version: '1.25.0'
-
-    - name: Build
-      run: go run mage.go generate
+        go-version: '1.24.6'
 
     - name: Test
       run: go test -v ./...

@@ -1,11 +1,11 @@
 package listener
 
 import (
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 )
 
-func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_with_param(ctx *parsing.Engine_config_directive_with_paramContext) {
+func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_with_param(ctx *parser.Engine_config_directive_with_paramContext) {
 	l.configurationDirective = types.NewConfigurationDirective()
 	l.configurationDirective.SetName(ctx.GetText())
 	l.appendComment = l.configurationDirective.GetMetadata().SetComment
@@ -18,7 +18,7 @@ func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_with_param(
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterEngine_config_sec_cache_transformations(ctx *parsing.Engine_config_sec_cache_transformationsContext) {
+func (l *ExtendedSeclangParserListener) EnterEngine_config_sec_cache_transformations(ctx *parser.Engine_config_sec_cache_transformationsContext) {
 	l.configurationDirective = types.NewConfigurationDirective()
 	l.configurationDirective.SetName(ctx.GetText())
 	l.appendComment = l.configurationDirective.GetMetadata().SetComment
@@ -31,11 +31,11 @@ func (l *ExtendedSeclangParserListener) EnterEngine_config_sec_cache_transformat
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterOption_list(ctx *parsing.Option_listContext) {
+func (l *ExtendedSeclangParserListener) EnterOption_list(ctx *parser.Option_listContext) {
 	l.setParam(ctx.GetText())
 }
 
-func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx *parsing.String_engine_config_directiveContext) {
+func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx *parser.String_engine_config_directiveContext) {
 	l.configurationDirective = types.NewConfigurationDirective()
 	l.configurationDirective.SetName(ctx.GetText())
 	l.appendComment = l.configurationDirective.GetMetadata().SetComment
@@ -49,7 +49,7 @@ func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx 
 }
 
 // SecMarker
-func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parsing.Sec_marker_directiveContext) {
+func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parser.Sec_marker_directiveContext) {
 	l.configurationDirective = types.NewConfigurationDirective()
 	err := l.configurationDirective.SetName(ctx.GetText())
 	if err != nil {

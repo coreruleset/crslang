@@ -1,11 +1,11 @@
 package listener
 
 import (
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 )
 
-func (l *ExtendedSeclangParserListener) EnterRule_script_directive(ctx *parsing.Rule_script_directiveContext) {
+func (l *ExtendedSeclangParserListener) EnterRule_script_directive(ctx *parser.Rule_script_directiveContext) {
 	l.currentDirective = types.NewSecRuleScript()
 	if l.previousDirective != nil {
 		l.previousDirective.AppendChainedDirective(l.currentDirective.(*types.SecRuleScript))

@@ -10,7 +10,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/stretchr/testify/require"
 
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 type CustomErrorListener struct {
@@ -33,7 +33,7 @@ func (c *CustomErrorListener) SyntaxError(recognizer antlr.Recognizer, offending
 }
 
 type TreeShapeListener struct {
-	*parsing.BaseSecLangParserListener
+	*parser.BaseSecLangParserListener
 }
 
 func NewTreeShapeListener() *TreeShapeListener {
@@ -46,237 +46,237 @@ func (t *TreeShapeListener) EnterEveryRule(ctx antlr.ParserRuleContext) {
 }
 
 var crsTestFiles = []string{
-	"seclang_parser/testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
-	"seclang_parser/testdata/crs/REQUEST-901-INITIALIZATION.conf",
-	"seclang_parser/testdata/crs/REQUEST-905-COMMON-EXCEPTIONS.conf",
-	"seclang_parser/testdata/crs/REQUEST-911-METHOD-ENFORCEMENT.conf",
-	"seclang_parser/testdata/crs/REQUEST-913-SCANNER-DETECTION.conf",
-	"seclang_parser/testdata/crs/REQUEST-920-PROTOCOL-ENFORCEMENT.conf",
-	"seclang_parser/testdata/crs/REQUEST-921-PROTOCOL-ATTACK.conf",
-	"seclang_parser/testdata/crs/REQUEST-922-MULTIPART-ATTACK.conf",
-	"seclang_parser/testdata/crs/REQUEST-930-APPLICATION-ATTACK-LFI.conf",
-	"seclang_parser/testdata/crs/REQUEST-931-APPLICATION-ATTACK-RFI.conf",
-	"seclang_parser/testdata/crs/REQUEST-932-APPLICATION-ATTACK-RCE.conf",
-	"seclang_parser/testdata/crs/REQUEST-933-APPLICATION-ATTACK-PHP.conf",
-	"seclang_parser/testdata/crs/REQUEST-934-APPLICATION-ATTACK-GENERIC.conf",
-	"seclang_parser/testdata/crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf",
-	"seclang_parser/testdata/crs/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
-	"seclang_parser/testdata/crs/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf",
-	"seclang_parser/testdata/crs/REQUEST-944-APPLICATION-ATTACK-JAVA.conf",
-	"seclang_parser/testdata/crs/REQUEST-949-BLOCKING-EVALUATION.conf",
-	"seclang_parser/testdata/crs/RESPONSE-950-DATA-LEAKAGES.conf",
-	"seclang_parser/testdata/crs/RESPONSE-951-DATA-LEAKAGES-SQL.conf",
-	"seclang_parser/testdata/crs/RESPONSE-952-DATA-LEAKAGES-JAVA.conf",
-	"seclang_parser/testdata/crs/RESPONSE-953-DATA-LEAKAGES-PHP.conf",
-	"seclang_parser/testdata/crs/RESPONSE-954-DATA-LEAKAGES-IIS.conf",
-	// "seclang_parser/testdata/crs/RESPONSE-955-WEB-SHELLS.conf",
-	"seclang_parser/testdata/crs/RESPONSE-959-BLOCKING-EVALUATION.conf",
-	"seclang_parser/testdata/crs/RESPONSE-980-CORRELATION.conf",
+	"testdata/crs/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf",
+	"testdata/crs/REQUEST-901-INITIALIZATION.conf",
+	"testdata/crs/REQUEST-905-COMMON-EXCEPTIONS.conf",
+	"testdata/crs/REQUEST-911-METHOD-ENFORCEMENT.conf",
+	"testdata/crs/REQUEST-913-SCANNER-DETECTION.conf",
+	"testdata/crs/REQUEST-920-PROTOCOL-ENFORCEMENT.conf",
+	"testdata/crs/REQUEST-921-PROTOCOL-ATTACK.conf",
+	"testdata/crs/REQUEST-922-MULTIPART-ATTACK.conf",
+	"testdata/crs/REQUEST-930-APPLICATION-ATTACK-LFI.conf",
+	"testdata/crs/REQUEST-931-APPLICATION-ATTACK-RFI.conf",
+	"testdata/crs/REQUEST-932-APPLICATION-ATTACK-RCE.conf",
+	"testdata/crs/REQUEST-933-APPLICATION-ATTACK-PHP.conf",
+	"testdata/crs/REQUEST-934-APPLICATION-ATTACK-GENERIC.conf",
+	"testdata/crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf",
+	"testdata/crs/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
+	"testdata/crs/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf",
+	"testdata/crs/REQUEST-944-APPLICATION-ATTACK-JAVA.conf",
+	"testdata/crs/REQUEST-949-BLOCKING-EVALUATION.conf",
+	"testdata/crs/RESPONSE-950-DATA-LEAKAGES.conf",
+	"testdata/crs/RESPONSE-951-DATA-LEAKAGES-SQL.conf",
+	"testdata/crs/RESPONSE-952-DATA-LEAKAGES-JAVA.conf",
+	"testdata/crs/RESPONSE-953-DATA-LEAKAGES-PHP.conf",
+	"testdata/crs/RESPONSE-954-DATA-LEAKAGES-IIS.conf",
+	// "testdata/crs/RESPONSE-955-WEB-SHELLS.conf",
+	"testdata/crs/RESPONSE-959-BLOCKING-EVALUATION.conf",
+	"testdata/crs/RESPONSE-980-CORRELATION.conf",
 }
 
 var pluginsTestFiles = []string{
-	"seclang_parser/testdata/plugins/wordpress-rule-exclusions-before.conf",
-	"seclang_parser/testdata/plugins/wordpress-rule-exclusions-config.conf",
-	"seclang_parser/testdata/plugins/drupal-rule-exclusions-before.conf",
-	"seclang_parser/testdata/plugins/drupal-rule-exclusions-config.conf",
-	"seclang_parser/testdata/plugins/google-oauth2-before.conf",
-	"seclang_parser/testdata/plugins/google-oauth2-config.conf",
+	"testdata/plugins/wordpress-rule-exclusions-before.conf",
+	"testdata/plugins/wordpress-rule-exclusions-config.conf",
+	"testdata/plugins/drupal-rule-exclusions-before.conf",
+	"testdata/plugins/drupal-rule-exclusions-config.conf",
+	"testdata/plugins/google-oauth2-before.conf",
+	"testdata/plugins/google-oauth2-config.conf",
 }
 
 var genericTests = map[string]struct {
 	errorCount int
 	comment    string
 }{
-	"seclang_parser/testdata/REQUEST-901-INITIALIZATION.conf": {
+	"testdata/REQUEST-901-INITIALIZATION.conf": {
 		0,
 		"Test file for REQUEST-901-INITIALIZATION.conf",
 	},
-	"seclang_parser/testdata/crs-setup.conf": {
+	"testdata/crs-setup.conf": {
 		0,
 		"Test file for crs-setup.conf",
 	},
-	"seclang_parser/testdata/test1.conf": {
+	"testdata/test1.conf": {
 		0,
 		"Test SecDefaultAction",
 	},
-	"seclang_parser/testdata/test2.conf": {
+	"testdata/test2.conf": {
 		0,
 		"Test SecAction and SecCollectionTimeout",
 	},
-	"seclang_parser/testdata/test3.conf": {
+	"testdata/test3.conf": {
 		0,
 		"test comment and secaction",
 	},
-	"seclang_parser/testdata/test4.conf": {
+	"testdata/test4.conf": {
 		0,
 		"test redefining SecCollectionTimeout",
 	},
-	"seclang_parser/testdata/test5.conf": {
+	"testdata/test5.conf": {
 		0,
 		"Test comments only file",
 	},
-	"seclang_parser/testdata/test_01_comment.conf": {
+	"testdata/test_01_comment.conf": {
 		0,
 		"Test comments only file",
 	},
-	"seclang_parser/testdata/test_02_seccompsignature.conf": {
+	"testdata/test_02_seccompsignature.conf": {
 		0,
 		"test SecComponentSignature",
 	},
-	"seclang_parser/testdata/test_03_secruleengine.conf": {
+	"testdata/test_03_secruleengine.conf": {
 		0,
 		"test SecRuleEngine",
 	},
-	"seclang_parser/testdata/test_04_directives.conf": {
+	"testdata/test_04_directives.conf": {
 		0,
 		"test directives",
 	},
-	"seclang_parser/testdata/test_05_secaction.conf": {
+	"testdata/test_05_secaction.conf": {
 		0,
 		"test SecAction",
 	},
-	"seclang_parser/testdata/test_06_secaction2.conf": {
+	"testdata/test_06_secaction2.conf": {
 		0,
 		"test SecAction with and without continuation",
 	},
-	"seclang_parser/testdata/test_07_secaction3.conf": {
+	"testdata/test_07_secaction3.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_08_secaction4.conf": {
+	"testdata/test_08_secaction4.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_09_secaction_ctl_01.conf": {
+	"testdata/test_09_secaction_ctl_01.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_10_secaction_ctl_02.conf": {
+	"testdata/test_10_secaction_ctl_02.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_11_secaction_ctl_03.conf": {
+	"testdata/test_11_secaction_ctl_03.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_12_secaction_ctl_04.conf": {
+	"testdata/test_12_secaction_ctl_04.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_13_secaction_ctl_05.conf": {
+	"testdata/test_13_secaction_ctl_05.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_14_secaction_ctl_06.conf": {
+	"testdata/test_14_secaction_ctl_06.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_15_secaction_01.conf": {
+	"testdata/test_15_secaction_01.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_16_secrule_01.conf": {
+	"testdata/test_16_secrule_01.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_17_secrule_02.conf": {
+	"testdata/test_17_secrule_02.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_18_secrule_03.conf": {
+	"testdata/test_18_secrule_03.conf": {
 		1,
 		"test should fail with non-existent operator",
 	},
-	"seclang_parser/testdata/test_19_secrule_04.conf": {
+	"testdata/test_19_secrule_04.conf": {
 		0,
 		"test SecAction with ctl",
 	},
-	"seclang_parser/testdata/test_20_secrule_05.conf": {
+	"testdata/test_20_secrule_05.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_21_secrule_06.conf": {
+	"testdata/test_21_secrule_06.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_22_secrule_07.conf": {
+	"testdata/test_22_secrule_07.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_23_secrule_08.conf": {
+	"testdata/test_23_secrule_08.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_24_secrule_09.conf": {
+	"testdata/test_24_secrule_09.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_25_secrule_10.conf": {
+	"testdata/test_25_secrule_10.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_26_secrule_11.conf": {
+	"testdata/test_26_secrule_11.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_27_secrule_12.conf": {
+	"testdata/test_27_secrule_12.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_28_secrule_13.conf": {
+	"testdata/test_28_secrule_13.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_29_secrule_14.conf": {
+	"testdata/test_29_secrule_14.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_30_secrule_15.conf": {
+	"testdata/test_30_secrule_15.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_31_secaction_ctl_07.conf": {
+	"testdata/test_31_secaction_ctl_07.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_32_secrule_16.conf": {
+	"testdata/test_32_secrule_16.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_33_secrule_16.conf": {
+	"testdata/test_33_secrule_16.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_directive_unknown.conf": {
+	"testdata/test_directive_unknown.conf": {
 		1,
 		"test should fail with unknown directive",
 	},
-	"seclang_parser/testdata/test_34_xml.conf": {
+	"testdata/test_34_xml.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_35_all_directives.conf": {
+	"testdata/test_35_all_directives.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_36_chain.conf": {
+	"testdata/test_36_chain.conf": {
 		0,
 		"",
 	},
-	"seclang_parser/testdata/test_37_ugly_rules.conf": {
+	"testdata/test_37_ugly_rules.conf": {
 		0,
 		"",
 	},
 }
 
 /* func TestLexerMinimal(t *testing.T) {
-	file := "seclang_parser/testdata/test1.conf"
+	file := "testdata/test1.conf"
 	t.Logf("Testing file %s", file)
 	input, err := antlr.NewFileStream(file)
 	if err != nil {
 		t.Errorf("Error reading file %s", file)
 	}
-	lexer := parsing.NewSecLangLexer(input)
+	lexer := parser.NewSecLangLexer(input)
 
 	lexerErrors := NewCustomErrorListenerV2()
 	lexer.RemoveErrorListeners()
@@ -293,13 +293,13 @@ var genericTests = map[string]struct {
 } */
 
 /* func TestParserMinimal(t *testing.T) {
-	file := "seclang_parser/testdata/test1.conf"
+	file := "testdata/test1.conf"
 	t.Logf("Testing file %s", file)
 	input, err := antlr.NewFileStream(file)
 	if err != nil {
 		t.Errorf("Error reading file %s", file)
 	}
-	lexer := parsing.NewSecLangLexer(input)
+	lexer := parser.NewSecLangLexer(input)
 
 	lexerErrors := NewCustomErrorListenerV2()
 	lexer.RemoveErrorListeners()
@@ -307,7 +307,7 @@ var genericTests = map[string]struct {
 
 	parserErrors := NewCustomErrorListenerV2()
 	stream := antlr.NewCommonTokenStream(lexer, 0)
-	p := parsing.NewSecLangParser(stream)
+	p := parser.NewSecLangParser(stream)
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrors)
 
@@ -325,7 +325,7 @@ func TestSecLang(t *testing.T) {
 			t.Errorf("Error reading file %s", file)
 			continue
 		}
-		lexer := parsing.NewSecLangLexer(input)
+		lexer := parser.NewSecLangLexer(input)
 
 		lexerErrors := NewCustomErrorListenerV2()
 		lexer.RemoveErrorListeners()
@@ -333,7 +333,7 @@ func TestSecLang(t *testing.T) {
 
 		parserErrors := NewCustomErrorListenerV2()
 		stream := antlr.NewCommonTokenStream(lexer, 0)
-		p := parsing.NewSecLangParser(stream)
+		p := parser.NewSecLangParser(stream)
 		p.RemoveErrorListeners()
 		p.AddErrorListener(parserErrors)
 
@@ -375,7 +375,7 @@ func TestCRSLang(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error reading file %s", file)
 		}
-		lexer := parsing.NewSecLangLexer(input)
+		lexer := parser.NewSecLangLexer(input)
 
 		lexerErrors := NewCustomErrorListenerV2()
 		lexer.RemoveErrorListeners()
@@ -383,7 +383,7 @@ func TestCRSLang(t *testing.T) {
 
 		parserErrors := NewCustomErrorListenerV2()
 		stream := antlr.NewCommonTokenStream(lexer, 0)
-		p := parsing.NewSecLangParser(stream)
+		p := parser.NewSecLangParser(stream)
 		p.RemoveErrorListeners()
 		p.AddErrorListener(parserErrors)
 		p.BuildParseTrees = true
@@ -424,7 +424,7 @@ func TestPlugins(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error reading file %s", file)
 		}
-		lexer := parsing.NewSecLangLexer(input)
+		lexer := parser.NewSecLangLexer(input)
 
 		lexerErrors := NewCustomErrorListenerV2()
 		lexer.RemoveErrorListeners()
@@ -432,7 +432,7 @@ func TestPlugins(t *testing.T) {
 
 		parserErrors := NewCustomErrorListenerV2()
 		stream := antlr.NewCommonTokenStream(lexer, 0)
-		p := parsing.NewSecLangParser(stream)
+		p := parser.NewSecLangParser(stream)
 		p.RemoveErrorListeners()
 		p.AddErrorListener(parserErrors)
 		p.BuildParseTrees = true

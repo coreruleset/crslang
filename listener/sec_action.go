@@ -1,12 +1,12 @@
 package listener
 
 import (
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 )
 
 // SecDefaultAction
-func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_default_action(ctx *parsing.Config_dir_sec_default_actionContext) {
+func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_default_action(ctx *parser.Config_dir_sec_default_actionContext) {
 	l.currentDirective = types.NewDefaultAction()
 	l.appendDirective = func() {
 		l.DirectiveList.Directives = append(l.DirectiveList.Directives, *l.currentDirective.(*types.DefaultAction))
@@ -15,7 +15,7 @@ func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_default_action(ctx *
 }
 
 // SecAction
-func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_action(ctx *parsing.Config_dir_sec_actionContext) {
+func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_action(ctx *parser.Config_dir_sec_actionContext) {
 	l.currentDirective = types.NewSecAction()
 	if l.previousDirective != nil {
 		l.previousDirective.AppendChainedDirective(l.currentDirective.(*types.SecAction))

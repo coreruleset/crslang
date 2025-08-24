@@ -3,11 +3,11 @@ package listener
 import (
 	"strconv"
 
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 )
 
-func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_id(ctx *parsing.Update_target_by_idContext) {
+func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_id(ctx *parser.Update_target_by_idContext) {
 	l.updateTargetDirective = types.NewUpdateTargetDirective()
 	l.appendComment = func(comment string) {
 		l.updateTargetDirective.Metadata.Comment = comment
@@ -24,7 +24,7 @@ func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_id(ctx *parsing.Up
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_tag(ctx *parsing.Update_target_by_tagContext) {
+func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_tag(ctx *parser.Update_target_by_tagContext) {
 	l.updateTargetDirective = types.NewUpdateTargetDirective()
 	l.appendComment = func(comment string) {
 		l.updateTargetDirective.Metadata.Comment = comment
@@ -37,7 +37,7 @@ func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_tag(ctx *parsing.U
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_msg(ctx *parsing.Update_target_by_msgContext) {
+func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_msg(ctx *parser.Update_target_by_msgContext) {
 	l.updateTargetDirective = types.NewUpdateTargetDirective()
 	l.appendComment = func(comment string) {
 		l.updateTargetDirective.Metadata.Comment = comment
@@ -50,11 +50,11 @@ func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_msg(ctx *parsing.U
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterUpdate_target_rules_values(ctx *parsing.Update_target_rules_valuesContext) {
+func (l *ExtendedSeclangParserListener) EnterUpdate_target_rules_values(ctx *parser.Update_target_rules_valuesContext) {
 	l.setParam(ctx.GetText())
 	l.setParam = doNothingFuncString
 }
 
-func (l *ExtendedSeclangParserListener) EnterUpdate_variables(ctx *parsing.Update_variablesContext) {
+func (l *ExtendedSeclangParserListener) EnterUpdate_variables(ctx *parser.Update_variablesContext) {
 	l.targetDirective = l.updateTargetDirective
 }

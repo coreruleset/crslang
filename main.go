@@ -12,7 +12,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/coreruleset/crslang/listener"
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 	"gopkg.in/yaml.v3"
 )
@@ -57,9 +57,9 @@ Flags:
 				if err != nil {
 					panic("Error reading file" + path)
 				}
-				lexer := parsing.NewSecLangLexer(input)
+				lexer := parser.NewSecLangLexer(input)
 				stream := antlr.NewCommonTokenStream(lexer, 0)
-				p := parsing.NewSecLangParser(stream)
+				p := parser.NewSecLangParser(stream)
 				start := p.Configuration()
 				var seclangListener listener.ExtendedSeclangParserListener
 				antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)

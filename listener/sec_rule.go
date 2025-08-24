@@ -1,11 +1,11 @@
 package listener
 
 import (
-	"github.com/coreruleset/crslang/parsing"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
 )
 
-func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parsing.Rules_directiveContext) {
+func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parser.Rules_directiveContext) {
 	l.currentDirective = types.NewSecRule()
 	l.currentDirective.(*types.SecRule).SetOperatorName("rx")
 	if l.previousDirective != nil {
@@ -19,21 +19,21 @@ func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parsing.Rules_
 	l.appendComment = l.currentDirective.GetMetadata().SetComment
 }
 
-func (l *ExtendedSeclangParserListener) EnterVariables(ctx *parsing.VariablesContext) {
+func (l *ExtendedSeclangParserListener) EnterVariables(ctx *parser.VariablesContext) {
 	l.targetDirective = l.currentDirective.(*types.SecRule)
 }
 
-func (l *ExtendedSeclangParserListener) EnterOperator_name(ctx *parsing.Operator_nameContext) {
+func (l *ExtendedSeclangParserListener) EnterOperator_name(ctx *parser.Operator_nameContext) {
 	err := l.currentDirective.(*types.SecRule).SetOperatorName(ctx.GetText())
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (l *ExtendedSeclangParserListener) EnterOperator_value(ctx *parsing.Operator_valueContext) {
+func (l *ExtendedSeclangParserListener) EnterOperator_value(ctx *parser.Operator_valueContext) {
 	l.currentDirective.(*types.SecRule).SetOperatorValue(ctx.GetText())
 }
 
-func (l *ExtendedSeclangParserListener) EnterOperator_not(ctx *parsing.Operator_notContext) {
+func (l *ExtendedSeclangParserListener) EnterOperator_not(ctx *parser.Operator_notContext) {
 	l.currentDirective.(*types.SecRule).SetOperatorNot(true)
 }
