@@ -48,7 +48,7 @@ func (s SecRuleScript) ToSeclangWithIdent(initialString string) string {
 	if s.Metadata.Phase != "" {
 		auxSlice = append(auxSlice, "phase:"+s.Metadata.Phase)
 	}
-	if s.Actions.DisruptiveAction.Action != "" {
+	if len(s.Actions.DisruptiveAction) > 0 {
 		auxSlice = append(auxSlice, s.Actions.DisruptiveAction.ToString())
 	}
 	if slices.Contains(actions, "status") {

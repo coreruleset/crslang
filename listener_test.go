@@ -5,8 +5,8 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/coreruleset/crslang/listener"
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/stretchr/testify/require"
 )
 
@@ -141,97 +141,30 @@ SecAction \
 									},
 								},
 								Actions: &types.SeclangActions{
-									DisruptiveAction: types.Action{
-										Action: string(types.Pass),
-									},
+									DisruptiveAction: types.NewAction(types.Pass, ""),
 									NonDisruptiveActions: []types.Action{
-										{
-											Action: string(types.NoLog),
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.blocking_inbound_anomaly_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.detection_inbound_anomaly_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.inbound_anomaly_score_pl1=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.inbound_anomaly_score_pl2=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.inbound_anomaly_score_pl3=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.inbound_anomaly_score_pl4=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.sql_injection_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.xss_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.rfi_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.lfi_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.rce_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.php_injection_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.http_violation_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.session_fixation_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.blocking_outbound_anomaly_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.detection_outbound_anomaly_score=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.outbound_anomaly_score_pl1=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.outbound_anomaly_score_pl2=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.outbound_anomaly_score_pl3=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.outbound_anomaly_score_pl4=0",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.anomaly_score=0",
-										},
+										types.NewAction(types.NoLog, ""),
+										types.NewAction(types.SetVar, "tx.blocking_inbound_anomaly_score=0"),
+										types.NewAction(types.SetVar, "tx.detection_inbound_anomaly_score=0"),
+										types.NewAction(types.SetVar, "tx.inbound_anomaly_score_pl1=0"),
+										types.NewAction(types.SetVar, "tx.inbound_anomaly_score_pl2=0"),
+										types.NewAction(types.SetVar, "tx.inbound_anomaly_score_pl3=0"),
+										types.NewAction(types.SetVar, "tx.inbound_anomaly_score_pl4=0"),
+										types.NewAction(types.SetVar, "tx.sql_injection_score=0"),
+										types.NewAction(types.SetVar, "tx.xss_score=0"),
+										types.NewAction(types.SetVar, "tx.rfi_score=0"),
+										types.NewAction(types.SetVar, "tx.lfi_score=0"),
+										types.NewAction(types.SetVar, "tx.rce_score=0"),
+										types.NewAction(types.SetVar, "tx.php_injection_score=0"),
+										types.NewAction(types.SetVar, "tx.http_violation_score=0"),
+										types.NewAction(types.SetVar, "tx.session_fixation_score=0"),
+										types.NewAction(types.SetVar, "tx.blocking_outbound_anomaly_score=0"),
+										types.NewAction(types.SetVar, "tx.detection_outbound_anomaly_score=0"),
+										types.NewAction(types.SetVar, "tx.outbound_anomaly_score_pl1=0"),
+										types.NewAction(types.SetVar, "tx.outbound_anomaly_score_pl2=0"),
+										types.NewAction(types.SetVar, "tx.outbound_anomaly_score_pl3=0"),
+										types.NewAction(types.SetVar, "tx.outbound_anomaly_score_pl4=0"),
+										types.NewAction(types.SetVar, "tx.anomaly_score=0"),
 									},
 								},
 							},
@@ -333,18 +266,10 @@ SecRule REQUEST_LINE "@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:
 									},
 								},
 								Actions: &types.SeclangActions{
-									DisruptiveAction: types.Action{
-										Action: string(types.Block),
-									},
+									DisruptiveAction: types.NewAction(types.Block, ""),
 									NonDisruptiveActions: []types.Action{
-										{
-											Action: string(types.LogData),
-											Param:  "%{request_line}",
-										},
-										{
-											Action: string(types.SetVar),
-											Param:  "tx.inbound_anomaly_score_pl1=+%{tx.warning_anomaly_score}",
-										},
+										types.NewAction(types.LogData, "%{request_line}"),
+										types.NewAction(types.SetVar, "tx.inbound_anomaly_score_pl1=+%{tx.warning_anomaly_score}"),
 									},
 								},
 							},
@@ -409,17 +334,10 @@ SecRule ARGS_GET:fbclid "@rx [a-zA-Z0-9_-]{61,61}" \
 									},
 								},
 								Actions: &types.SeclangActions{
-									DisruptiveAction: types.Action{
-										Action: string(types.Pass),
-									},
+									DisruptiveAction: types.NewAction(types.Pass, ""),
 									NonDisruptiveActions: []types.Action{
-										{
-											Action: string(types.NoLog),
-										},
-										{
-											Action: string(types.Ctl),
-											Param:  "ruleRemoveTargetById=942440;ARGS:fbclid",
-										},
+										types.NewAction(types.NoLog, ""),
+										types.NewAction(types.Ctl, "ruleRemoveTargetById=942440;ARGS:fbclid"),
 									},
 								},
 							},
@@ -459,9 +377,7 @@ SecRule ARGS_GET:fbclid|!ARGS_GET|ARGS_GET:fbclid|!ARGS_GET:fbclid|ARGS_GET:test
 									Value: "test",
 								},
 								Actions: &types.SeclangActions{
-									DisruptiveAction: types.Action{
-										Action: string(types.Pass),
-									},
+									DisruptiveAction: types.NewAction(types.Pass, ""),
 								},
 							},
 						},
@@ -500,9 +416,7 @@ SecRule ARGS:/^id_/|!ARGS:id_1 "@rx test" \
 									Value: "test",
 								},
 								Actions: &types.SeclangActions{
-									DisruptiveAction: types.Action{
-										Action: string(types.Pass),
-									},
+									DisruptiveAction: types.NewAction(types.Pass, ""),
 								},
 							},
 						},
@@ -569,18 +483,12 @@ SecRule REQUEST_LINE "@streq GET /" \
 									},
 								},
 								Actions: &types.SeclangActions{
-									DisruptiveAction: types.Action{
-										Action: string(types.Pass),
-									},
+									DisruptiveAction: types.NewAction(types.Pass, ""),
 									NonDisruptiveActions: []types.Action{
-										{
-											Action: string(types.NoLog),
-										},
+										types.NewAction(types.NoLog, ""),
 									},
 									FlowActions: []types.Action{
-										{
-											Action: string(types.Chain),
-										},
+										types.NewAction(types.Chain, ""),
 									},
 								},
 								ChainedRule: &types.SecRule{
@@ -599,14 +507,8 @@ SecRule REQUEST_LINE "@streq GET /" \
 									},
 									Actions: &types.SeclangActions{
 										NonDisruptiveActions: []types.Action{
-											{
-												Action: string(types.Ctl),
-												Param:  "ruleRemoveByTag=OWASP_CRS",
-											},
-											{
-												Action: string(types.Ctl),
-												Param:  "auditEngine=Off",
-											},
+											types.NewAction(types.Ctl, "ruleRemoveByTag=OWASP_CRS"),
+											types.NewAction(types.Ctl, "auditEngine=Off"),
 										},
 									},
 								},
@@ -691,20 +593,11 @@ SecRule REQBODY_PROCESSOR "!@rx (?:URLENCODED|MULTIPART|XML|JSON)" \
 									Value:  "(?:URLENCODED|MULTIPART|XML|JSON)",
 								},
 								Actions: &types.SeclangActions{
-									DisruptiveAction: types.Action{
-										Action: string(types.Pass),
-									},
+									DisruptiveAction: types.NewAction(types.Pass, ""),
 									NonDisruptiveActions: []types.Action{
-										{
-											Action: string(types.NoLog),
-										},
-										{
-											Action: string(types.NoAuditLog),
-										},
-										{
-											Action: string(types.Ctl),
-											Param:  "forceRequestBodyVariable=On",
-										},
+										types.NewAction(types.NoLog, ""),
+										types.NewAction(types.NoAuditLog, ""),
+										types.NewAction(types.Ctl, "forceRequestBodyVariable=On"),
 									},
 								},
 							},

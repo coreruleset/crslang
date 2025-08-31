@@ -391,7 +391,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secruleDirective.Metadata = new(SecRuleMetadata)
 				secruleDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secruleDirective.Actions.FlowActions = []Action{{Action: "chain"}}
+					secruleDirective.Actions.FlowActions = []Action{NewAction(Chain, "")}
 				}
 			}
 			directiveAux = secruleDirective
@@ -407,7 +407,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secactionDirective.Metadata = new(SecRuleMetadata)
 				secactionDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secactionDirective.Actions.FlowActions = []Action{{Action: "chain"}}
+					secactionDirective.Actions.FlowActions = []Action{NewAction(Chain, "")}
 				}
 			}
 			directiveAux = secactionDirective
@@ -423,7 +423,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secscriptDirective.Metadata = new(SecRuleMetadata)
 				secscriptDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secscriptDirective.Actions.FlowActions = []Action{{Action: "chain"}}
+					secscriptDirective.Actions.FlowActions = []Action{NewAction(Chain, "")}
 				}
 			}
 			directiveAux = secscriptDirective
