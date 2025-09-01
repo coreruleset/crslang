@@ -1,6 +1,8 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type SeclangActions struct {
 	DisruptiveAction     Action   `yaml:"disruptive,omitempty"`
@@ -53,7 +55,7 @@ func (a Action) ToString() string {
 		if param == "" {
 			return action
 		} else {
-			return action + ":" + param
+			return action + ":'" + param + "'"
 		}
 	}
 	return ""
