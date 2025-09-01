@@ -242,9 +242,7 @@ func CopyActions(a SeclangActions) *SeclangActions {
 
 func (s *SeclangActions) GetActionKeys() []string {
 	keys := []string{}
-	// if s.DisruptiveAction != nil {
-	// 	keys = append(keys, s.DisruptiveAction.ToString())
-	// }
+	keys = append(keys, s.DisruptiveAction.GetKey())
 	for _, action := range s.NonDisruptiveActions {
 		keys = append(keys, action.GetKey())
 	}
@@ -258,11 +256,9 @@ func (s *SeclangActions) GetActionKeys() []string {
 }
 
 func (s *SeclangActions) GetActionByKey(key string) Action {
-	// if s.DisruptiveAction != nil {
-	// 	if s.DisruptiveAction.ToString() == key {
-	// 		return s.DisruptiveAction
-	// 	}
-	// }
+	if s.DisruptiveAction.Action == key {
+		return s.DisruptiveAction
+	}
 	for _, action := range s.NonDisruptiveActions {
 		if action.GetKey() == key {
 			return action
