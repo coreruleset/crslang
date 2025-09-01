@@ -1,17 +1,19 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type SeclangActions struct {
-	DisruptiveAction     Action   `yaml:"disruptiveAction,omitempty"`
-	NonDisruptiveActions []Action `yaml:"non-disruptiveActions,omitempty"`
-	FlowActions          []Action `yaml:"flowActions,omitempty"`
-	DataActions          []Action `yaml:"dataActions,omitempty"`
+	DisruptiveAction     Action   `yaml:"disruptive,omitempty"`
+	NonDisruptiveActions []Action `yaml:"non-disruptive,omitempty"`
+	FlowActions          []Action `yaml:"flow,omitempty"`
+	DataActions          []Action `yaml:"data,omitempty"`
 }
 
 func (s *SeclangActions) ToString() string {
 	results := []string{}
-	if s.DisruptiveAction.Action != "" {
+	if len(s.DisruptiveAction) > 0 {
 		results = append(results, s.DisruptiveAction.ToString())
 	}
 	for _, action := range s.NonDisruptiveActions {
@@ -38,9 +40,56 @@ func (s *SeclangActions) String() string {
 	return fmt.Sprintf("Disruptive: %v, NonDisruptive: %v, Flow: %v, Data: %v", s.DisruptiveAction, s.NonDisruptiveActions, s.FlowActions, s.DataActions)
 }
 
-type Action struct {
-	Action string `yaml:"action"`
-	Param  string `yaml:"param,omitempty"`
+// Action represents a single action with its parameters
+// It's a map where the key is the action name and the value is the parameter
+type Action map[string]string
+
+// ToString converts the action to its string representation
+func (a Action) ToString() string {
+	if len(a) == 0 {
+		return ""
+	}
+
+	// Get the first (and should be only) key-value pair
+	for action, param := range a {
+		if param == "" {
+			return action
+		} else {
+			return action + ":'" + param + "'"
+		}
+	}
+	return ""
+}
+
+// GetKey returns the action name (first key in the map)
+func (a Action) GetKey() string {
+	for key := range a {
+		return key
+	}
+	return ""
+}
+
+// GetParam returns the parameter value for the action
+func (a Action) GetParam() string {
+	for _, value := range a {
+		return value
+	}
+	return ""
+}
+
+// ActionType is a constraint for all action types
+type ActionType interface {
+	DisruptiveAction | FlowAction | DataAction | NonDisruptiveAction
+}
+
+// NewAction creates a new Action with the given action type and parameter
+// It uses generics to accept DisruptiveAction, FlowAction, DataAction, or NonDisruptiveAction
+func NewAction[T ActionType](action T, param string) Action {
+	actionStr := string(action)
+	if param == "" {
+		return Action{actionStr: ""}
+	}
+	return Action{actionStr: param}
 }
 
 type DisruptiveAction string
@@ -101,130 +150,38 @@ const (
 	SetVar                 NonDisruptiveAction = "setvar"
 )
 
-var (
-	disruptiveActions = map[string]DisruptiveAction{
-		"allow":    Allow,
-		"block":    Block,
-		"deny":     Deny,
-		"drop":     Drop,
-		"pass":     Pass,
-		"pause":    Pause,
-		"proxy":    Proxy,
-		"redirect": Redirect,
-	}
-
-	flowActions = map[string]FlowAction{
-		"chain":     Chain,
-		"skip":      Skip,
-		"skipAfter": SkipAfter,
-	}
-
-	dataActions = map[string]DataAction{
-		"data":   Data,
-		"status": Status,
-		"xmlns":  XLMNS,
-	}
-
-	nonDisruptiveActions = map[string]NonDisruptiveAction{
-		"append":                 Append,
-		"auditlog":               AuditLog,
-		"capture":                Capture,
-		"ctl":                    Ctl,
-		"deprecatevar":           DeprecateVar,
-		"exec":                   Exec,
-		"expirevar":              ExpireVar,
-		"initcol":                InitCol,
-		"log":                    Log,
-		"logdata":                LogData,
-		"multiMatch":             MultiMatch,
-		"noauditlog":             NoAuditLog,
-		"nolog":                  NoLog,
-		"prepend":                Prepend,
-		"sanitiseArg":            SanitiseArg,
-		"sanitiseMatched":        SanitiseMatched,
-		"sanitiseMatchedBytes":   SanitiseMatchedBytes,
-		"sanitiseRequestHeader":  SanitiseRequestHeader,
-		"sanitiseResponseHeader": SanitiseResponseHeader,
-		"setuid":                 SetUid,
-		"setrsc":                 SetRsc,
-		"setsid":                 SetSid,
-		"setenv":                 SetEnv,
-		"setvar":                 SetVar,
-	}
-)
-
-func (a Action) ToString() string {
-	if a.Param == "" {
-		return a.Action
-	} else {
-		return a.Action + ":" + a.Param
-	}
-}
-
-func (a Action) GetKey() string {
-	return a.Action
-}
-
-func (s *SeclangActions) SetDisruptiveActionWithParam(action, value string) error {
-	_, ok := disruptiveActions[action]
-	if !ok {
-		return fmt.Errorf("Disruptive action %s not found", action)
-	}
-	s.DisruptiveAction = Action{Action: action, Param: value}
+func (s *SeclangActions) SetDisruptiveActionWithParam(action DisruptiveAction, value string) error {
+	s.DisruptiveAction = NewAction(action, value)
 	return nil
 }
 
-func (s *SeclangActions) SetDisruptiveActionOnly(action string) error {
-	_, ok := disruptiveActions[action]
-	if !ok {
-		return fmt.Errorf("Disruptive action %s not found", action)
-	}
-	s.DisruptiveAction = Action{Action: action}
+func (s *SeclangActions) SetDisruptiveActionOnly(action DisruptiveAction) error {
+	s.DisruptiveAction = NewAction(action, "")
 	return nil
 }
 
-func (s *SeclangActions) AddNonDisruptiveActionWithParam(action, param string) error {
-	_, ok := nonDisruptiveActions[action]
-	if !ok {
-		return fmt.Errorf("Non-disruptive action %s not found", action)
-	}
-	s.NonDisruptiveActions = append(s.NonDisruptiveActions, Action{Action: action, Param: param})
+func (s *SeclangActions) AddNonDisruptiveActionWithParam(action NonDisruptiveAction, param string) error {
+	s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewAction(action, param))
 	return nil
 }
 
-func (s *SeclangActions) AddNonDisruptiveActionOnly(action string) error {
-	_, ok := nonDisruptiveActions[action]
-	if !ok {
-		return fmt.Errorf("Non-disruptive action %s not found", action)
-	}
-	s.NonDisruptiveActions = append(s.NonDisruptiveActions, Action{Action: action})
+func (s *SeclangActions) AddNonDisruptiveActionOnly(action NonDisruptiveAction) error {
+	s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewAction(action, ""))
 	return nil
 }
 
-func (s *SeclangActions) AddFlowActionWithParam(action, param string) error {
-	_, ok := flowActions[action]
-	if !ok {
-		return fmt.Errorf("Flow action %s not found", action)
-	}
-	s.FlowActions = append(s.FlowActions, Action{Action: action, Param: param})
+func (s *SeclangActions) AddFlowActionWithParam(action FlowAction, param string) error {
+	s.FlowActions = append(s.FlowActions, NewAction(action, param))
 	return nil
 }
 
-func (s *SeclangActions) AddFlowActionOnly(action string) error {
-	_, ok := flowActions[action]
-	if !ok {
-		return fmt.Errorf("Flow action %s not found", action)
-	}
-	s.FlowActions = append(s.FlowActions, Action{Action: action})
+func (s *SeclangActions) AddFlowActionOnly(action FlowAction) error {
+	s.FlowActions = append(s.FlowActions, NewAction(action, ""))
 	return nil
 }
 
-func (s *SeclangActions) AddDataActionWithParams(action, param string) error {
-	_, ok := dataActions[action]
-	if !ok {
-		return fmt.Errorf("Data action %s not found", action)
-	}
-	s.DataActions = append(s.DataActions, Action{Action: action, Param: param})
+func (s *SeclangActions) AddDataActionWithParams(action DataAction, param string) error {
+	s.DataActions = append(s.DataActions, NewAction(action, param))
 	return nil
 }
 
