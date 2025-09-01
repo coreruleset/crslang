@@ -30,6 +30,10 @@ func (d SecRule) GetActions() *SeclangActions {
 	return d.Actions
 }
 
+func (d SecRule) GetTransformations() Transformations {
+	return d.Transformations
+}
+
 func (s *SecRule) AddVariable(name string, excluded bool) error {
 	variable, err := GetVariable(name)
 	if err != nil {

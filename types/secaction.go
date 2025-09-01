@@ -22,6 +22,10 @@ func (d SecAction) GetActions() *SeclangActions {
 	return d.Actions
 }
 
+func (d SecAction) GetTransformations() Transformations {
+	return d.Transformations
+}
+
 func (s *SecAction) AppendChainedDirective(chainedDirective ChainableDirective) {
 	s.ChainedRule = chainedDirective
 }

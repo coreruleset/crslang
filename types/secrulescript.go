@@ -28,6 +28,10 @@ func (d SecRuleScript) GetActions() *SeclangActions {
 	return d.Actions
 }
 
+func (d SecRuleScript) GetTransformations() Transformations {
+	return d.Transformations
+}
+
 func (s SecRuleScript) ToSeclang() string {
 	return s.ToSeclangWithIdent("")
 }
