@@ -1,5 +1,7 @@
 package types
 
+import "slices"
+
 type SecAction struct {
 	Metadata        *SecRuleMetadata `yaml:"metadata,omitempty"`
 	Transformations `yaml:",inline"`
@@ -22,6 +24,10 @@ func (d SecAction) GetActions() *SeclangActions {
 	return d.Actions
 }
 
+func (d SecAction) GetTransformations() Transformations {
+	return d.Transformations
+}
+
 func (s *SecAction) AppendChainedDirective(chainedDirective ChainableDirective) {
 	s.ChainedRule = chainedDirective
 }
@@ -35,20 +41,32 @@ func (s SecAction) NonDisruptiveActionsCount() int {
 }
 
 func (s SecAction) ToSeclang() string {
-	result := ""
-	result += s.Metadata.Comment + "SecAction \"phase:" + s.Metadata.Phase
-	actions := s.Actions.ToString()
-	transformations := s.Transformations.ToString()
-	if actions != "" {
-		result += "," + actions
-	}
-	if transformations != "" {
-		result += ", " + transformations
-	}
-	result += "\"\n"
-	return result
+	return s.ToSeclangWithIdent("")
 }
 
 func (s SecAction) ToSeclangWithIdent(initialString string) string {
-	return initialString + s.ToSeclang()
+	auxString := ",\\\n" + initialString + "    "
+	endString := ""
+
+	result := ""
+	result += s.Metadata.Comment + initialString + "SecAction"
+	sortedActions := sortActions(&s)
+	for i, action := range sortedActions {
+		if i == 0 {
+			result += " \\\n" + initialString + "    \""
+		} else {
+			result += auxString
+		}
+		result += action
+		if i == len(sortedActions)-1 {
+			result += "\""
+		} else {
+			result += endString
+		}
+	}
+	result += "\n"
+	if slices.Contains(s.Actions.GetActionKeys(), "chain") {
+		result += (s.ChainedRule).ToSeclangWithIdent(initialString + "    ")
+	}
+	return result
 }

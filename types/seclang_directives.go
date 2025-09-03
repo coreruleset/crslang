@@ -8,6 +8,9 @@ type SeclangDirective interface {
 
 type ChainableDirective interface {
 	SeclangDirective
+	GetMetadata() Metadata
+	GetActions() *SeclangActions
+	GetTransformations() Transformations
 	ToSeclangWithIdent(string) string
 	GetChainedDirective() ChainableDirective
 	AppendChainedDirective(ChainableDirective)

@@ -101,7 +101,7 @@ func (t *Transformations) AddTransformation(transformation string) error {
 	return nil
 }
 
-func (t *Transformations) ToString() string {
+func (t Transformations) ToString() string {
 	results := []string{}
 	for _, transformation := range t.Transformations {
 		results = append(results, string(transformation))
