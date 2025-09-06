@@ -54,6 +54,8 @@ func (a Action) ToString() string {
 	for action, param := range a {
 		if param == "" {
 			return action
+		} else if action == "ctl" {
+			return action + ":" + param + ""
 		} else {
 			return action + ":'" + param + "'"
 		}
