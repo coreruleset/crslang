@@ -38,5 +38,6 @@ jobs:
           mkdir crs/util/crs-rules-check/rules
           go run . -s -o crs/util/crs-rules-check/rules output.yaml
           cd crs/util/crs-rules-check
+          git describe --tags
           pip install -r requirements.txt
           python rules-check.py -t ../APPROVED_TAGS -r rules/*.conf
