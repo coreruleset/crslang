@@ -31,6 +31,7 @@ jobs:
           repository: coreruleset/coreruleset
           path: crs
           ref: 8edc58f3ef4d664577e14e5132072559ff30cb34
+          fetch-tags: true
 
       - name: Check format
         run: |
