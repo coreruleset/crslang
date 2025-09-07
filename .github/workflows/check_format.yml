@@ -35,9 +35,8 @@ jobs:
       - name: Check format
         run: |
           go run . -o output crs/rules/
-          ls -R
           mkdir crs/util/crs-rules-check/rules
           go run . -s -o crs/util/crs-rules-check/rules output.yaml
           cd crs/util/crs-rules-check
           pip install -r requirements.txt
-          rules-check.py -t ../APPROVED_TAGS -r rules/*.conf
+          python rules-check.py -t ../APPROVED_TAGS -r rules/*.conf
