@@ -30,7 +30,7 @@ jobs:
         with:
           repository: coreruleset/coreruleset
           path: crs
-          ref: 8edc58f
+          ref: 8edc58f3ef4d664577e14e5132072559ff30cb34
 
       - name: Check format
         run: |
