@@ -79,18 +79,18 @@ func CollectionsToString(collections []Collection, separator string) string {
 			}
 			result += string(collection.Name)
 		} else {
-			for _, arg := range collection.Arguments {
+			for j, arg := range collection.Arguments {
 				if collection.Count {
 					result += "&"
 				}
 				result += string(collection.Name) + ":" + arg
-				if i != len(collection.Arguments)-1 || len(collection.Excluded) > 0 {
+				if j != len(collection.Arguments)-1 || len(collection.Excluded) > 0 {
 					result += separator
 				}
 			}
-			for _, excluded := range collection.Excluded {
+			for j, excluded := range collection.Excluded {
 				result += "!" + string(collection.Name) + ":" + excluded
-				if i != len(collection.Excluded)-1 {
+				if j != len(collection.Excluded)-1 {
 					result += separator
 				}
 			}

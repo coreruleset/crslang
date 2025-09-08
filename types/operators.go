@@ -115,5 +115,9 @@ func (o *Operator) SetOperatorNot(not bool) {
 }
 
 func (o *Operator) ToString() string {
-	return "@" + string(o.Name) + " " + o.Value
+	if o.Value != "" {
+		return "@" + string(o.Name) + " " + o.Value
+	} else {
+		return "@" + string(o.Name)
+	}
 }
