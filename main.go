@@ -12,9 +12,9 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/coreruleset/crslang/listener"
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
-	"gopkg.in/yaml.v3"
+	"github.com/coreruleset/seclang_parser/parser"
+	"go.yaml.in/yaml/v4"
 )
 
 var (
