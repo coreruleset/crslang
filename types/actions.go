@@ -13,7 +13,7 @@ type SeclangActions struct {
 
 func (s *SeclangActions) ToString() string {
 	results := []string{}
-	if len(s.DisruptiveAction) > 0 {
+	if s.DisruptiveAction != nil {
 		results = append(results, s.DisruptiveAction.ToString())
 	}
 	for _, action := range s.NonDisruptiveActions {
@@ -40,12 +40,38 @@ func (s *SeclangActions) String() string {
 	return fmt.Sprintf("Disruptive: %v, NonDisruptive: %v, Flow: %v, Data: %v", s.DisruptiveAction, s.NonDisruptiveActions, s.FlowActions, s.DataActions)
 }
 
-// Action represents a single action with its parameters
+// Action interface represents a generic action
+type Action interface {
+	GetKey() string
+	ToString() string
+}
+
+// ActionOnly represents an action without parameters
+type ActionOnly string
+
+// GetKey returns the action name
+func (a ActionOnly) GetKey() string {
+	return string(a)
+}
+
+// ToString returns the string representation of the action
+func (a ActionOnly) ToString() string {
+	return string(a)
+}
+
+// NewActionOnly creates a new NewActionOnly with the given action type
+// It uses generics to accept DisruptiveAction, FlowAction, DataAction, or NonDisruptiveAction
+func NewActionOnly[T ActionType](action T) Action {
+	actionStr := string(action)
+	return ActionOnly(actionStr)
+}
+
+// ActionWithParam represents a single action with its parameters
 // It's a map where the key is the action name and the value is the parameter
-type Action map[string]string
+type ActionWithParam map[string]string
 
 // ToString converts the action to its string representation
-func (a Action) ToString() string {
+func (a ActionWithParam) ToString() string {
 	if len(a) == 0 {
 		return ""
 	}
@@ -64,7 +90,7 @@ func (a Action) ToString() string {
 }
 
 // GetKey returns the action name (first key in the map)
-func (a Action) GetKey() string {
+func (a ActionWithParam) GetKey() string {
 	for key := range a {
 		return key
 	}
@@ -72,7 +98,7 @@ func (a Action) GetKey() string {
 }
 
 // GetParam returns the parameter value for the action
-func (a Action) GetParam() string {
+func (a ActionWithParam) GetParam() string {
 	for _, value := range a {
 		return value
 	}
@@ -84,14 +110,14 @@ type ActionType interface {
 	DisruptiveAction | FlowAction | DataAction | NonDisruptiveAction
 }
 
-// NewAction creates a new Action with the given action type and parameter
+// NewActionWithParam creates a new NewActionWithParam with the given action type and parameter
 // It uses generics to accept DisruptiveAction, FlowAction, DataAction, or NonDisruptiveAction
-func NewAction[T ActionType](action T, param string) Action {
+func NewActionWithParam[T ActionType](action T, param string) Action {
 	actionStr := string(action)
 	if param == "" {
-		return Action{actionStr: ""}
+		return ActionWithParam{actionStr: ""}
 	}
-	return Action{actionStr: param}
+	return ActionWithParam{actionStr: param}
 }
 
 type DisruptiveAction string
@@ -153,37 +179,37 @@ const (
 )
 
 func (s *SeclangActions) SetDisruptiveActionWithParam(action DisruptiveAction, value string) error {
-	s.DisruptiveAction = NewAction(action, value)
+	s.DisruptiveAction = NewActionWithParam(action, value)
 	return nil
 }
 
 func (s *SeclangActions) SetDisruptiveActionOnly(action DisruptiveAction) error {
-	s.DisruptiveAction = NewAction(action, "")
+	s.DisruptiveAction = NewActionOnly(action)
 	return nil
 }
 
 func (s *SeclangActions) AddNonDisruptiveActionWithParam(action NonDisruptiveAction, param string) error {
-	s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewAction(action, param))
+	s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewActionWithParam(action, param))
 	return nil
 }
 
 func (s *SeclangActions) AddNonDisruptiveActionOnly(action NonDisruptiveAction) error {
-	s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewAction(action, ""))
+	s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewActionOnly(action))
 	return nil
 }
 
 func (s *SeclangActions) AddFlowActionWithParam(action FlowAction, param string) error {
-	s.FlowActions = append(s.FlowActions, NewAction(action, param))
+	s.FlowActions = append(s.FlowActions, NewActionWithParam(action, param))
 	return nil
 }
 
 func (s *SeclangActions) AddFlowActionOnly(action FlowAction) error {
-	s.FlowActions = append(s.FlowActions, NewAction(action, ""))
+	s.FlowActions = append(s.FlowActions, NewActionOnly(action))
 	return nil
 }
 
 func (s *SeclangActions) AddDataActionWithParams(action DataAction, param string) error {
-	s.DataActions = append(s.DataActions, NewAction(action, param))
+	s.DataActions = append(s.DataActions, NewActionWithParam(action, param))
 	return nil
 }
 
@@ -201,7 +227,9 @@ func CopyActions(a SeclangActions) *SeclangActions {
 
 func (s *SeclangActions) GetActionKeys() []string {
 	keys := []string{}
-	keys = append(keys, s.DisruptiveAction.GetKey())
+	if s.DisruptiveAction != nil {
+		keys = append(keys, s.DisruptiveAction.GetKey())
+	}
 	for _, action := range s.NonDisruptiveActions {
 		keys = append(keys, action.GetKey())
 	}
@@ -215,7 +243,7 @@ func (s *SeclangActions) GetActionKeys() []string {
 }
 
 func (s *SeclangActions) GetActionByKey(key string) Action {
-	if s.DisruptiveAction.GetKey() == key {
+	if s.DisruptiveAction != nil && s.DisruptiveAction.GetKey() == key {
 		return s.DisruptiveAction
 	}
 	for _, action := range s.NonDisruptiveActions {
@@ -233,11 +261,11 @@ func (s *SeclangActions) GetActionByKey(key string) Action {
 			return action
 		}
 	}
-	return Action{}
+	return ActionWithParam{}
 }
 
-func (s *SeclangActions) GetActionsByKey(key string) []Action {
-	actions := []Action{}
+func (s *SeclangActions) GetActionsByKey(key string) []ActionWithParam {
+	actions := []ActionWithParam{}
 	// if s.DisruptiveAction != nil {
 	// 	if s.DisruptiveAction.ToString() == key {
 	// 		actions = append(actions, s.DisruptiveAction)
@@ -245,17 +273,26 @@ func (s *SeclangActions) GetActionsByKey(key string) []Action {
 	// }
 	for _, action := range s.NonDisruptiveActions {
 		if action.GetKey() == key {
-			actions = append(actions, action)
+			aP, ok := action.(ActionWithParam)
+			if ok {
+				actions = append(actions, aP)
+			}
 		}
 	}
 	for _, action := range s.FlowActions {
 		if action.GetKey() == key {
-			actions = append(actions, action)
+			aP, ok := action.(ActionWithParam)
+			if ok {
+				actions = append(actions, aP)
+			}
 		}
 	}
 	for _, action := range s.DataActions {
 		if action.GetKey() == key {
-			actions = append(actions, action)
+			aP, ok := action.(ActionWithParam)
+			if ok {
+				actions = append(actions, aP)
+			}
 		}
 	}
 	return actions

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"os"
 
 	"go.yaml.in/yaml/v4"
@@ -156,6 +157,61 @@ type conditionDirectiveLoader struct {
 	Conditions  yaml.Node       `yaml:"conditions,omitempty"`
 	Actions     SeclangActions  `yaml:"actions,omitempty"`
 	ChainedRule yaml.Node       `yaml:"chainedRule"`
+}
+
+// UnmarshalYAML unmarshals a YAML node into a SeclangActions struct
+// it converts the actions to their respective types
+func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
+	var raw map[string]interface{}
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	for k, v := range raw {
+		switch k {
+		case "disruptive":
+			switch val := v.(type) {
+			case string:
+				s.DisruptiveAction = NewActionOnly(DisruptiveAction(val))
+			case map[string]interface{}:
+				if len(v.(map[string]interface{})) != 1 {
+					return fmt.Errorf("Error: invalid format for disruptive action")
+				}
+				for a, p := range val {
+					s.DisruptiveAction = NewActionWithParam(DisruptiveAction(a), p.(string))
+				}
+			}
+		case "non-disruptive", "flow", "data":
+			for _, action := range v.([]interface{}) {
+				switch act := action.(type) {
+				case string:
+					switch k {
+					case "non-disruptive":
+						s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewActionOnly(NonDisruptiveAction(act)))
+					case "flow":
+						s.FlowActions = append(s.FlowActions, NewActionOnly(FlowAction(act)))
+					case "data":
+						s.DataActions = append(s.DataActions, NewActionOnly(DataAction(act)))
+					}
+				case map[string]interface{}:
+					if len(act) != 1 {
+						return fmt.Errorf("Error: invalid format for non-disruptive action")
+					}
+					for a, p := range act {
+						switch k {
+						case "non-disruptive":
+							s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewActionWithParam(NonDisruptiveAction(a), p.(string)))
+						case "flow":
+							s.FlowActions = append(s.FlowActions, NewActionWithParam(FlowAction(a), p.(string)))
+						case "data":
+							s.DataActions = append(s.DataActions, NewActionWithParam(DataAction(a), p.(string)))
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // LoadDirectivesWithConditionsFromFile loads condition format directives from a yaml file
@@ -391,7 +447,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secruleDirective.Metadata = new(SecRuleMetadata)
 				secruleDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secruleDirective.Actions.FlowActions = []Action{NewAction(Chain, "")}
+					secruleDirective.Actions.FlowActions = []Action{NewActionOnly(Chain)}
 				}
 			}
 			directiveAux = secruleDirective
@@ -407,7 +463,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secactionDirective.Metadata = new(SecRuleMetadata)
 				secactionDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secactionDirective.Actions.FlowActions = []Action{NewAction(Chain, "")}
+					secactionDirective.Actions.FlowActions = []Action{NewActionOnly(Chain)}
 				}
 			}
 			directiveAux = secactionDirective
@@ -423,7 +479,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secscriptDirective.Metadata = new(SecRuleMetadata)
 				secscriptDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secscriptDirective.Actions.FlowActions = []Action{NewAction(Chain, "")}
+					secscriptDirective.Actions.FlowActions = []Action{NewActionOnly(Chain)}
 				}
 			}
 			directiveAux = secscriptDirective
