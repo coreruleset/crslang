@@ -82,25 +82,14 @@ func (a Action) GetParam() string {
 // ActionType is a constraint for all action types
 type ActionType interface {
 	DisruptiveAction | FlowAction | DataAction | NonDisruptiveAction
+	String() string
 }
 
 // NewAction creates a new Action with the given action type and parameter
 // It uses generics to accept DisruptiveAction, FlowAction, DataAction, or NonDisruptiveAction
 func NewAction[T ActionType](action T, param string) (Action, error) {
 	// Use the String() method to get the string representation
-	var actionStr string
-	switch v := any(action).(type) {
-	case DisruptiveAction:
-		actionStr = v.String()
-	case FlowAction:
-		actionStr = v.String()
-	case DataAction:
-		actionStr = v.String()
-	case NonDisruptiveAction:
-		actionStr = v.String()
-	default:
-		return Action{}, fmt.Errorf("unknown action type: %T", action)
-	}
+	actionStr := action.String()
 
 	// Check if the action is an Unknown value
 	if actionStr == "unknown" {
