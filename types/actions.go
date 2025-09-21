@@ -82,108 +82,260 @@ func (a Action) GetParam() string {
 // ActionType is a constraint for all action types
 type ActionType interface {
 	DisruptiveAction | FlowAction | DataAction | NonDisruptiveAction
+	String() string
 }
 
 // NewAction creates a new Action with the given action type and parameter
 // It uses generics to accept DisruptiveAction, FlowAction, DataAction, or NonDisruptiveAction
-func NewAction[T ActionType](action T, param string) Action {
-	actionStr := string(action)
-	if param == "" {
-		return Action{actionStr: ""}
+func NewAction[T ActionType](action T, param string) (Action, error) {
+	// Use the String() method to get the string representation
+	actionStr := action.String()
+
+	// Check if the action is an Unknown value
+	if actionStr == "unknown" {
+		return Action{}, fmt.Errorf("invalid action: unknown action type")
 	}
-	return Action{actionStr: param}
+
+	if param == "" {
+		return Action{actionStr: ""}, nil
+	}
+	return Action{actionStr: param}, nil
 }
 
-type DisruptiveAction string
+type DisruptiveAction int
 
 const (
-	Allow    DisruptiveAction = "allow"
-	Block    DisruptiveAction = "block"
-	Deny     DisruptiveAction = "deny"
-	Drop     DisruptiveAction = "drop"
-	Pass     DisruptiveAction = "pass"
-	Pause    DisruptiveAction = "pause"
-	Proxy    DisruptiveAction = "proxy"
-	Redirect DisruptiveAction = "redirect"
+	Allow DisruptiveAction = iota
+	Block
+	Deny
+	Drop
+	Pass
+	Pause
+	Proxy
+	Redirect
+	Unknown
 )
 
-type FlowAction string
+func (d DisruptiveAction) String() string {
+	switch d {
+	case Allow:
+		return "allow"
+	case Block:
+		return "block"
+	case Deny:
+		return "deny"
+	case Drop:
+		return "drop"
+	case Pass:
+		return "pass"
+	case Pause:
+		return "pause"
+	case Proxy:
+		return "proxy"
+	case Redirect:
+		return "redirect"
+	case Unknown:
+		return "unknown"
+	default:
+		return "unknown"
+	}
+}
+
+type FlowAction int
 
 const (
-	Chain     FlowAction = "chain"
-	Skip      FlowAction = "skip"
-	SkipAfter FlowAction = "skipAfter"
+	Chain FlowAction = iota
+	Skip
+	SkipAfter
+	FlowUnknown
 )
 
-type DataAction string
+func (f FlowAction) String() string {
+	switch f {
+	case Chain:
+		return "chain"
+	case Skip:
+		return "skip"
+	case SkipAfter:
+		return "skipAfter"
+	case FlowUnknown:
+		return "unknown"
+	default:
+		return "unknown"
+	}
+}
+
+type DataAction int
 
 const (
-	Data   DataAction = "data"
-	Status DataAction = "status"
-	XLMNS  DataAction = "xmlns"
+	Data DataAction = iota
+	Status
+	XLMNS
+	DataUnknown
 )
 
-type NonDisruptiveAction string
+func (d DataAction) String() string {
+	switch d {
+	case Data:
+		return "data"
+	case Status:
+		return "status"
+	case XLMNS:
+		return "xmlns"
+	case DataUnknown:
+		return "unknown"
+	default:
+		return "unknown"
+	}
+}
+
+type NonDisruptiveAction int
 
 const (
-	Append                 NonDisruptiveAction = "append"
-	AuditLog               NonDisruptiveAction = "auditlog"
-	Capture                NonDisruptiveAction = "capture"
-	Ctl                    NonDisruptiveAction = "ctl"
-	DeprecateVar           NonDisruptiveAction = "deprecatevar"
-	Exec                   NonDisruptiveAction = "exec"
-	ExpireVar              NonDisruptiveAction = "expirevar"
-	InitCol                NonDisruptiveAction = "initcol"
-	Log                    NonDisruptiveAction = "log"
-	LogData                NonDisruptiveAction = "logdata"
-	MultiMatch             NonDisruptiveAction = "multiMatch"
-	NoAuditLog             NonDisruptiveAction = "noauditlog"
-	NoLog                  NonDisruptiveAction = "nolog"
-	Prepend                NonDisruptiveAction = "prepend"
-	SanitiseArg            NonDisruptiveAction = "sanitiseArg"
-	SanitiseMatched        NonDisruptiveAction = "sanitiseMatched"
-	SanitiseMatchedBytes   NonDisruptiveAction = "sanitiseMatchedBytes"
-	SanitiseRequestHeader  NonDisruptiveAction = "sanitiseRequestHeader"
-	SanitiseResponseHeader NonDisruptiveAction = "sanitiseResponseHeader"
-	SetUid                 NonDisruptiveAction = "setuid"
-	SetRsc                 NonDisruptiveAction = "setrsc"
-	SetSid                 NonDisruptiveAction = "setsid"
-	SetEnv                 NonDisruptiveAction = "setenv"
-	SetVar                 NonDisruptiveAction = "setvar"
+	Append NonDisruptiveAction = iota
+	AuditLog
+	Capture
+	Ctl
+	DeprecateVar
+	Exec
+	ExpireVar
+	InitCol
+	Log
+	LogData
+	MultiMatch
+	NoAuditLog
+	NoLog
+	Prepend
+	SanitiseArg
+	SanitiseMatched
+	SanitiseMatchedBytes
+	SanitiseRequestHeader
+	SanitiseResponseHeader
+	SetUid
+	SetRsc
+	SetSid
+	SetEnv
+	SetVar
+	NonDisruptiveUnknown
 )
+
+func (n NonDisruptiveAction) String() string {
+	switch n {
+	case Append:
+		return "append"
+	case AuditLog:
+		return "auditlog"
+	case Capture:
+		return "capture"
+	case Ctl:
+		return "ctl"
+	case DeprecateVar:
+		return "deprecatevar"
+	case Exec:
+		return "exec"
+	case ExpireVar:
+		return "expirevar"
+	case InitCol:
+		return "initcol"
+	case Log:
+		return "log"
+	case LogData:
+		return "logdata"
+	case MultiMatch:
+		return "multiMatch"
+	case NoAuditLog:
+		return "noauditlog"
+	case NoLog:
+		return "nolog"
+	case Prepend:
+		return "prepend"
+	case SanitiseArg:
+		return "sanitiseArg"
+	case SanitiseMatched:
+		return "sanitiseMatched"
+	case SanitiseMatchedBytes:
+		return "sanitiseMatchedBytes"
+	case SanitiseRequestHeader:
+		return "sanitiseRequestHeader"
+	case SanitiseResponseHeader:
+		return "sanitiseResponseHeader"
+	case SetUid:
+		return "setuid"
+	case SetRsc:
+		return "setrsc"
+	case SetSid:
+		return "setsid"
+	case SetEnv:
+		return "setenv"
+	case SetVar:
+		return "setvar"
+	case NonDisruptiveUnknown:
+		return "unknown"
+	default:
+		return "unknown"
+	}
+}
 
 func (s *SeclangActions) SetDisruptiveActionWithParam(action DisruptiveAction, value string) error {
-	s.DisruptiveAction = NewAction(action, value)
+	newAction, err := NewAction(action, value)
+	if err != nil {
+		return err
+	}
+	s.DisruptiveAction = newAction
 	return nil
 }
 
 func (s *SeclangActions) SetDisruptiveActionOnly(action DisruptiveAction) error {
-	s.DisruptiveAction = NewAction(action, "")
+	newAction, err := NewAction(action, "")
+	if err != nil {
+		return err
+	}
+	s.DisruptiveAction = newAction
 	return nil
 }
 
 func (s *SeclangActions) AddNonDisruptiveActionWithParam(action NonDisruptiveAction, param string) error {
-	s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewAction(action, param))
+	newAction, err := NewAction(action, param)
+	if err != nil {
+		return err
+	}
+	s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
 	return nil
 }
 
 func (s *SeclangActions) AddNonDisruptiveActionOnly(action NonDisruptiveAction) error {
-	s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewAction(action, ""))
+	newAction, err := NewAction(action, "")
+	if err != nil {
+		return err
+	}
+	s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
 	return nil
 }
 
 func (s *SeclangActions) AddFlowActionWithParam(action FlowAction, param string) error {
-	s.FlowActions = append(s.FlowActions, NewAction(action, param))
+	newAction, err := NewAction(action, param)
+	if err != nil {
+		return err
+	}
+	s.FlowActions = append(s.FlowActions, newAction)
 	return nil
 }
 
 func (s *SeclangActions) AddFlowActionOnly(action FlowAction) error {
-	s.FlowActions = append(s.FlowActions, NewAction(action, ""))
+	newAction, err := NewAction(action, "")
+	if err != nil {
+		return err
+	}
+	s.FlowActions = append(s.FlowActions, newAction)
 	return nil
 }
 
 func (s *SeclangActions) AddDataActionWithParams(action DataAction, param string) error {
-	s.DataActions = append(s.DataActions, NewAction(action, param))
+	newAction, err := NewAction(action, param)
+	if err != nil {
+		return err
+	}
+	s.DataActions = append(s.DataActions, newAction)
 	return nil
 }
 

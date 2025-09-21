@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"os"
 
 	"go.yaml.in/yaml/v4"
@@ -391,7 +392,11 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secruleDirective.Metadata = new(SecRuleMetadata)
 				secruleDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secruleDirective.Actions.FlowActions = []Action{NewAction(Chain, "")}
+					chainAction, err := NewAction(Chain, "")
+					if err != nil {
+						panic(fmt.Sprintf("failed to create chain action: %v", err))
+					}
+					secruleDirective.Actions.FlowActions = []Action{chainAction}
 				}
 			}
 			directiveAux = secruleDirective
@@ -407,7 +412,11 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secactionDirective.Metadata = new(SecRuleMetadata)
 				secactionDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secactionDirective.Actions.FlowActions = []Action{NewAction(Chain, "")}
+					chainAction, err := NewAction(Chain, "")
+					if err != nil {
+						panic(fmt.Sprintf("failed to create chain action: %v", err))
+					}
+					secactionDirective.Actions.FlowActions = []Action{chainAction}
 				}
 			}
 			directiveAux = secactionDirective
@@ -423,7 +432,11 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secscriptDirective.Metadata = new(SecRuleMetadata)
 				secscriptDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secscriptDirective.Actions.FlowActions = []Action{NewAction(Chain, "")}
+					chainAction, err := NewAction(Chain, "")
+					if err != nil {
+						panic(fmt.Sprintf("failed to create chain action: %v", err))
+					}
+					secscriptDirective.Actions.FlowActions = []Action{chainAction}
 				}
 			}
 			directiveAux = secscriptDirective
