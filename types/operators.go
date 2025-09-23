@@ -226,6 +226,9 @@ func stringToOperatorType(name string) OperatorType {
 }
 
 func (o OperatorType) MarshalYAML() (interface{}, error) {
+	if o == UnknownOperator {
+		return nil, fmt.Errorf("unknown operator type")
+	}
 	return o.String(), nil
 }
 
