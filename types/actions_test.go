@@ -4,7 +4,82 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.yaml.in/yaml/v4"
 )
+
+// Helper functions to create actions for tests, panicking on error
+func mustNewActionOnly[T ActionType](action T) Action {
+	newAction, err := NewActionOnly(action)
+	if err != nil {
+		panic(err)
+	}
+	return newAction
+}
+
+func mustNewActionWithParam[T ActionType](action T, param string) Action {
+	newAction, err := NewActionWithParam(action, param)
+	if err != nil {
+		panic(err)
+	}
+	return newAction
+}
+
+var (
+	unmarshalTests = []struct {
+		input    string
+		expected SeclangActions
+	}{
+		{
+			input: `
+disruptive: block
+non-disruptive:
+    - capture
+    - logdata: 'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}'
+    - setvar: tx.rfi_parameter_%{MATCHED_VAR_NAME}=.%{tx.1}
+flow:
+    - chain`,
+			expected: SeclangActions{
+				DisruptiveAction: mustNewActionOnly(Block),
+				NonDisruptiveActions: []Action{
+					mustNewActionOnly(Capture),
+					mustNewActionWithParam(LogData, "Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}"),
+					mustNewActionWithParam(SetVar, "tx.rfi_parameter_%{MATCHED_VAR_NAME}=.%{tx.1}"),
+				},
+				FlowActions: []Action{
+					mustNewActionOnly(Chain),
+				},
+			},
+		},
+		{
+			input: `
+disruptive: deny
+non-disruptive:
+    - log
+data:
+    - status: "500"`,
+			expected: SeclangActions{
+				DisruptiveAction: mustNewActionOnly(Deny),
+				NonDisruptiveActions: []Action{
+					mustNewActionOnly(Log),
+				},
+				DataActions: []Action{
+					mustNewActionWithParam(Status, "500"),
+				},
+			},
+		},
+	}
+)
+
+func TestUnmarshalActions(t *testing.T) {
+	for _, tt := range unmarshalTests {
+		t.Run("Unmarshal actions from YAML", func(t *testing.T) {
+			var result SeclangActions
+			err := yaml.Unmarshal([]byte(tt.input), &result)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
 
 func TestNewActionWithUnknownActions(t *testing.T) {
 	t.Run("DisruptiveAction Unknown should return error", func(t *testing.T) {
