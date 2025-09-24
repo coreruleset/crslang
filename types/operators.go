@@ -1,6 +1,8 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Operator struct {
 	Negate bool         `yaml:"negate,omitempty"`
@@ -8,98 +10,245 @@ type Operator struct {
 	Value  string       `yaml:",omitempty"`
 }
 
-type OperatorType string
+type OperatorType int
 
 const (
-	BeginsWith           OperatorType = "beginsWith"
-	Contains             OperatorType = "contains"
-	ContainsWord         OperatorType = "containsWord"
-	DetectSQLi           OperatorType = "detectSQLi"
-	DetectXSS            OperatorType = "detectXSS"
-	EndsWith             OperatorType = "endsWith"
-	Eq                   OperatorType = "eq"
-	FuzzyHash            OperatorType = "fuzzyHash"
-	Ge                   OperatorType = "ge"
-	GeoLookup            OperatorType = "geoLookup"
-	GsbLookup            OperatorType = "gsbLookup"
-	Gt                   OperatorType = "gt"
-	InspectFile          OperatorType = "inspectFile"
-	IpMatchF             OperatorType = "ipMatchF"
-	IpMatchFromFile      OperatorType = "ipMatchFromFile"
-	IpMatch              OperatorType = "ipMatch"
-	Le                   OperatorType = "le"
-	Lt                   OperatorType = "lt"
-	Pmf                  OperatorType = "pmf"
-	PmFromFile           OperatorType = "pmFromFile"
-	Pm                   OperatorType = "pm"
-	Rbl                  OperatorType = "rbl"
-	Rsub                 OperatorType = "rsub"
-	Rx                   OperatorType = "rx"
-	RxGlobal             OperatorType = "rxGlobal"
-	StrEq                OperatorType = "streq"
-	StrMatch             OperatorType = "strmatch"
-	UnconditionalMatch   OperatorType = "unconditionalMatch"
-	ValidateByteRange    OperatorType = "validateByteRange"
-	ValidateDTD          OperatorType = "validateDTD"
-	ValidateHash         OperatorType = "validateHash"
-	ValidateSchema       OperatorType = "validateSchema"
-	ValidateUrlEncoding  OperatorType = "validateUrlEncoding"
-	ValidateUtf8Encoding OperatorType = "validateUtf8Encoding"
-	VerifyCC             OperatorType = "verifyCC"
-	VerifyCPF            OperatorType = "verifyCPF"
-	VerifySSN            OperatorType = "verifySSN"
-	VerifySVNR           OperatorType = "verifySVNR"
-	Within               OperatorType = "within"
+	UnknownOperator OperatorType = iota
+	BeginsWith
+	Contains
+	ContainsWord
+	DetectSQLi
+	DetectXSS
+	EndsWith
+	Eq
+	FuzzyHash
+	Ge
+	GeoLookup
+	GsbLookup
+	Gt
+	InspectFile
+	IpMatchF
+	IpMatchFromFile
+	IpMatch
+	Le
+	Lt
+	Pmf
+	PmFromFile
+	Pm
+	Rbl
+	Rsub
+	Rx
+	RxGlobal
+	StrEq
+	StrMatch
+	UnconditionalMatch
+	ValidateByteRange
+	ValidateDTD
+	ValidateHash
+	ValidateSchema
+	ValidateUrlEncoding
+	ValidateUtf8Encoding
+	VerifyCC
+	VerifyCPF
+	VerifySSN
+	VerifySVNR
+	Within
 )
 
-var (
-	allOperators = map[string]OperatorType{
-		"beginsWith":           BeginsWith,
-		"contains":             Contains,
-		"containsWord":         ContainsWord,
-		"detectSQLi":           DetectSQLi,
-		"detectXSS":            DetectXSS,
-		"endsWith":             EndsWith,
-		"eq":                   Eq,
-		"fuzzyHash":            FuzzyHash,
-		"ge":                   Ge,
-		"geoLookup":            GeoLookup,
-		"gsbLookup":            GsbLookup,
-		"gt":                   Gt,
-		"inspectFile":          InspectFile,
-		"ipMatchF":             IpMatchF,
-		"ipMatchFromFile":      IpMatchFromFile,
-		"ipMatch":              IpMatch,
-		"le":                   Le,
-		"lt":                   Lt,
-		"pmf":                  Pmf,
-		"pmFromFile":           PmFromFile,
-		"pm":                   Pm,
-		"rbl":                  Rbl,
-		"rsub":                 Rsub,
-		"rx":                   Rx,
-		"rxGlobal":             RxGlobal,
-		"streq":                StrEq,
-		"strmatch":             StrMatch,
-		"unconditionalMatch":   UnconditionalMatch,
-		"validateByteRange":    ValidateByteRange,
-		"validateDTD":          ValidateDTD,
-		"validateHash":         ValidateHash,
-		"validateSchema":       ValidateSchema,
-		"validateUrlEncoding":  ValidateUrlEncoding,
-		"validateUtf8Encoding": ValidateUtf8Encoding,
-		"verifyCC":             VerifyCC,
-		"verifyCPF":            VerifyCPF,
-		"verifySSN":            VerifySSN,
-		"verifySVNR":           VerifySVNR,
-		"within":               Within,
+func (o OperatorType) String() string {
+	switch o {
+	case BeginsWith:
+		return "beginsWith"
+	case Contains:
+		return "contains"
+	case ContainsWord:
+		return "containsWord"
+	case DetectSQLi:
+		return "detectSQLi"
+	case DetectXSS:
+		return "detectXSS"
+	case EndsWith:
+		return "endsWith"
+	case Eq:
+		return "eq"
+	case FuzzyHash:
+		return "fuzzyHash"
+	case Ge:
+		return "ge"
+	case GeoLookup:
+		return "geoLookup"
+	case GsbLookup:
+		return "gsbLookup"
+	case Gt:
+		return "gt"
+	case InspectFile:
+		return "inspectFile"
+	case IpMatchF:
+		return "ipMatchF"
+	case IpMatchFromFile:
+		return "ipMatchFromFile"
+	case IpMatch:
+		return "ipMatch"
+	case Le:
+		return "le"
+	case Lt:
+		return "lt"
+	case Pmf:
+		return "pmf"
+	case PmFromFile:
+		return "pmFromFile"
+	case Pm:
+		return "pm"
+	case Rbl:
+		return "rbl"
+	case Rsub:
+		return "rsub"
+	case Rx:
+		return "rx"
+	case RxGlobal:
+		return "rxGlobal"
+	case StrEq:
+		return "streq"
+	case StrMatch:
+		return "strmatch"
+	case UnconditionalMatch:
+		return "unconditionalMatch"
+	case ValidateByteRange:
+		return "validateByteRange"
+	case ValidateDTD:
+		return "validateDTD"
+	case ValidateHash:
+		return "validateHash"
+	case ValidateSchema:
+		return "validateSchema"
+	case ValidateUrlEncoding:
+		return "validateUrlEncoding"
+	case ValidateUtf8Encoding:
+		return "validateUtf8Encoding"
+	case VerifyCC:
+		return "verifyCC"
+	case VerifyCPF:
+		return "verifyCPF"
+	case VerifySSN:
+		return "verifySSN"
+	case VerifySVNR:
+		return "verifySVNR"
+	case Within:
+		return "within"
+	default:
+		return "unknownOperator"
 	}
-)
+}
+
+func stringToOperatorType(name string) OperatorType {
+	switch name {
+	case "beginsWith":
+		return BeginsWith
+	case "contains":
+		return Contains
+	case "containsWord":
+		return ContainsWord
+	case "detectSQLi":
+		return DetectSQLi
+	case "detectXSS":
+		return DetectXSS
+	case "endsWith":
+		return EndsWith
+	case "eq":
+		return Eq
+	case "fuzzyHash":
+		return FuzzyHash
+	case "ge":
+		return Ge
+	case "geoLookup":
+		return GeoLookup
+	case "gsbLookup":
+		return GsbLookup
+	case "gt":
+		return Gt
+	case "inspectFile":
+		return InspectFile
+	case "ipMatchF":
+		return IpMatchF
+	case "ipMatchFromFile":
+		return IpMatchFromFile
+	case "ipMatch":
+		return IpMatch
+	case "le":
+		return Le
+	case "lt":
+		return Lt
+	case "pmf":
+		return Pmf
+	case "pmFromFile":
+		return PmFromFile
+	case "pm":
+		return Pm
+	case "rbl":
+		return Rbl
+	case "rsub":
+		return Rsub
+	case "rx":
+		return Rx
+	case "rxGlobal":
+		return RxGlobal
+	case "streq":
+		return StrEq
+	case "strmatch":
+		return StrMatch
+	case "unconditionalMatch":
+		return UnconditionalMatch
+	case "validateByteRange":
+		return ValidateByteRange
+	case "validateDTD":
+		return ValidateDTD
+	case "validateHash":
+		return ValidateHash
+	case "validateSchema":
+		return ValidateSchema
+	case "validateUrlEncoding":
+		return ValidateUrlEncoding
+	case "validateUtf8Encoding":
+		return ValidateUtf8Encoding
+	case "verifyCC":
+		return VerifyCC
+	case "verifyCPF":
+		return VerifyCPF
+	case "verifySSN":
+		return VerifySSN
+	case "verifySVNR":
+		return VerifySVNR
+	case "within":
+		return Within
+	default:
+		return UnknownOperator
+	}
+}
+
+func (o OperatorType) MarshalYAML() (interface{}, error) {
+	if o == UnknownOperator {
+		return nil, fmt.Errorf("unknown operator type")
+	}
+	return o.String(), nil
+}
+
+func (o *OperatorType) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var name string
+	if err := unmarshal(&name); err != nil {
+		return err
+	}
+	operatorConst := stringToOperatorType(name)
+	if operatorConst == UnknownOperator {
+		return fmt.Errorf("Operator name %s is not valid", name)
+	}
+	*o = operatorConst
+	return nil
+}
 
 func (o *Operator) SetOperatorName(name string) error {
-	operatorConst, ok := allOperators[name]
-	if !ok {
-		return fmt.Errorf("Operator name %s not found", name)
+	operatorConst := stringToOperatorType(name)
+	if operatorConst == UnknownOperator {
+		return fmt.Errorf("Operator name %s is not valid", name)
 	}
 
 	o.Name = operatorConst
@@ -116,8 +265,8 @@ func (o *Operator) SetOperatorNot(not bool) {
 
 func (o *Operator) ToString() string {
 	if o.Value != "" {
-		return "@" + string(o.Name) + " " + o.Value
+		return "@" + o.Name.String() + " " + o.Value
 	} else {
-		return "@" + string(o.Name)
+		return "@" + o.Name.String()
 	}
 }
