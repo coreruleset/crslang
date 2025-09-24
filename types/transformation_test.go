@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	stringTests = []struct {
+	transformationTests = []struct {
 		transformation Transformation
 		yamlStr        string
 	}{
@@ -54,7 +54,7 @@ var (
 )
 
 func TestTransformationToString(t *testing.T) {
-	for _, tt := range stringTests {
+	for _, tt := range transformationTests {
 		t.Run(tt.yamlStr, func(t *testing.T) {
 			if tt.transformation.String() != tt.yamlStr {
 				t.Errorf("Expected %q, got %q", tt.yamlStr, tt.transformation.String())
@@ -63,8 +63,8 @@ func TestTransformationToString(t *testing.T) {
 	}
 }
 
-func TestStringToOperatorType(t *testing.T) {
-	for _, tt := range stringTests {
+func TestStringToTransformation(t *testing.T) {
+	for _, tt := range transformationTests {
 		t.Run(tt.yamlStr, func(t *testing.T) {
 			op := stringToTransformation(tt.yamlStr)
 			if op != tt.transformation {
@@ -75,14 +75,15 @@ func TestStringToOperatorType(t *testing.T) {
 }
 
 func TestMarshalTransformation(t *testing.T) {
-	for _, tt := range stringTests {
+	for _, tt := range transformationTests {
 		t.Run(tt.yamlStr, func(t *testing.T) {
-			data, err := yaml.Marshal(tt.transformation)
+			transformation := tt.yamlStr
+			data, err := yaml.Marshal(transformation)
 			if err != nil {
 				t.Fatalf("Failed to marshal: %v", err)
 			}
-			if string(data) != tt.yamlStr+"\n" {
-				t.Errorf("Expected %q, got %q", tt.yamlStr+"\n", data)
+			if string(data) != transformation+"\n" {
+				t.Errorf("Expected %q, got %q", transformation+"\n", data)
 			}
 		})
 	}
