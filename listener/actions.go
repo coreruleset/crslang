@@ -1,64 +1,74 @@
 package listener
 
 import (
+	"fmt"
+
 	"github.com/coreruleset/crslang/types"
 	"github.com/coreruleset/seclang_parser/parser"
 )
 
-// Helper functions to convert string to action types
-func stringToDisruptiveAction(s string) types.DisruptiveAction {
-	return types.DisruptiveAction(s)
-}
-
-func stringToNonDisruptiveAction(s string) types.NonDisruptiveAction {
-	return types.NonDisruptiveAction(s)
-}
-
-func stringToFlowAction(s string) types.FlowAction {
-	return types.FlowAction(s)
-}
-
-func stringToDataAction(s string) types.DataAction {
-	return types.DataAction(s)
-}
-
 func (l *ExtendedSeclangParserListener) EnterDisruptive_action_only(ctx *parser.Disruptive_action_onlyContext) {
-	l.currentDirective.GetActions().SetDisruptiveActionOnly(stringToDisruptiveAction(ctx.GetText()))
+	action := types.StringToDisruptiveAction(ctx.GetText())
+	err := l.currentDirective.GetActions().SetDisruptiveActionOnly(action)
+	if err != nil {
+		panic(fmt.Sprintf("failed to set disruptive action: %v", err))
+	}
 }
 
 func (l *ExtendedSeclangParserListener) EnterNon_disruptive_action_only(ctx *parser.Non_disruptive_action_onlyContext) {
-	l.currentDirective.GetActions().AddNonDisruptiveActionOnly(stringToNonDisruptiveAction(ctx.GetText()))
+	action := types.StringToNonDisruptiveAction(ctx.GetText())
+	err := l.currentDirective.GetActions().AddNonDisruptiveActionOnly(action)
+	if err != nil {
+		panic(fmt.Sprintf("failed to add non-disruptive action: %v", err))
+	}
 }
 
 // Event for chain action, the only flow action with no parameters is Chain
 func (l *ExtendedSeclangParserListener) EnterFlow_action_only(ctx *parser.Flow_action_onlyContext) {
-	l.currentDirective.GetActions().AddFlowActionOnly(stringToFlowAction(ctx.GetText()))
+	action := types.StringToFlowAction(ctx.GetText())
+	err := l.currentDirective.GetActions().AddFlowActionOnly(action)
+	if err != nil {
+		panic(fmt.Sprintf("failed to add flow action: %v", err))
+	}
 	l.previousDirective = l.currentDirective
 }
 
 func (l *ExtendedSeclangParserListener) EnterDisruptive_action_with_params(ctx *parser.Disruptive_action_with_paramsContext) {
 	l.setParam = func(value string) {
-		l.currentDirective.GetActions().SetDisruptiveActionWithParam(stringToDisruptiveAction(ctx.GetText()), value)
+		action := types.StringToDisruptiveAction(ctx.GetText())
+		err := l.currentDirective.GetActions().SetDisruptiveActionWithParam(action, value)
+		if err != nil {
+			panic(fmt.Sprintf("failed to set disruptive action with param: %v", err))
+		}
 	}
 }
 
 func (l *ExtendedSeclangParserListener) EnterNon_disruptive_action_with_params(ctx *parser.Non_disruptive_action_with_paramsContext) {
 	l.setParam = func(value string) {
-		l.currentDirective.GetActions().AddNonDisruptiveActionWithParam(stringToNonDisruptiveAction(ctx.GetText()), value)
+		action := types.StringToNonDisruptiveAction(ctx.GetText())
+		err := l.currentDirective.GetActions().AddNonDisruptiveActionWithParam(action, value)
+		if err != nil {
+			panic(fmt.Sprintf("failed to add non-disruptive action with param: %v", err))
+		}
 	}
 }
 
 func (l *ExtendedSeclangParserListener) EnterFlow_action_with_params(ctx *parser.Flow_action_with_paramsContext) {
 	l.setParam = func(value string) {
-		l.currentDirective.GetActions().AddFlowActionWithParam(stringToFlowAction(ctx.GetText()), value)
+		action := types.StringToFlowAction(ctx.GetText())
+		err := l.currentDirective.GetActions().AddFlowActionWithParam(action, value)
+		if err != nil {
+			panic(fmt.Sprintf("failed to add flow action with param: %v", err))
+		}
 	}
 }
 
 func (l *ExtendedSeclangParserListener) EnterData_action_with_params(ctx *parser.Data_action_with_paramsContext) {
 	l.setParam = func(value string) {
-		err := l.currentDirective.GetActions().AddDataActionWithParams(stringToDataAction(ctx.GetText()), value)
+		action := types.StringToDataAction(ctx.GetText())
+		err := l.currentDirective.GetActions().AddDataActionWithParams(action, value)
 		if err != nil {
-			panic(err)
+			panic(fmt.Sprintf("failed to add data action with param: %v", err))
 		}
 	}
 }

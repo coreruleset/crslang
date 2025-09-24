@@ -172,13 +172,13 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 		case "disruptive":
 			switch val := v.(type) {
 			case string:
-				s.DisruptiveAction = NewActionOnly(DisruptiveAction(val))
+				s.SetDisruptiveActionOnly(StringToDisruptiveAction(val))
 			case map[string]interface{}:
 				if len(v.(map[string]interface{})) != 1 {
 					return fmt.Errorf("Error: invalid format for disruptive action")
 				}
 				for a, p := range val {
-					s.DisruptiveAction = NewActionWithParam(DisruptiveAction(a), p.(string))
+					s.SetDisruptiveActionWithParam(StringToDisruptiveAction(a), p.(string))
 				}
 			}
 		case "non-disruptive", "flow", "data":
@@ -187,11 +187,9 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 				case string:
 					switch k {
 					case "non-disruptive":
-						s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewActionOnly(NonDisruptiveAction(act)))
+						s.AddNonDisruptiveActionOnly(StringToNonDisruptiveAction(act))
 					case "flow":
-						s.FlowActions = append(s.FlowActions, NewActionOnly(FlowAction(act)))
-					case "data":
-						s.DataActions = append(s.DataActions, NewActionOnly(DataAction(act)))
+						s.AddFlowActionOnly(StringToFlowAction(act))
 					}
 				case map[string]interface{}:
 					if len(act) != 1 {
@@ -200,11 +198,11 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 					for a, p := range act {
 						switch k {
 						case "non-disruptive":
-							s.NonDisruptiveActions = append(s.NonDisruptiveActions, NewActionWithParam(NonDisruptiveAction(a), p.(string)))
+							s.AddNonDisruptiveActionWithParam(StringToNonDisruptiveAction(a), p.(string))
 						case "flow":
-							s.FlowActions = append(s.FlowActions, NewActionWithParam(FlowAction(a), p.(string)))
+							s.AddFlowActionWithParam(StringToFlowAction(a), p.(string))
 						case "data":
-							s.DataActions = append(s.DataActions, NewActionWithParam(DataAction(a), p.(string)))
+							s.AddDataActionWithParams(StringToDataAction(a), p.(string))
 						}
 					}
 				}
@@ -447,7 +445,11 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secruleDirective.Metadata = new(SecRuleMetadata)
 				secruleDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secruleDirective.Actions.FlowActions = []Action{NewActionOnly(Chain)}
+					chainAction, err := NewActionOnly(Chain)
+					if err != nil {
+						panic(fmt.Sprintf("failed to create chain action: %v", err))
+					}
+					secruleDirective.Actions.FlowActions = []Action{chainAction}
 				}
 			}
 			directiveAux = secruleDirective
@@ -463,7 +465,11 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secactionDirective.Metadata = new(SecRuleMetadata)
 				secactionDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secactionDirective.Actions.FlowActions = []Action{NewActionOnly(Chain)}
+					chainAction, err := NewActionOnly(Chain)
+					if err != nil {
+						panic(fmt.Sprintf("failed to create chain action: %v", err))
+					}
+					secactionDirective.Actions.FlowActions = []Action{chainAction}
 				}
 			}
 			directiveAux = secactionDirective
@@ -479,7 +485,11 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secscriptDirective.Metadata = new(SecRuleMetadata)
 				secscriptDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					secscriptDirective.Actions.FlowActions = []Action{NewActionOnly(Chain)}
+					chainAction, err := NewActionOnly(Chain)
+					if err != nil {
+						panic(fmt.Sprintf("failed to create chain action: %v", err))
+					}
+					secscriptDirective.Actions.FlowActions = []Action{chainAction}
 				}
 			}
 			directiveAux = secscriptDirective
