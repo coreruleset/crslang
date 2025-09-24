@@ -159,6 +159,59 @@ type conditionDirectiveLoader struct {
 	ChainedRule yaml.Node       `yaml:"chainedRule"`
 }
 
+// UnmarshalYAML unmarshals a YAML node into a SeclangActions struct
+// it converts the actions to their respective types
+func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
+	var raw map[string]interface{}
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	for k, v := range raw {
+		switch k {
+		case "disruptive":
+			switch val := v.(type) {
+			case string:
+				s.SetDisruptiveActionOnly(StringToDisruptiveAction(val))
+			case map[string]interface{}:
+				if len(v.(map[string]interface{})) != 1 {
+					return fmt.Errorf("Error: invalid format for disruptive action")
+				}
+				for a, p := range val {
+					s.SetDisruptiveActionWithParam(StringToDisruptiveAction(a), p.(string))
+				}
+			}
+		case "non-disruptive", "flow", "data":
+			for _, action := range v.([]interface{}) {
+				switch act := action.(type) {
+				case string:
+					switch k {
+					case "non-disruptive":
+						s.AddNonDisruptiveActionOnly(StringToNonDisruptiveAction(act))
+					case "flow":
+						s.AddFlowActionOnly(StringToFlowAction(act))
+					}
+				case map[string]interface{}:
+					if len(act) != 1 {
+						return fmt.Errorf("Error: invalid format for non-disruptive action")
+					}
+					for a, p := range act {
+						switch k {
+						case "non-disruptive":
+							s.AddNonDisruptiveActionWithParam(StringToNonDisruptiveAction(a), p.(string))
+						case "flow":
+							s.AddFlowActionWithParam(StringToFlowAction(a), p.(string))
+						case "data":
+							s.AddDataActionWithParams(StringToDataAction(a), p.(string))
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // LoadDirectivesWithConditionsFromFile loads condition format directives from a yaml file
 func LoadDirectivesWithConditionsFromFile(filename string) ConfigurationList {
 	yamlFile, err := os.ReadFile(filename)
@@ -392,7 +445,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secruleDirective.Metadata = new(SecRuleMetadata)
 				secruleDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					chainAction, err := NewAction(Chain, "")
+					chainAction, err := NewActionOnly(Chain)
 					if err != nil {
 						panic(fmt.Sprintf("failed to create chain action: %v", err))
 					}
@@ -412,7 +465,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secactionDirective.Metadata = new(SecRuleMetadata)
 				secactionDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					chainAction, err := NewAction(Chain, "")
+					chainAction, err := NewActionOnly(Chain)
 					if err != nil {
 						panic(fmt.Sprintf("failed to create chain action: %v", err))
 					}
@@ -432,7 +485,7 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				secscriptDirective.Metadata = new(SecRuleMetadata)
 				secscriptDirective.Actions = new(SeclangActions)
 				if i < len(conditionDirective.Conditions)-1 || chainedDirective != nil {
-					chainAction, err := NewAction(Chain, "")
+					chainAction, err := NewActionOnly(Chain)
 					if err != nil {
 						panic(fmt.Sprintf("failed to create chain action: %v", err))
 					}
