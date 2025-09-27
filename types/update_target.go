@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -22,9 +23,9 @@ func NewUpdateTargetDirective() *UpdateTargetDirective {
 }
 
 func (d *UpdateTargetDirective) AddVariable(name string, excluded bool) error {
-	variable, err := GetVariable(name)
-	if err != nil {
-		return err
+	variable := stringToVariableName(name)
+	if variable == UNKNOWN_VAR {
+		return fmt.Errorf("Invalid variable name: %s", name)
 	}
 	if excluded {
 		vars := []Variable{}

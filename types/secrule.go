@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"slices"
 )
 
@@ -34,9 +35,9 @@ func (d SecRule) GetTransformations() Transformations {
 }
 
 func (s *SecRule) AddVariable(name string, excluded bool) error {
-	variable, err := GetVariable(name)
-	if err != nil {
-		return err
+	variable := stringToVariableName(name)
+	if variable == UNKNOWN_VAR {
+		return fmt.Errorf("Invalid variable name: %s", name)
 	}
 	if excluded {
 		vars := []Variable{}
