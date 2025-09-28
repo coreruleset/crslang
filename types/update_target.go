@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -22,9 +23,9 @@ func NewUpdateTargetDirective() *UpdateTargetDirective {
 }
 
 func (d *UpdateTargetDirective) AddVariable(name string, excluded bool) error {
-	variable, err := GetVariable(name)
-	if err != nil {
-		return err
+	variable := stringToVariableName(name)
+	if variable == UNKNOWN_VAR {
+		return fmt.Errorf("Invalid variable name: %s", name)
 	}
 	if excluded {
 		vars := []Variable{}
@@ -41,9 +42,9 @@ func (d *UpdateTargetDirective) AddVariable(name string, excluded bool) error {
 }
 
 func (d *UpdateTargetDirective) AddCollection(name, value string, excluded, asCount bool) error {
-	col, err := GetCollection(name)
-	if err != nil {
-		return err
+	col := stringToCollectionName(name)
+	if col == UNKNOWN_COLLECTION {
+		return fmt.Errorf("Invalid collection name: %s", name)
 	}
 	if excluded && !asCount {
 		results := []Collection{}

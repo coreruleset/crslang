@@ -7,114 +7,330 @@ type Variable struct {
 	Excluded bool         `yaml:"excluded,omitempty"`
 }
 
-type VariableName string
+type VariableName int
 
 const (
-	ARGS_COMBINED_SIZE               VariableName = "ARGS_COMBINED_SIZE"
-	AUTH_TYPE                        VariableName = "AUTH_TYPE"
-	DURATION                         VariableName = "DURATION"
-	FILES_COMBINED_SIZE              VariableName = "FILES_COMBINED_SIZE"
-	FILES_NAMES                      VariableName = "FILES_NAMES"
-	FILES_SIZES                      VariableName = "FILES_SIZES"
-	FILES_TMP_CONTENT                VariableName = "FILES_TMP_CONTENT"
-	FILES_TMPNAMES                   VariableName = "FILES_TMPNAMES"
-	FULL_REQUEST                     VariableName = "FULL_REQUEST"
-	FULL_REQUEST_LENGTH              VariableName = "FULL_REQUEST_LENGTH"
-	HIGHEST_SEVERITY                 VariableName = "HIGHEST_SEVERITY"
-	INBOUND_DATA_ERROR               VariableName = "INBOUND_DATA_ERROR"
-	MATCHED_VAR                      VariableName = "MATCHED_VAR"
-	MATCHED_VAR_NAME                 VariableName = "MATCHED_VAR_NAME"
-	MODSEC_BUILD                     VariableName = "MODSEC_BUILD"
-	MSC_PCRE_LIMITS_EXCEEDED         VariableName = "MSC_PCRE_LIMITS_EXCEEDED"
-	MULTIPART_CRLF_LF_LINES          VariableName = "MULTIPART_CRLF_LF_LINES"
-	MULTIPART_FILENAME               VariableName = "MULTIPART_FILENAME"
-	MULTIPART_NAME                   VariableName = "MULTIPART_NAME"
-	MULTIPART_STRICT_ERROR           VariableName = "MULTIPART_STRICT_ERROR"
-	MULTIPART_UNMATCHED_BOUNDARY     VariableName = "MULTIPART_UNMATCHED_BOUNDARY"
-	OUTBOUND_DATA_ERROR              VariableName = "OUTBOUND_DATA_ERROR"
-	PATH_INFO                        VariableName = "PATH_INFO"
-	PERF_ALL                         VariableName = "PERF_ALL"
-	PERF_COMBINED                    VariableName = "PERF_COMBINED"
-	PERF_GC                          VariableName = "PERF_GC"
-	PERF_LOGGING                     VariableName = "PERF_LOGGING"
-	PERF_PHASE1                      VariableName = "PERF_PHASE1"
-	PERF_PHASE2                      VariableName = "PERF_PHASE2"
-	PERF_PHASE3                      VariableName = "PERF_PHASE3"
-	PERF_PHASE4                      VariableName = "PERF_PHASE4"
-	PERF_PHASE5                      VariableName = "PERF_PHASE5"
-	PERF_SREAD                       VariableName = "PERF_SREAD"
-	PERF_SWRITE                      VariableName = "PERF_SWRITE"
-	QUERY_STRING                     VariableName = "QUERY_STRING"
-	REMOTE_ADDR                      VariableName = "REMOTE_ADDR"
-	REMOTE_HOST                      VariableName = "REMOTE_HOST"
-	REMOTE_PORT                      VariableName = "REMOTE_PORT"
-	REMOTE_USER                      VariableName = "REMOTE_USER"
-	REQBODY_ERROR                    VariableName = "REQBODY_ERROR"
-	REQBODY_ERROR_MSG                VariableName = "REQBODY_ERROR_MSG"
-	REQBODY_PROCESSOR                VariableName = "REQBODY_PROCESSOR"
-	REQUEST_BASENAME                 VariableName = "REQUEST_BASENAME"
-	REQUEST_BODY                     VariableName = "REQUEST_BODY"
-	REQUEST_BODY_LENGTH              VariableName = "REQUEST_BODY_LENGTH"
-	REQUEST_FILENAME                 VariableName = "REQUEST_FILENAME"
-	REQUEST_LINE                     VariableName = "REQUEST_LINE"
-	REQUEST_METHOD                   VariableName = "REQUEST_METHOD"
-	REQUEST_PROTOCOL                 VariableName = "REQUEST_PROTOCOL"
-	REQUEST_URI                      VariableName = "REQUEST_URI"
-	REQUEST_URI_RAW                  VariableName = "REQUEST_URI_RAW"
-	RESPONSE_BODY                    VariableName = "RESPONSE_BODY"
-	RESPONSE_CONTENT_LENGTH          VariableName = "RESPONSE_CONTENT_LENGTH"
-	RESPONSE_CONTENT_TYPE            VariableName = "RESPONSE_CONTENT_TYPE"
-	RESPONSE_PROTOCOL                VariableName = "RESPONSE_PROTOCOL"
-	RESPONSE_STATUS                  VariableName = "RESPONSE_STATUS"
-	RESOURCE                         VariableName = "RESOURCE"
-	SCRIPT_BASENAME                  VariableName = "SCRIPT_BASENAME"
-	SCRIPT_FILENAME                  VariableName = "SCRIPT_FILENAME"
-	SCRIPT_GID                       VariableName = "SCRIPT_GID"
-	SCRIPT_GROUPNAME                 VariableName = "SCRIPT_GROUPNAME"
-	SCRIPT_MODE                      VariableName = "SCRIPT_MODE"
-	SCRIPT_UID                       VariableName = "SCRIPT_UID"
-	SCRIPT_USERNAME                  VariableName = "SCRIPT_USERNAME"
-	SDBM_DELETE_ERROR                VariableName = "SDBM_DELETE_ERROR"
-	SERVER_ADDR                      VariableName = "SERVER_ADDR"
-	SERVER_NAME                      VariableName = "SERVER_NAME"
-	SERVER_PORT                      VariableName = "SERVER_PORT"
-	SESSIONID                        VariableName = "SESSIONID"
-	STATUS_LINE                      VariableName = "STATUS_LINE"
-	STREAM_INPUT_BODY                VariableName = "STREAM_INPUT_BODY"
-	STREAM_OUTPUT_BODY               VariableName = "STREAM_OUTPUT_BODY"
-	TIME                             VariableName = "TIME"
-	TIME_DAY                         VariableName = "TIME_DAY"
-	TIME_EPOCH                       VariableName = "TIME_EPOCH"
-	TIME_HOUR                        VariableName = "TIME_HOUR"
-	TIME_MIN                         VariableName = "TIME_MIN"
-	TIME_MON                         VariableName = "TIME_MON"
-	TIME_SEC                         VariableName = "TIME_SEC"
-	TIME_WDAY                        VariableName = "TIME_WDAY"
-	TIME_YEAR                        VariableName = "TIME_YEAR"
-	UNIQUE_ID                        VariableName = "UNIQUE_ID"
-	URLENCODED_ERROR                 VariableName = "URLENCODED_ERROR"
-	USER                             VariableName = "USER"
-	USERAGENT_IP                     VariableName = "USERAGENT_IP"
-	USERID                           VariableName = "USERID"
-	WEBAPPID                         VariableName = "WEBAPPID"
-	WEBSERVER_ERROR_LOG              VariableName = "WEBSERVER_ERROR_LOG"
-	MSC_PCRE_ERROR                   VariableName = "MSC_PCRE_ERROR"
-	MULTIPART_BOUNDARY_QUOTED        VariableName = "MULTIPART_BOUNDARY_QUOTED"
-	MULTIPART_BOUNDARY_WHITESPACE    VariableName = "MULTIPART_BOUNDARY_WHITESPACE"
-	MULTIPART_DATA_AFTER             VariableName = "MULTIPART_DATA_AFTER"
-	MULTIPART_DATA_BEFORE            VariableName = "MULTIPART_DATA_BEFORE"
-	MULTIPART_FILE_LIMIT_EXCEEDED    VariableName = "MULTIPART_FILE_LIMIT_EXCEEDED"
-	MULTIPART_HEADER_FOLDING         VariableName = "MULTIPART_HEADER_FOLDING"
-	MULTIPART_INVALID_HEADER_FOLDING VariableName = "MULTIPART_INVALID_HEADER_FOLDING"
-	MULTIPART_INVALID_PART           VariableName = "MULTIPART_INVALID_PART"
-	MULTIPART_INVALID_QUOTING        VariableName = "MULTIPART_INVALID_QUOTING"
-	MULTIPART_LF_LINE                VariableName = "MULTIPART_LF_LINE"
-	MULTIPART_MISSING_SEMICOLON      VariableName = "MULTIPART_MISSING_SEMICOLON"
-	MULTIPART_SEMICOLON_MISSING      VariableName = "MULTIPART_SEMICOLON_MISSING"
-	REQBODY_PROCESSOR_ERROR          VariableName = "REQBODY_PROCESSOR_ERROR"
-	REQBODY_PROCESSOR_ERROR_MSG      VariableName = "REQBODY_PROCESSOR_ERROR_MSG"
-	STATUS                           VariableName = "STATUS"
+	UNKNOWN_VAR VariableName = iota
+	ARGS_COMBINED_SIZE
+	AUTH_TYPE
+	DURATION
+	FILES_COMBINED_SIZE
+	FILES_NAMES
+	FILES_SIZES
+	FILES_TMP_CONTENT
+	FILES_TMPNAMES
+	FULL_REQUEST
+	FULL_REQUEST_LENGTH
+	HIGHEST_SEVERITY
+	INBOUND_DATA_ERROR
+	MATCHED_VAR
+	MATCHED_VAR_NAME
+	MODSEC_BUILD
+	MSC_PCRE_LIMITS_EXCEEDED
+	MULTIPART_CRLF_LF_LINES
+	MULTIPART_FILENAME
+	MULTIPART_NAME
+	MULTIPART_STRICT_ERROR
+	MULTIPART_UNMATCHED_BOUNDARY
+	OUTBOUND_DATA_ERROR
+	PATH_INFO
+	PERF_ALL
+	PERF_COMBINED
+	PERF_GC
+	PERF_LOGGING
+	PERF_PHASE1
+	PERF_PHASE2
+	PERF_PHASE3
+	PERF_PHASE4
+	PERF_PHASE5
+	PERF_SREAD
+	PERF_SWRITE
+	QUERY_STRING
+	REMOTE_ADDR
+	REMOTE_HOST
+	REMOTE_PORT
+	REMOTE_USER
+	REQBODY_ERROR
+	REQBODY_ERROR_MSG
+	REQBODY_PROCESSOR
+	REQUEST_BASENAME
+	REQUEST_BODY
+	REQUEST_BODY_LENGTH
+	REQUEST_FILENAME
+	REQUEST_LINE
+	REQUEST_METHOD
+	REQUEST_PROTOCOL
+	REQUEST_URI
+	REQUEST_URI_RAW
+	RESPONSE_BODY
+	RESPONSE_CONTENT_LENGTH
+	RESPONSE_CONTENT_TYPE
+	RESPONSE_PROTOCOL
+	RESPONSE_STATUS
+	RESOURCE
+	SCRIPT_BASENAME
+	SCRIPT_FILENAME
+	SCRIPT_GID
+	SCRIPT_GROUPNAME
+	SCRIPT_MODE
+	SCRIPT_UID
+	SCRIPT_USERNAME
+	SDBM_DELETE_ERROR
+	SERVER_ADDR
+	SERVER_NAME
+	SERVER_PORT
+	SESSIONID
+	STATUS_LINE
+	STREAM_INPUT_BODY
+	STREAM_OUTPUT_BODY
+	TIME
+	TIME_DAY
+	TIME_EPOCH
+	TIME_HOUR
+	TIME_MIN
+	TIME_MON
+	TIME_SEC
+	TIME_WDAY
+	TIME_YEAR
+	UNIQUE_ID
+	URLENCODED_ERROR
+	USER
+	USERAGENT_IP
+	USERID
+	WEBAPPID
+	WEBSERVER_ERROR_LOG
+	MSC_PCRE_ERROR
+	MULTIPART_BOUNDARY_QUOTED
+	MULTIPART_BOUNDARY_WHITESPACE
+	MULTIPART_DATA_AFTER
+	MULTIPART_DATA_BEFORE
+	MULTIPART_FILE_LIMIT_EXCEEDED
+	MULTIPART_HEADER_FOLDING
+	MULTIPART_INVALID_HEADER_FOLDING
+	MULTIPART_INVALID_PART
+	MULTIPART_INVALID_QUOTING
+	MULTIPART_LF_LINE
+	MULTIPART_MISSING_SEMICOLON
+	MULTIPART_SEMICOLON_MISSING
+	REQBODY_PROCESSOR_ERROR
+	REQBODY_PROCESSOR_ERROR_MSG
+	STATUS
 )
+
+func (v VariableName) String() string {
+	switch v {
+	case ARGS_COMBINED_SIZE:
+		return "ARGS_COMBINED_SIZE"
+	case AUTH_TYPE:
+		return "AUTH_TYPE"
+	case DURATION:
+		return "DURATION"
+	case FILES_COMBINED_SIZE:
+		return "FILES_COMBINED_SIZE"
+	case FILES_NAMES:
+		return "FILES_NAMES"
+	case FILES_SIZES:
+		return "FILES_SIZES"
+	case FILES_TMP_CONTENT:
+		return "FILES_TMP_CONTENT"
+	case FILES_TMPNAMES:
+		return "FILES_TMPNAMES"
+	case FULL_REQUEST:
+		return "FULL_REQUEST"
+	case FULL_REQUEST_LENGTH:
+		return "FULL_REQUEST_LENGTH"
+	case HIGHEST_SEVERITY:
+		return "HIGHEST_SEVERITY"
+	case INBOUND_DATA_ERROR:
+		return "INBOUND_DATA_ERROR"
+	case MATCHED_VAR:
+		return "MATCHED_VAR"
+	case MATCHED_VAR_NAME:
+		return "MATCHED_VAR_NAME"
+	case MODSEC_BUILD:
+		return "MODSEC_BUILD"
+	case MSC_PCRE_LIMITS_EXCEEDED:
+		return "MSC_PCRE_LIMITS_EXCEEDED"
+	case MULTIPART_CRLF_LF_LINES:
+		return "MULTIPART_CRLF_LF_LINES"
+	case MULTIPART_FILENAME:
+		return "MULTIPART_FILENAME"
+	case MULTIPART_NAME:
+		return "MULTIPART_NAME"
+	case MULTIPART_STRICT_ERROR:
+		return "MULTIPART_STRICT_ERROR"
+	case MULTIPART_UNMATCHED_BOUNDARY:
+		return "MULTIPART_UNMATCHED_BOUNDARY"
+	case OUTBOUND_DATA_ERROR:
+		return "OUTBOUND_DATA_ERROR"
+	case PATH_INFO:
+		return "PATH_INFO"
+	case PERF_ALL:
+		return "PERF_ALL"
+	case PERF_COMBINED:
+		return "PERF_COMBINED"
+	case PERF_GC:
+		return "PERF_GC"
+	case PERF_LOGGING:
+		return "PERF_LOGGING"
+	case PERF_PHASE1:
+		return "PERF_PHASE1"
+	case PERF_PHASE2:
+		return "PERF_PHASE2"
+	case PERF_PHASE3:
+		return "PERF_PHASE3"
+	case PERF_PHASE4:
+		return "PERF_PHASE4"
+	case PERF_PHASE5:
+		return "PERF_PHASE5"
+	case PERF_SREAD:
+		return "PERF_SREAD"
+	case PERF_SWRITE:
+		return "PERF_SWRITE"
+	case QUERY_STRING:
+		return "QUERY_STRING"
+	case REMOTE_ADDR:
+		return "REMOTE_ADDR"
+	case REMOTE_HOST:
+		return "REMOTE_HOST"
+	case REMOTE_PORT:
+		return "REMOTE_PORT"
+	case REMOTE_USER:
+		return "REMOTE_USER"
+	case REQBODY_ERROR:
+		return "REQBODY_ERROR"
+	case REQBODY_ERROR_MSG:
+		return "REQBODY_ERROR_MSG"
+	case REQBODY_PROCESSOR:
+		return "REQBODY_PROCESSOR"
+	case REQUEST_BASENAME:
+		return "REQUEST_BASENAME"
+	case REQUEST_BODY:
+		return "REQUEST_BODY"
+	case REQUEST_BODY_LENGTH:
+		return "REQUEST_BODY_LENGTH"
+	case REQUEST_FILENAME:
+		return "REQUEST_FILENAME"
+	case REQUEST_LINE:
+		return "REQUEST_LINE"
+	case REQUEST_METHOD:
+		return "REQUEST_METHOD"
+	case REQUEST_PROTOCOL:
+		return "REQUEST_PROTOCOL"
+	case REQUEST_URI:
+		return "REQUEST_URI"
+	case REQUEST_URI_RAW:
+		return "REQUEST_URI_RAW"
+	case RESPONSE_BODY:
+		return "RESPONSE_BODY"
+	case RESPONSE_CONTENT_LENGTH:
+		return "RESPONSE_CONTENT_LENGTH"
+	case RESPONSE_CONTENT_TYPE:
+		return "RESPONSE_CONTENT_TYPE"
+	case RESPONSE_PROTOCOL:
+		return "RESPONSE_PROTOCOL"
+	case RESPONSE_STATUS:
+		return "RESPONSE_STATUS"
+	case RESOURCE:
+		return "RESOURCE"
+	case SCRIPT_BASENAME:
+		return "SCRIPT_BASENAME"
+	case SCRIPT_FILENAME:
+		return "SCRIPT_FILENAME"
+	case SCRIPT_GID:
+		return "SCRIPT_GID"
+	case SCRIPT_GROUPNAME:
+		return "SCRIPT_GROUPNAME"
+	case SCRIPT_MODE:
+		return "SCRIPT_MODE"
+	case SCRIPT_UID:
+		return "SCRIPT_UID"
+	case SCRIPT_USERNAME:
+		return "SCRIPT_USERNAME"
+	case SDBM_DELETE_ERROR:
+		return "SDBM_DELETE_ERROR"
+	case SERVER_ADDR:
+		return "SERVER_ADDR"
+	case SERVER_NAME:
+		return "SERVER_NAME"
+	case SERVER_PORT:
+		return "SERVER_PORT"
+	case SESSIONID:
+		return "SESSIONID"
+	case STATUS_LINE:
+		return "STATUS_LINE"
+	case STREAM_INPUT_BODY:
+		return "STREAM_INPUT_BODY"
+	case STREAM_OUTPUT_BODY:
+		return "STREAM_OUTPUT_BODY"
+	case TIME:
+		return "TIME"
+	case TIME_DAY:
+		return "TIME_DAY"
+	case TIME_EPOCH:
+		return "TIME_EPOCH"
+	case TIME_HOUR:
+		return "TIME_HOUR"
+	case TIME_MIN:
+		return "TIME_MIN"
+	case TIME_MON:
+		return "TIME_MON"
+	case TIME_SEC:
+		return "TIME_SEC"
+	case TIME_WDAY:
+		return "TIME_WDAY"
+	case TIME_YEAR:
+		return "TIME_YEAR"
+	case UNIQUE_ID:
+		return "UNIQUE_ID"
+	case URLENCODED_ERROR:
+		return "URLENCODED_ERROR"
+	case USER:
+		return "USER"
+	case USERAGENT_IP:
+		return "USERAGENT_IP"
+	case USERID:
+		return "USERID"
+	case WEBAPPID:
+		return "WEBAPPID"
+	case WEBSERVER_ERROR_LOG:
+		return "WEBSERVER_ERROR_LOG"
+	case MSC_PCRE_ERROR:
+		return "MSC_PCRE_ERROR"
+	case MULTIPART_BOUNDARY_QUOTED:
+		return "MULTIPART_BOUNDARY_QUOTED"
+	case MULTIPART_BOUNDARY_WHITESPACE:
+		return "MULTIPART_BOUNDARY_WHITESPACE"
+	case MULTIPART_DATA_AFTER:
+		return "MULTIPART_DATA_AFTER"
+	case MULTIPART_DATA_BEFORE:
+		return "MULTIPART_DATA_BEFORE"
+	case MULTIPART_FILE_LIMIT_EXCEEDED:
+		return "MULTIPART_FILE_LIMIT_EXCEEDED"
+	case MULTIPART_HEADER_FOLDING:
+		return "MULTIPART_HEADER_FOLDING"
+	case MULTIPART_INVALID_HEADER_FOLDING:
+		return "MULTIPART_INVALID_HEADER_FOLDING"
+	case MULTIPART_INVALID_PART:
+		return "MULTIPART_INVALID_PART"
+	case MULTIPART_INVALID_QUOTING:
+		return "MULTIPART_INVALID_QUOTING"
+	case MULTIPART_LF_LINE:
+		return "MULTIPART_LF_LINE"
+	case MULTIPART_MISSING_SEMICOLON:
+		return "MULTIPART_MISSING_SEMICOLON"
+	case MULTIPART_SEMICOLON_MISSING:
+		return "MULTIPART_SEMICOLON_MISSING"
+	case REQBODY_PROCESSOR_ERROR:
+		return "REQBODY_PROCESSOR_ERROR"
+	case REQBODY_PROCESSOR_ERROR_MSG:
+		return "REQBODY_PROCESSOR_ERROR_MSG"
+	case STATUS:
+		return "STATUS"
+	default:
+		return "UNKNOWN_VAR"
+	}
+}
 
 var (
 	allVariables = map[string]VariableName{
@@ -231,7 +447,7 @@ func VariablesToString(variables []Variable, separator string) string {
 		if variable.Excluded {
 			result += "!"
 		}
-		result += string(variable.Name)
+		result += variable.Name.String()
 		if i != len(variables)-1 {
 			result += separator
 		}
@@ -239,10 +455,30 @@ func VariablesToString(variables []Variable, separator string) string {
 	return result
 }
 
-func GetVariable(name string) (VariableName, error) {
+func stringToVariableName(name string) VariableName {
 	variable, exists := allVariables[name]
 	if !exists {
-		return "", fmt.Errorf("Invalid variable name: %s", name)
+		return UNKNOWN_VAR
 	}
-	return variable, nil
+	return variable
+}
+
+func (v VariableName) MarshalYAML() (interface{}, error) {
+	if v == UNKNOWN_VAR {
+		return nil, fmt.Errorf("Unknown variable name")
+	}
+	return v.String(), nil
+}
+
+func (v *VariableName) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var name string
+	if err := unmarshal(&name); err != nil {
+		return err
+	}
+	variableConst := stringToVariableName(name)
+	if variableConst == UNKNOWN_VAR {
+		return fmt.Errorf("Variable name %s is not valid", name)
+	}
+	*v = variableConst
+	return nil
 }
