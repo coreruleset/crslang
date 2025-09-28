@@ -24,6 +24,14 @@ func mustNewActionWithParam[T ActionType](action T, param string) Action {
 	return newAction
 }
 
+func mustNewActionMultipleParam[T ActionType](action T, params []string) Action {
+	newAction, err := NewActionMultipleParam(action, params)
+	if err != nil {
+		panic(err)
+	}
+	return newAction
+}
+
 var (
 	unmarshalTests = []struct {
 		input    string
@@ -43,7 +51,7 @@ flow:
 				NonDisruptiveActions: []Action{
 					mustNewActionOnly(Capture),
 					mustNewActionWithParam(LogData, "Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}"),
-					mustNewActionWithParam(SetVar, "tx.rfi_parameter_%{MATCHED_VAR_NAME}=.%{tx.1}"),
+					mustNewActionMultipleParam(SetVar, []string{"tx.rfi_parameter_%{MATCHED_VAR_NAME}=.%{tx.1}"}),
 				},
 				FlowActions: []Action{
 					mustNewActionOnly(Chain),

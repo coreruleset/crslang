@@ -196,13 +196,27 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 						return fmt.Errorf("Error: invalid format for non-disruptive action")
 					}
 					for a, p := range act {
-						switch k {
-						case "non-disruptive":
-							s.AddNonDisruptiveActionWithParam(StringToNonDisruptiveAction(a), p.(string))
-						case "flow":
-							s.AddFlowActionWithParam(StringToFlowAction(a), p.(string))
-						case "data":
-							s.AddDataActionWithParams(StringToDataAction(a), p.(string))
+						switch p := p.(type) {
+						case string:
+							switch k {
+							case "non-disruptive":
+								s.AddNonDisruptiveActionWithParam(StringToNonDisruptiveAction(a), p)
+							case "flow":
+								s.AddFlowActionWithParam(StringToFlowAction(a), p)
+							case "data":
+								s.AddDataActionWithParams(StringToDataAction(a), p)
+							}
+						case []interface{}:
+							for _, param := range p {
+								switch k {
+								case "non-disruptive":
+									s.AddNonDisruptiveActionWithParam(StringToNonDisruptiveAction(a), param.(string))
+								case "flow":
+									s.AddFlowActionWithParam(StringToFlowAction(a), param.(string))
+								case "data":
+									s.AddDataActionWithParams(StringToDataAction(a), param.(string))
+								}
+							}
 						}
 					}
 				}

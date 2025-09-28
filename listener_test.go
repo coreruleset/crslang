@@ -27,6 +27,14 @@ func mustNewActionWithParam[T types.ActionType](action T, param string) types.Ac
 	return newAction
 }
 
+func mustNewActionMultipleParam[T types.ActionType](action T, params []string) types.Action {
+	newAction, err := types.NewActionMultipleParam(action, params)
+	if err != nil {
+		panic(err)
+	}
+	return newAction
+}
+
 type testCase struct {
 	name     string
 	payload  string
@@ -161,27 +169,29 @@ SecAction \
 									DisruptiveAction: mustNewActionOnly(types.Pass),
 									NonDisruptiveActions: []types.Action{
 										mustNewActionOnly(types.NoLog),
-										mustNewActionWithParam(types.SetVar, "tx.blocking_inbound_anomaly_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.detection_inbound_anomaly_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl1=0"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl2=0"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl3=0"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl4=0"),
-										mustNewActionWithParam(types.SetVar, "tx.sql_injection_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.xss_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.rfi_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.lfi_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.rce_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.php_injection_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.http_violation_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.session_fixation_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.blocking_outbound_anomaly_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.detection_outbound_anomaly_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.outbound_anomaly_score_pl1=0"),
-										mustNewActionWithParam(types.SetVar, "tx.outbound_anomaly_score_pl2=0"),
-										mustNewActionWithParam(types.SetVar, "tx.outbound_anomaly_score_pl3=0"),
-										mustNewActionWithParam(types.SetVar, "tx.outbound_anomaly_score_pl4=0"),
-										mustNewActionWithParam(types.SetVar, "tx.anomaly_score=0"),
+										mustNewActionMultipleParam(types.SetVar, []string{
+											"tx.blocking_inbound_anomaly_score=0",
+											"tx.detection_inbound_anomaly_score=0",
+											"tx.inbound_anomaly_score_pl1=0",
+											"tx.inbound_anomaly_score_pl2=0",
+											"tx.inbound_anomaly_score_pl3=0",
+											"tx.inbound_anomaly_score_pl4=0",
+											"tx.sql_injection_score=0",
+											"tx.xss_score=0",
+											"tx.rfi_score=0",
+											"tx.lfi_score=0",
+											"tx.rce_score=0",
+											"tx.php_injection_score=0",
+											"tx.http_violation_score=0",
+											"tx.session_fixation_score=0",
+											"tx.blocking_outbound_anomaly_score=0",
+											"tx.detection_outbound_anomaly_score=0",
+											"tx.outbound_anomaly_score_pl1=0",
+											"tx.outbound_anomaly_score_pl2=0",
+											"tx.outbound_anomaly_score_pl3=0",
+											"tx.outbound_anomaly_score_pl4=0",
+											"tx.anomaly_score=0"},
+										),
 									},
 								},
 							},
@@ -286,7 +296,7 @@ SecRule REQUEST_LINE "@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:
 									DisruptiveAction: mustNewActionOnly(types.Block),
 									NonDisruptiveActions: []types.Action{
 										mustNewActionWithParam(types.LogData, "%{request_line}"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl1=+%{tx.warning_anomaly_score}"),
+										mustNewActionMultipleParam(types.SetVar, []string{"tx.inbound_anomaly_score_pl1=+%{tx.warning_anomaly_score}"}),
 									},
 								},
 							},
@@ -677,6 +687,6 @@ func TestLoadSecLang(t *testing.T) {
 		antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
 		got = seclangListener.ConfigurationList
 
-		require.Equalf(t, got, test.expected, test.name)
+		require.Equalf(t, test.expected, got, test.name)
 	}
 }

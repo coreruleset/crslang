@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 )
 
 type SeclangActions struct {
@@ -110,6 +111,61 @@ func (a ActionWithParam) GetParam() string {
 	return ""
 }
 
+type ActionMultipleParams map[string][]string
+
+// GetKey returns the action name (first key in the map)
+func (a ActionMultipleParams) GetKey() string {
+	for key := range a {
+		return key
+	}
+	return ""
+}
+
+// ToString allows to implement the Action interface
+func (a ActionMultipleParams) ToString() string {
+	if len(a) == 0 {
+		return ""
+	}
+
+	var result []string
+	// Get the first (and should be only) key-value pair
+	for action, multParams := range a {
+		for _, param := range multParams {
+			result = append(result, action+":"+param)
+		}
+	}
+	return strings.Join(result, ", ")
+}
+
+func (a *ActionMultipleParams) AppendParam(param string) error {
+	if len(*a) != 1 {
+		return fmt.Errorf("Invalid state: Action should contain exactly one action type")
+	}
+
+	// Get the first (and only) key-value pair
+	for action := range *a {
+		(*a)[action] = append((*a)[action], param)
+		return nil
+	}
+	return nil
+}
+
+func (a ActionMultipleParams) GetAllParams() []string {
+	if len(a) == 0 {
+		return []string{}
+	}
+
+	var result []string
+	// Get the first (and should be only) key-value pair
+	for action, multParams := range a {
+		// Iterate over all parameters and append them to the result slice
+		for _, param := range multParams {
+			result = append(result, action+":"+param)
+		}
+	}
+	return result
+}
+
 // ActionType is a constraint for all action types
 type ActionType interface {
 	DisruptiveAction | FlowAction | DataAction | NonDisruptiveAction
@@ -128,6 +184,20 @@ func NewActionWithParam[T ActionType](action T, param string) (ActionWithParam, 
 	}
 
 	return ActionWithParam{actionStr: param}, nil
+}
+
+// NewActionMultipleParam creates a new ActionMultipleParams with the given action type and parameter
+// It uses generics to accept DisruptiveAction, FlowAction, DataAction, or NonDisruptiveAction
+func NewActionMultipleParam[T ActionType](action T, params []string) (ActionMultipleParams, error) {
+	// Use the String() method to get the string representation
+	actionStr := action.String()
+
+	// Check if the action is an Unknown value
+	if actionStr == "unknown" {
+		return ActionMultipleParams{}, fmt.Errorf("invalid action: unknown action type")
+	}
+
+	return ActionMultipleParams{actionStr: params}, nil
 }
 
 type DisruptiveAction int
@@ -423,11 +493,36 @@ func (s *SeclangActions) SetDisruptiveActionOnly(action DisruptiveAction) error 
 }
 
 func (s *SeclangActions) AddNonDisruptiveActionWithParam(action NonDisruptiveAction, param string) error {
-	newAction, err := NewActionWithParam(action, param)
-	if err != nil {
-		return err
+	if action == SetVar {
+		// Check if there is already a setvar action in the last position
+		if len(s.NonDisruptiveActions) > 0 {
+			lastAction := s.NonDisruptiveActions[len(s.NonDisruptiveActions)-1]
+			if lastAction.GetKey() != "setvar" {
+				// If the last action is not setvar, we need to create a new one
+				newAction, err := NewActionMultipleParam(action, []string{param})
+				if err != nil {
+					return err
+				}
+				s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
+			} else {
+				// If the last action is setvar, we need to append the param to it
+				aMP, ok := lastAction.(ActionMultipleParams)
+				if !ok {
+					return fmt.Errorf("invalid action type: expected ActionMultipleParams, got %T", lastAction)
+				}
+				err := aMP.AppendParam(param)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	} else {
+		newAction, err := NewActionWithParam(action, param)
+		if err != nil {
+			return err
+		}
+		s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
 	}
-	s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
 	return nil
 }
 
