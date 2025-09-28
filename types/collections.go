@@ -9,35 +9,36 @@ type Collection struct {
 	Count     bool           `yaml:"count,omitempty"`
 }
 
-type CollectionName string
+type CollectionName int
 
 const (
 	// Collections
-	ARGS                   CollectionName = "ARGS"
-	ARGS_GET               CollectionName = "ARGS_GET"
-	ARGS_GET_NAMES         CollectionName = "ARGS_GET_NAMES"
-	ARGS_NAMES             CollectionName = "ARGS_NAMES"
-	ARGS_POST_NAMES        CollectionName = "ARGS_POST_NAMES"
-	ARGS_POST              CollectionName = "ARGS_POST"
-	ENV                    CollectionName = "ENV"
-	FILES                  CollectionName = "FILES"
-	GEO                    CollectionName = "GEO"
-	GLOBAL                 CollectionName = "GLOBAL"
-	IP                     CollectionName = "IP"
-	MATCHED_VARS_NAMES     CollectionName = "MATCHED_VARS_NAMES"
-	MATCHED_VARS           CollectionName = "MATCHED_VARS"
-	MULTIPART_PART_HEADERS CollectionName = "MULTIPART_PART_HEADERS"
-	PERF_RULES             CollectionName = "PERF_RULES"
-	REQUEST_COOKIES_NAMES  CollectionName = "REQUEST_COOKIES_NAMES"
-	REQUEST_COOKIES        CollectionName = "REQUEST_COOKIES"
-	REQUEST_HEADERS_NAMES  CollectionName = "REQUEST_HEADERS_NAMES"
-	REQUEST_HEADERS        CollectionName = "REQUEST_HEADERS"
-	RESPONSE_HEADERS_NAMES CollectionName = "RESPONSE_HEADERS_NAMES"
-	RESPONSE_HEADERS       CollectionName = "RESPONSE_HEADERS"
-	RULE                   CollectionName = "RULE"
-	SESSION                CollectionName = "SESSION"
-	TX                     CollectionName = "TX"
-	XML                    CollectionName = "XML"
+	UNKNOWN_COLLECTION CollectionName = iota
+	ARGS
+	ARGS_GET
+	ARGS_GET_NAMES
+	ARGS_NAMES
+	ARGS_POST_NAMES
+	ARGS_POST
+	ENV
+	FILES
+	GEO
+	GLOBAL
+	IP
+	MATCHED_VARS_NAMES
+	MATCHED_VARS
+	MULTIPART_PART_HEADERS
+	PERF_RULES
+	REQUEST_COOKIES_NAMES
+	REQUEST_COOKIES
+	REQUEST_HEADERS_NAMES
+	REQUEST_HEADERS
+	RESPONSE_HEADERS_NAMES
+	RESPONSE_HEADERS
+	RULE
+	SESSION
+	TX
+	XML
 )
 
 var (
@@ -70,6 +71,82 @@ var (
 	}
 )
 
+func (c CollectionName) String() string {
+	switch c {
+	case ARGS:
+		return "ARGS"
+	case ARGS_GET:
+		return "ARGS_GET"
+	case ARGS_GET_NAMES:
+		return "ARGS_GET_NAMES"
+	case ARGS_NAMES:
+		return "ARGS_NAMES"
+	case ARGS_POST_NAMES:
+		return "ARGS_POST_NAMES"
+	case ARGS_POST:
+		return "ARGS_POST"
+	case ENV:
+		return "ENV"
+	case FILES:
+		return "FILES"
+	case GEO:
+		return "GEO"
+	case GLOBAL:
+		return "GLOBAL"
+	case IP:
+		return "IP"
+	case MATCHED_VARS_NAMES:
+		return "MATCHED_VARS_NAMES"
+	case MATCHED_VARS:
+		return "MATCHED_VARS"
+	case MULTIPART_PART_HEADERS:
+		return "MULTIPART_PART_HEADERS"
+	case PERF_RULES:
+		return "PERF_RULES"
+	case REQUEST_COOKIES_NAMES:
+		return "REQUEST_COOKIES_NAMES"
+	case REQUEST_COOKIES:
+		return "REQUEST_COOKIES"
+	case REQUEST_HEADERS_NAMES:
+		return "REQUEST_HEADERS_NAMES"
+	case REQUEST_HEADERS:
+		return "REQUEST_HEADERS"
+	case RESPONSE_HEADERS_NAMES:
+		return "RESPONSE_HEADERS_NAMES"
+	case RESPONSE_HEADERS:
+		return "RESPONSE_HEADERS"
+	case RULE:
+		return "RULE"
+	case SESSION:
+		return "SESSION"
+	case TX:
+		return "TX"
+	case XML:
+		return "XML"
+	default:
+		return "unknown"
+	}
+}
+
+func (c CollectionName) MarshalYAML() (interface{}, error) {
+	if c == UNKNOWN_COLLECTION {
+		return nil, fmt.Errorf("Unknown collection name")
+	}
+	return c.String(), nil
+}
+
+func (c *CollectionName) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var name string
+	if err := unmarshal(&name); err != nil {
+		return err
+	}
+	*c = stringToCollectionName(name)
+	if *c == UNKNOWN_COLLECTION {
+		return fmt.Errorf("Collection name %s is not valid", name)
+	}
+	return nil
+}
+
 func CollectionsToString(collections []Collection, separator string) string {
 	result := ""
 	for i, collection := range collections {
@@ -77,19 +154,19 @@ func CollectionsToString(collections []Collection, separator string) string {
 			if collection.Count {
 				result += "&"
 			}
-			result += string(collection.Name)
+			result += collection.Name.String()
 		} else {
 			for j, arg := range collection.Arguments {
 				if collection.Count {
 					result += "&"
 				}
-				result += string(collection.Name) + ":" + arg
+				result += collection.Name.String() + ":" + arg
 				if j != len(collection.Arguments)-1 || len(collection.Excluded) > 0 {
 					result += separator
 				}
 			}
 			for j, excluded := range collection.Excluded {
-				result += "!" + string(collection.Name) + ":" + excluded
+				result += "!" + collection.Name.String() + ":" + excluded
 				if j != len(collection.Excluded)-1 {
 					result += separator
 				}
@@ -102,10 +179,10 @@ func CollectionsToString(collections []Collection, separator string) string {
 	return result
 }
 
-func GetCollection(name string) (CollectionName, error) {
+func stringToCollectionName(name string) CollectionName {
 	col, exists := allCollections[name]
 	if !exists {
-		return "", fmt.Errorf("Invalid collection name: %s", name)
+		return UNKNOWN_COLLECTION
 	}
-	return col, nil
+	return col
 }

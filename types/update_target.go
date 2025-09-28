@@ -42,9 +42,9 @@ func (d *UpdateTargetDirective) AddVariable(name string, excluded bool) error {
 }
 
 func (d *UpdateTargetDirective) AddCollection(name, value string, excluded, asCount bool) error {
-	col, err := GetCollection(name)
-	if err != nil {
-		return err
+	col := stringToCollectionName(name)
+	if col == UNKNOWN_COLLECTION {
+		return fmt.Errorf("Invalid collection name: %s", name)
 	}
 	if excluded && !asCount {
 		results := []Collection{}
