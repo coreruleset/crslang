@@ -613,35 +613,24 @@ func (s *SeclangActions) GetActionByKey(key string) Action {
 	return ActionWithParam{}
 }
 
-func (s *SeclangActions) GetActionsByKey(key string) []ActionWithParam {
-	actions := []ActionWithParam{}
-	// if s.DisruptiveAction != nil {
-	// 	if s.DisruptiveAction.ToString() == key {
-	// 		actions = append(actions, s.DisruptiveAction)
-	// 	}
-	// }
+func (s *SeclangActions) GetActionsByKey(key string) []Action {
+	actions := []Action{}
+	if s.DisruptiveAction != nil && s.DisruptiveAction.GetKey() == key {
+		actions = append(actions, s.DisruptiveAction)
+	}
 	for _, action := range s.NonDisruptiveActions {
 		if action.GetKey() == key {
-			aP, ok := action.(ActionWithParam)
-			if ok {
-				actions = append(actions, aP)
-			}
+			actions = append(actions, action)
 		}
 	}
 	for _, action := range s.FlowActions {
 		if action.GetKey() == key {
-			aP, ok := action.(ActionWithParam)
-			if ok {
-				actions = append(actions, aP)
-			}
+			actions = append(actions, action)
 		}
 	}
 	for _, action := range s.DataActions {
 		if action.GetKey() == key {
-			aP, ok := action.(ActionWithParam)
-			if ok {
-				actions = append(actions, aP)
-			}
+			actions = append(actions, action)
 		}
 	}
 	return actions

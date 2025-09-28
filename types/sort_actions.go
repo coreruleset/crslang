@@ -37,7 +37,12 @@ func sortActions(d ChainableDirective) []string {
 		case (fn == "setvar" || fn == "ctl") && slices.Contains(aKeys, fn):
 			aList := a.GetActionsByKey(fn)
 			for _, action := range aList {
-				results = append(results, action.ToString())
+				switch action.(type) {
+				case ActionMultipleParams:
+					results = slices.Concat(results, action.(ActionMultipleParams).GetAllParams())
+				default:
+					results = append(results, action.ToString())
+				}
 			}
 		case slices.Contains(aKeys, fn):
 			results = append(results, a.GetActionByKey(fn).ToString())
