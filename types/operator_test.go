@@ -3,6 +3,7 @@ package types
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -51,6 +52,50 @@ var (
 		{VerifySVNR, "verifySVNR"},
 		{Within, "within"},
 	}
+	operatorUnmarshalTests = []struct {
+		name     string
+		input    string
+		expected Operator
+	}{
+		{
+			name: "Standard format",
+			input: `name: rx
+value: ^.*$`,
+			expected: Operator{
+				Name:  Rx,
+				Value: "^.*$",
+			},
+		},
+		{
+			name: "Standard format, negated",
+			input: `name: rx
+value: ^.*$
+negate: true`,
+			expected: Operator{
+				Name:   Rx,
+				Value:  "^.*$",
+				Negate: true,
+			},
+		},
+		{
+			name:  "Compact format",
+			input: `rx: ^.*$`,
+			expected: Operator{
+				Name:  Rx,
+				Value: "^.*$",
+			},
+		},
+		{
+			name: "Compact format, negated",
+			input: `rx: ^.*$
+negate: true`,
+			expected: Operator{
+				Name:   Rx,
+				Value:  "^.*$",
+				Negate: true,
+			},
+		},
+	}
 )
 
 func TestOperatorTypeToString(t *testing.T) {
@@ -84,6 +129,19 @@ func TestMarshalOperatorType(t *testing.T) {
 			if string(data) != tt.yamlStr+"\n" {
 				t.Errorf("Expected %q, got %q", tt.yamlStr+"\n", data)
 			}
+		})
+	}
+}
+
+func TestUnmarshalOperator(t *testing.T) {
+	for _, tt := range operatorUnmarshalTests {
+		t.Run(tt.name, func(t *testing.T) {
+			var result Operator
+			err := yaml.Unmarshal([]byte(tt.input), &result)
+			if err != nil {
+				t.Fatalf("Failed to unmarshal: %v", err)
+			}
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }
