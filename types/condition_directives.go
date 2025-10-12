@@ -47,11 +47,11 @@ type RuleWithCondition struct {
 	ChainedRule *RuleWithCondition `yaml:"chainedRule,omitempty"`
 }
 
-func (s RuleWithCondition) ToSeclang() string {
+func (s *RuleWithCondition) ToSeclang() string {
 	return "New sec rule with conditions"
 }
 
-func (s RuleWithCondition) GetKind() Kind {
+func (s *RuleWithCondition) GetKind() Kind {
 	return s.Kind
 }
 
@@ -85,7 +85,7 @@ func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList 
 	return result
 }
 
-func RuleToCondition(directive ChainableDirective) RuleWithCondition {
+func RuleToCondition(directive ChainableDirective) *RuleWithCondition {
 	var ruleWithCondition RuleWithCondition
 	switch directive.(type) {
 	case *SecRule:
@@ -135,7 +135,7 @@ func RuleToCondition(directive ChainableDirective) RuleWithCondition {
 	if directive.GetChainedDirective() != nil {
 		chainedConditionRule := RuleToCondition(directive.GetChainedDirective())
 		if directive.NonDisruptiveActionsCount() > 0 {
-			ruleWithCondition.ChainedRule = &chainedConditionRule
+			ruleWithCondition.ChainedRule = chainedConditionRule
 		} else {
 			ruleWithCondition.Conditions = append(ruleWithCondition.Conditions, chainedConditionRule.Conditions...)
 			ruleWithCondition.Actions.NonDisruptiveActions = chainedConditionRule.Actions.NonDisruptiveActions
@@ -144,7 +144,7 @@ func RuleToCondition(directive ChainableDirective) RuleWithCondition {
 			}
 		}
 	}
-	return ruleWithCondition
+	return &ruleWithCondition
 }
 
 // yamlLoaderConditionRules is a auxiliary struct to load and iterate over the yaml file
@@ -328,7 +328,7 @@ func loadConditionDirective(yamlDirective yaml.Node) SeclangDirective {
 }
 
 // loadRuleWithConditions loads a rule with conditions in a recursive way
-func loadRuleWithConditions(yamlDirective yaml.Node) RuleWithCondition {
+func loadRuleWithConditions(yamlDirective yaml.Node) *RuleWithCondition {
 	rawDirective := []byte{}
 	var err error
 
@@ -344,7 +344,7 @@ func loadRuleWithConditions(yamlDirective yaml.Node) RuleWithCondition {
 		print(string(rawDirective))
 		panic(err)
 	}
-	directive := RuleWithCondition{
+	directive := &RuleWithCondition{
 		Kind:     RuleKind,
 		Metadata: loaderDirective.Metadata,
 		Actions:  loaderDirective.Actions,
@@ -355,10 +355,10 @@ func loadRuleWithConditions(yamlDirective yaml.Node) RuleWithCondition {
 			directive.Conditions = append(directive.Conditions, loadedCondition)
 		}
 	}
-	var loadedChainedRule RuleWithCondition
+	var loadedChainedRule *RuleWithCondition
 	if len(loaderDirective.ChainedRule.Content) > 0 {
 		loadedChainedRule = loadRuleWithConditions(loaderDirective.ChainedRule)
-		directive.ChainedRule = &loadedChainedRule
+		directive.ChainedRule = loadedChainedRule
 	}
 	return directive
 }
@@ -404,8 +404,8 @@ func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationList) *Co
 				directive = directiveWrapped.(CommentDirective).Metadata
 			case DefaultAction:
 				directive = directiveWrapped
-			case RuleWithCondition:
-				directive = FromConditionToUnmorfattedDirective(directiveWrapped.(RuleWithCondition))
+			case *RuleWithCondition:
+				directive = FromConditionToUnmorfattedDirective(*directiveWrapped.(*RuleWithCondition))
 			case ConfigurationDirective:
 				directive = ConfigurationDirective{
 					Metadata:  directiveWrapped.(ConfigurationDirective).Metadata,
