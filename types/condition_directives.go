@@ -147,6 +147,12 @@ func RuleToCondition(directive ChainableDirective) *RuleWithCondition {
 	return &ruleWithCondition
 }
 
+// configurationYamlLoader is a auxiliary struct to load the whole yaml file
+type configurationYamlLoader struct {
+	Global        DefaultConfigs             `yaml:"global,omitempty"`
+	DirectiveList []yamlLoaderConditionRules `yaml:"directivelist,omitempty"`
+}
+
 // yamlLoaderConditionRules is a auxiliary struct to load and iterate over the yaml file
 type yamlLoaderConditionRules struct {
 	Id         string                 `yaml:"id"`
@@ -228,8 +234,9 @@ func LoadDirectivesWithConditionsFromFile(filename string) ConfigurationList {
 
 // LoadDirectivesWithConditions loads condition format directives from a yaml file
 func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationList {
-	var configs []yamlLoaderConditionRules
-	err := yaml.Unmarshal(yamlFile, &configs)
+	var config configurationYamlLoader
+	err := yaml.Unmarshal(yamlFile, &config)
+	configs := config.DirectiveList
 	if err != nil {
 		panic(err)
 	}
@@ -246,7 +253,7 @@ func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationList {
 		}
 		resultConfigs = append(resultConfigs, DirectiveList{Id: config.Id, Directives: directives, Marker: config.Marker})
 	}
-	return ConfigurationList{DirectiveList: resultConfigs}
+	return ConfigurationList{Global: config.Global, DirectiveList: resultConfigs}
 }
 
 // loadConditionDirective loads the different kind of directives
@@ -405,7 +412,14 @@ func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationList) *Co
 			case DefaultAction:
 				directive = directiveWrapped
 			case *RuleWithCondition:
-				directive = FromConditionToUnmorfattedDirective(*directiveWrapped.(*RuleWithCondition))
+				chainableDir := FromConditionToUnmorfattedDirective(*directiveWrapped.(*RuleWithCondition))
+				if configListWrapped.Global.Version != "" {
+					chainableDir.GetMetadata().SetVer(configListWrapped.Global.Version)
+				}
+				for _, tag := range configListWrapped.Global.Tags {
+					chainableDir.GetMetadata().AddTag(tag)
+				}
+				directive = chainableDir
 			case ConfigurationDirective:
 				directive = ConfigurationDirective{
 					Metadata:  directiveWrapped.(ConfigurationDirective).Metadata,
