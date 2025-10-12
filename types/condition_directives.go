@@ -51,6 +51,10 @@ func (s RuleWithCondition) ToSeclang() string {
 	return "New sec rule with conditions"
 }
 
+func (s RuleWithCondition) GetKind() Kind {
+	return s.Kind
+}
+
 func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList {
 	result := new(ConfigurationList)
 	for _, config := range configList.DirectiveList {

@@ -137,7 +137,9 @@ func printSeclangToFile(configList types.ConfigurationList, filename string) err
 func printCRSLang(configList types.ConfigurationList, filename string) error {
 	configListWithConditions := types.ToDirectiveWithConditions(configList)
 
-	yamlFile, err := yaml.Marshal(configListWithConditions.DirectiveList)
+	configListWithConditions.ExtractDefaultValues()
+
+	yamlFile, err := yaml.Marshal(configListWithConditions)
 	if err != nil {
 		return err
 	}

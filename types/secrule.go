@@ -22,6 +22,10 @@ func NewSecRule() *SecRule {
 	return secRule
 }
 
+func (d SecRule) GetKind() Kind {
+	return UnknownKind
+}
+
 func (d SecRule) GetMetadata() Metadata {
 	return d.Metadata
 }
