@@ -85,7 +85,9 @@ func (c *ConfigurationList) ExtractDefaultValues() {
 	// Clear version and tags in rules since they are now in the global section
 	for _, rule := range rules {
 		rule.Metadata.Ver = ""
-		rule.Metadata.Tags = []string{}
+		rule.Metadata.Tags = slices.DeleteFunc(rule.Metadata.Tags, func(s string) bool {
+			return slices.Contains(tags, s)
+		})
 	}
 
 	c.Global.Version = version
