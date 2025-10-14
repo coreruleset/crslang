@@ -81,7 +81,7 @@ func LoadSeclang(input string) types.ConfigurationList {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && filepath.Ext(info.Name()) == ".conf" {
+		if ext := filepath.Ext(info.Name()); !info.IsDir() && (ext == ".conf" || (ext == ".example" && filepath.Ext(strings.TrimSuffix(info.Name(), ext)) == ".conf")) {
 			input, err := antlr.NewFileStream(path)
 			if err != nil {
 				panic("Error reading file" + path)
