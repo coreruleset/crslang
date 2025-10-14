@@ -3,6 +3,7 @@ package types
 type Kind string
 
 const (
+	UnknownKind       Kind = "unknown"
 	CommentKind       Kind = "comment"
 	ConfigurationKind Kind = "configuration"
 	DefaultActionKind Kind = "defaultaction"

@@ -22,6 +22,10 @@ func NewUpdateTargetDirective() *UpdateTargetDirective {
 	return directive
 }
 
+func (d UpdateTargetDirective) GetKind() Kind {
+	return d.Kind
+}
+
 func (d *UpdateTargetDirective) AddVariable(name string, excluded bool) error {
 	variable := stringToVariableName(name)
 	if variable == UNKNOWN_VAR {

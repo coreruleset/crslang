@@ -16,6 +16,10 @@ func NewSecAction() *SecAction {
 	return secAction
 }
 
+func (d SecAction) GetKind() Kind {
+	return UnknownKind
+}
+
 func (d SecAction) GetMetadata() Metadata {
 	return d.Metadata
 }

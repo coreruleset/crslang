@@ -9,6 +9,10 @@ type UpdateActionDirective struct {
 	Modify  ModifyAction `yaml:"modify"`
 }
 
+func (d UpdateActionDirective) GetKind() Kind {
+	return d.Kind
+}
+
 type ModifyAction struct {
 	Metadata        *UpdateActionMetadata `yaml:"metadata,omitempty"`
 	Transformations `yaml:",inline"`

@@ -3,6 +3,7 @@ package types
 import "fmt"
 
 type SeclangDirective interface {
+	GetKind() Kind
 	ToSeclang() string
 }
 
@@ -22,6 +23,10 @@ type CommentDirective struct {
 	Metadata CommentMetadata `yaml:",inline"`
 }
 
+func (d CommentDirective) GetKind() Kind {
+	return d.Kind
+}
+
 func (d CommentDirective) ToSeclang() string {
 	return d.Metadata.ToSeclang()
 }
@@ -31,6 +36,10 @@ type ConfigurationDirective struct {
 	Metadata  *CommentMetadata           `yaml:",inline"`
 	Name      ConfigurationDirectiveType `yaml:"name"`
 	Parameter string                     `yaml:"parameter"`
+}
+
+func (c ConfigurationDirective) GetKind() Kind {
+	return c.Kind
 }
 
 type ConfigurationDirectiveType string

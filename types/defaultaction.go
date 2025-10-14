@@ -15,6 +15,10 @@ func NewDefaultAction() *DefaultAction {
 	return defaultAction
 }
 
+func (d DefaultAction) GetKind() Kind {
+	return d.Kind
+}
+
 func (d DefaultAction) GetMetadata() Metadata {
 	return d.Metadata
 }
