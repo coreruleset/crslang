@@ -19,6 +19,10 @@ func NewSecRuleScript() *SecRuleScript {
 	return secRuleScript
 }
 
+func (d SecRuleScript) GetKind() Kind {
+	return UnknownKind
+}
+
 func (d SecRuleScript) GetMetadata() Metadata {
 	return d.Metadata
 }

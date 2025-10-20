@@ -270,3 +270,47 @@ func (o *Operator) ToString() string {
 		return "@" + o.Name.String()
 	}
 }
+
+func (o Operator) MarshalYAML() (interface{}, error) {
+	mapOperator := make(map[interface{}]interface{})
+	oName, err := o.Name.MarshalYAML()
+	if err != nil {
+		return nil, err
+	}
+	mapOperator[oName] = o.Value
+	return mapOperator, nil
+}
+
+func (o *Operator) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var rawData map[string]interface{}
+	if err := unmarshal(&rawData); err != nil {
+		return err
+	}
+	for k, v := range rawData {
+		switch k {
+		case "negate":
+			negate, ok := v.(bool)
+			if !ok {
+				return fmt.Errorf("negate should be a boolean")
+			}
+			o.Negate = negate
+		case "name":
+			if err := o.SetOperatorName(v.(string)); err != nil {
+				return err
+			}
+		case "value":
+			o.SetOperatorValue(v.(string))
+		default:
+			err := o.SetOperatorName(k)
+			if err != nil {
+				return err
+			}
+			if strVal, ok := v.(string); ok {
+				o.SetOperatorValue(strVal)
+			} else {
+				return fmt.Errorf("operator value should be a string")
+			}
+		}
+	}
+	return nil
+}

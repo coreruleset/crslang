@@ -13,6 +13,10 @@ type RemoveRuleDirective struct {
 	Msgs     []string        `yaml:"msgs,omitempty"`
 }
 
+func (d RemoveRuleDirective) GetKind() Kind {
+	return d.Kind
+}
+
 type IdRange struct {
 	Start int `yaml:"start"`
 	End   int `yaml:"end"`

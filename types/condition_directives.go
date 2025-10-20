@@ -47,8 +47,12 @@ type RuleWithCondition struct {
 	ChainedRule *RuleWithCondition `yaml:"chainedRule,omitempty"`
 }
 
-func (s RuleWithCondition) ToSeclang() string {
+func (s *RuleWithCondition) ToSeclang() string {
 	return "New sec rule with conditions"
+}
+
+func (s *RuleWithCondition) GetKind() Kind {
+	return s.Kind
 }
 
 func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList {
@@ -81,7 +85,7 @@ func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList 
 	return result
 }
 
-func RuleToCondition(directive ChainableDirective) RuleWithCondition {
+func RuleToCondition(directive ChainableDirective) *RuleWithCondition {
 	var ruleWithCondition RuleWithCondition
 	switch directive.(type) {
 	case *SecRule:
@@ -131,7 +135,7 @@ func RuleToCondition(directive ChainableDirective) RuleWithCondition {
 	if directive.GetChainedDirective() != nil {
 		chainedConditionRule := RuleToCondition(directive.GetChainedDirective())
 		if directive.NonDisruptiveActionsCount() > 0 {
-			ruleWithCondition.ChainedRule = &chainedConditionRule
+			ruleWithCondition.ChainedRule = chainedConditionRule
 		} else {
 			ruleWithCondition.Conditions = append(ruleWithCondition.Conditions, chainedConditionRule.Conditions...)
 			ruleWithCondition.Actions.NonDisruptiveActions = chainedConditionRule.Actions.NonDisruptiveActions
@@ -140,7 +144,13 @@ func RuleToCondition(directive ChainableDirective) RuleWithCondition {
 			}
 		}
 	}
-	return ruleWithCondition
+	return &ruleWithCondition
+}
+
+// configurationYamlLoader is a auxiliary struct to load the whole yaml file
+type configurationYamlLoader struct {
+	Global        DefaultConfigs             `yaml:"global,omitempty"`
+	DirectiveList []yamlLoaderConditionRules `yaml:"directivelist,omitempty"`
 }
 
 // yamlLoaderConditionRules is a auxiliary struct to load and iterate over the yaml file
@@ -283,8 +293,9 @@ func LoadDirectivesWithConditionsFromFile(filename string) ConfigurationList {
 
 // LoadDirectivesWithConditions loads condition format directives from a yaml file
 func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationList {
-	var configs []yamlLoaderConditionRules
-	err := yaml.Unmarshal(yamlFile, &configs)
+	var config configurationYamlLoader
+	err := yaml.Unmarshal(yamlFile, &config)
+	configs := config.DirectiveList
 	if err != nil {
 		panic(err)
 	}
@@ -301,7 +312,7 @@ func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationList {
 		}
 		resultConfigs = append(resultConfigs, DirectiveList{Id: config.Id, Directives: directives, Marker: config.Marker})
 	}
-	return ConfigurationList{DirectiveList: resultConfigs}
+	return ConfigurationList{Global: config.Global, DirectiveList: resultConfigs}
 }
 
 // loadConditionDirective loads the different kind of directives
@@ -383,7 +394,7 @@ func loadConditionDirective(yamlDirective yaml.Node) SeclangDirective {
 }
 
 // loadRuleWithConditions loads a rule with conditions in a recursive way
-func loadRuleWithConditions(yamlDirective yaml.Node) RuleWithCondition {
+func loadRuleWithConditions(yamlDirective yaml.Node) *RuleWithCondition {
 	rawDirective := []byte{}
 	var err error
 
@@ -399,7 +410,7 @@ func loadRuleWithConditions(yamlDirective yaml.Node) RuleWithCondition {
 		print(string(rawDirective))
 		panic(err)
 	}
-	directive := RuleWithCondition{
+	directive := &RuleWithCondition{
 		Kind:     RuleKind,
 		Metadata: loaderDirective.Metadata,
 		Actions:  loaderDirective.Actions,
@@ -410,10 +421,10 @@ func loadRuleWithConditions(yamlDirective yaml.Node) RuleWithCondition {
 			directive.Conditions = append(directive.Conditions, loadedCondition)
 		}
 	}
-	var loadedChainedRule RuleWithCondition
+	var loadedChainedRule *RuleWithCondition
 	if len(loaderDirective.ChainedRule.Content) > 0 {
 		loadedChainedRule = loadRuleWithConditions(loaderDirective.ChainedRule)
-		directive.ChainedRule = &loadedChainedRule
+		directive.ChainedRule = loadedChainedRule
 	}
 	return directive
 }
@@ -459,8 +470,15 @@ func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationList) *Co
 				directive = directiveWrapped.(CommentDirective).Metadata
 			case DefaultAction:
 				directive = directiveWrapped
-			case RuleWithCondition:
-				directive = FromConditionToUnmorfattedDirective(directiveWrapped.(RuleWithCondition))
+			case *RuleWithCondition:
+				chainableDir := FromConditionToUnmorfattedDirective(*directiveWrapped.(*RuleWithCondition))
+				if configListWrapped.Global.Version != "" {
+					chainableDir.GetMetadata().SetVer(configListWrapped.Global.Version)
+				}
+				for _, tag := range configListWrapped.Global.Tags {
+					chainableDir.GetMetadata().AddTag(tag)
+				}
+				directive = chainableDir
 			case ConfigurationDirective:
 				directive = ConfigurationDirective{
 					Metadata:  directiveWrapped.(ConfigurationDirective).Metadata,

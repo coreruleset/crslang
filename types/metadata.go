@@ -20,6 +20,10 @@ type CommentMetadata struct {
 	Comment string `yaml:"comment,omitempty"`
 }
 
+func (c CommentMetadata) GetKind() Kind {
+	return UnknownKind
+}
+
 func (c *CommentMetadata) SetComment(value string) {
 	c.Comment = value
 }

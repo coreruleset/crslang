@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"slices"
 )
 
@@ -21,6 +22,10 @@ func NewSecRule() *SecRule {
 	return secRule
 }
 
+func (d SecRule) GetKind() Kind {
+	return UnknownKind
+}
+
 func (d SecRule) GetMetadata() Metadata {
 	return d.Metadata
 }
@@ -34,9 +39,9 @@ func (d SecRule) GetTransformations() Transformations {
 }
 
 func (s *SecRule) AddVariable(name string, excluded bool) error {
-	variable, err := GetVariable(name)
-	if err != nil {
-		return err
+	variable := stringToVariableName(name)
+	if variable == UNKNOWN_VAR {
+		return fmt.Errorf("Invalid variable name: %s", name)
 	}
 	if excluded {
 		vars := []Variable{}
@@ -53,9 +58,9 @@ func (s *SecRule) AddVariable(name string, excluded bool) error {
 }
 
 func (s *SecRule) AddCollection(name, value string, excluded, asCount bool) error {
-	col, err := GetCollection(name)
-	if err != nil {
-		return err
+	col := stringToCollectionName(name)
+	if col == UNKNOWN_COLLECTION {
+		return fmt.Errorf("Invalid collection name: %s", name)
 	}
 	if excluded && !asCount {
 		results := []Collection{}
