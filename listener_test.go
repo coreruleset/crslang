@@ -27,7 +27,7 @@ func mustNewActionWithParam[T types.ActionType](action T, param string) types.Ac
 	return newAction
 }
 
-func mustNewSetvarAction(collection, operation string, vars []types.VarAssignment) types.Action {
+func mustNewSetvarAction(collection types.CollectionName, operation string, vars []types.VarAssignment) types.Action {
 	newAction, err := types.NewSetvarAction(collection, operation, vars)
 	if err != nil {
 		panic(err)
@@ -169,7 +169,7 @@ SecAction \
 									DisruptiveAction: mustNewActionOnly(types.Pass),
 									NonDisruptiveActions: []types.Action{
 										mustNewActionOnly(types.NoLog),
-										mustNewSetvarAction("tx", "=", []types.VarAssignment{
+										mustNewSetvarAction(types.TX, "=", []types.VarAssignment{
 											{Variable: "blocking_inbound_anomaly_score", Value: "0"},
 											{Variable: "detection_inbound_anomaly_score", Value: "0"},
 											{Variable: "inbound_anomaly_score_pl1", Value: "0"},
@@ -296,7 +296,7 @@ SecRule REQUEST_LINE "@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:
 									DisruptiveAction: mustNewActionOnly(types.Block),
 									NonDisruptiveActions: []types.Action{
 										mustNewActionWithParam(types.LogData, "%{request_line}"),
-										mustNewSetvarAction("tx", "=+", []types.VarAssignment{{Variable: "inbound_anomaly_score_pl1", Value: "%{tx.warning_anomaly_score}"}}),
+										mustNewSetvarAction(types.TX, "=+", []types.VarAssignment{{Variable: "inbound_anomaly_score_pl1", Value: "%{tx.warning_anomaly_score}"}}),
 									},
 								},
 							},

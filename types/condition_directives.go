@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"go.yaml.in/yaml/v4"
 )
@@ -235,7 +236,11 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 										}
 									}
 								}
-								newAct, err := NewSetvarAction(colName.(string), op.(string), parsedAssigns)
+								cName := stringToCollectionName(strings.ToUpper(colName.(string)))
+								if cName == UNKNOWN_COLLECTION {
+									return fmt.Errorf("Collection name %s is not valid", cName)
+								}
+								newAct, err := NewSetvarAction(cName, op.(string), parsedAssigns)
 								if err != nil {
 									return err
 								}
@@ -255,7 +260,7 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 										}
 									}
 								}
-								newAct, err := NewSetvarAction("tx", "=", parsedAssigns)
+								newAct, err := NewSetvarAction(TX, "=", parsedAssigns)
 								if err != nil {
 									return err
 								}

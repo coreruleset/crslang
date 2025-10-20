@@ -117,9 +117,9 @@ type VarAssignment struct {
 }
 
 type SetvarAction struct {
-	CollectionName string          `yaml:"collection,omitempty"`
-	Operation      string          `yaml:"operation,omitempty"`
-	Assignments    []VarAssignment `yaml:"assignments,omitempty"`
+	Collection  CollectionName  `yaml:"collection,omitempty"`
+	Operation   string          `yaml:"operation,omitempty"`
+	Assignments []VarAssignment `yaml:"assignments,omitempty"`
 }
 
 // GetKey returns the action name (it is always "setvar")
@@ -136,7 +136,7 @@ func (a SetvarAction) ToString() string {
 	var result []string
 	// Reconstruct the setvar actions
 	for _, asg := range a.Assignments {
-		result = append(result, SetVar.String()+":"+a.CollectionName+"."+asg.Variable+a.Operation+asg.Value)
+		result = append(result, SetVar.String()+":"+a.Collection.String()+"."+asg.Variable+a.Operation+asg.Value)
 	}
 	return strings.Join(result, ", ")
 }
@@ -154,7 +154,7 @@ func (a SetvarAction) GetAllParams() []string {
 	var result []string
 	// Get all the variables
 	for _, asg := range a.Assignments {
-		res := SetVar.String() + ":" + a.CollectionName + "." + asg.Variable + a.Operation + asg.Value
+		res := SetVar.String() + ":" + a.Collection.String() + "." + asg.Variable + a.Operation + asg.Value
 		result = append(result, res)
 	}
 	return result
@@ -168,10 +168,10 @@ func (s VarAssignment) MarshalYAML() (interface{}, error) {
 }
 
 func (s SetvarAction) MarshalYAML() (interface{}, error) {
-	if s.CollectionName == "" || s.Operation == "" || len(s.Assignments) == 0 {
+	if s.Collection == UNKNOWN_COLLECTION || s.Operation == "" || len(s.Assignments) == 0 {
 		return nil, fmt.Errorf("invalid setvar action: missing collection name, operation, or assignments")
 	}
-	if (s.CollectionName == "tx" || s.CollectionName == "TX") && s.Operation == "=" {
+	if s.Collection == TX && s.Operation == "=" {
 		// Default case
 		res := map[string][]VarAssignment{}
 		res["setvar"] = s.Assignments
@@ -180,16 +180,16 @@ func (s SetvarAction) MarshalYAML() (interface{}, error) {
 		// Non-default case, collection is different to `TX` or operation is different to `=`.
 		// Fields are re-mapped to a mirrored struct in order to preserve the order in the YAML
 		res := map[string]struct {
-			Collection  string
+			Collection  CollectionName
 			Operation   string
 			Assignments []VarAssignment
 		}{}
 		res["setvar"] = struct {
-			Collection  string
+			Collection  CollectionName
 			Operation   string
 			Assignments []VarAssignment
 		}{
-			Collection:  s.CollectionName,
+			Collection:  s.Collection,
 			Operation:   s.Operation,
 			Assignments: s.Assignments,
 		}
@@ -217,10 +217,12 @@ func NewActionWithParam[T ActionType](action T, param string) (ActionWithParam, 
 	return ActionWithParam{actionStr: param}, nil
 }
 
-// NewSetvarAction creates a new ActionMultipleParams with the given action type and parameter
-// It uses generics to accept DisruptiveAction, FlowAction, DataAction, or NonDisruptiveAction
-func NewSetvarAction(collection, operation string, vars []VarAssignment) (SetvarAction, error) {
-	return SetvarAction{CollectionName: collection, Operation: operation, Assignments: vars}, nil
+// NewSetvarAction creates a new SetvarAction with the given collection name, operation, and variable assignments
+func NewSetvarAction(collection CollectionName, operation string, vars []VarAssignment) (SetvarAction, error) {
+	if collection != GLOBAL && collection != IP && collection != RESOURCE && collection != SESSION && collection != TX && collection != USER {
+		return SetvarAction{}, fmt.Errorf("invalid setvar action: invalid collection name '%s'", collection)
+	}
+	return SetvarAction{Collection: collection, Operation: operation, Assignments: vars}, nil
 }
 
 type DisruptiveAction int
@@ -526,12 +528,13 @@ func (s *SeclangActions) AddNonDisruptiveActionWithParam(action NonDisruptiveAct
 
 // AddSetvarAction adds a setvar action to the NonDisruptiveActions list
 func (s *SeclangActions) AddSetvarAction(collection, variable, operation, value string) error {
+	colName := stringToCollectionName(strings.ToUpper(collection))
 	// Check if there is already a setvar action in the last position
 	if len(s.NonDisruptiveActions) > 0 {
 		lastAction := s.NonDisruptiveActions[len(s.NonDisruptiveActions)-1]
-		if lastAction.GetKey() != SetVar.String() || lastAction.(SetvarAction).CollectionName != collection || lastAction.(SetvarAction).Operation != operation {
+		if lastAction.GetKey() != SetVar.String() || lastAction.(SetvarAction).Collection != colName || lastAction.(SetvarAction).Operation != operation {
 			// If the last action is not setvar, we need to create a new one
-			newAction, err := NewSetvarAction(collection, operation, []VarAssignment{{Variable: variable, Value: value}})
+			newAction, err := NewSetvarAction(colName, operation, []VarAssignment{{Variable: variable, Value: value}})
 			if err != nil {
 				return err
 			}
@@ -550,7 +553,7 @@ func (s *SeclangActions) AddSetvarAction(collection, variable, operation, value 
 		}
 	} else {
 		// If there are no actions yet, we need to create a new setvar action
-		newAction, err := NewSetvarAction(collection, operation, []VarAssignment{{Variable: variable, Value: value}})
+		newAction, err := NewSetvarAction(colName, operation, []VarAssignment{{Variable: variable, Value: value}})
 		if err != nil {
 			return err
 		}
