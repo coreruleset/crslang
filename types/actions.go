@@ -524,6 +524,7 @@ func (s *SeclangActions) AddNonDisruptiveActionWithParam(action NonDisruptiveAct
 	return nil
 }
 
+// AddSetvarAction adds a setvar action to the NonDisruptiveActions list
 func (s *SeclangActions) AddSetvarAction(collection, variable, operation, value string) error {
 	// Check if there is already a setvar action in the last position
 	if len(s.NonDisruptiveActions) > 0 {
@@ -547,6 +548,13 @@ func (s *SeclangActions) AddSetvarAction(collection, variable, operation, value 
 			}
 			s.NonDisruptiveActions[len(s.NonDisruptiveActions)-1] = sv
 		}
+	} else {
+		// If there are no actions yet, we need to create a new setvar action
+		newAction, err := NewSetvarAction(collection, operation, []VarAssignment{{Variable: variable, Value: value}})
+		if err != nil {
+			return err
+		}
+		s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
 	}
 	return nil
 }
