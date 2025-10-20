@@ -196,26 +196,71 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 						return fmt.Errorf("Error: invalid format for non-disruptive action")
 					}
 					for a, p := range act {
-						switch p := p.(type) {
-						case string:
+						if a == "setvar" {
+							switch p := p.(type) {
+							case map[string]interface{}:
+								colName, ok := p["collection"]
+								if _, parseOk := colName.(string); !ok || !parseOk {
+									colName = "tx"
+								}
+								op, ok := p["operation"]
+								if _, parseOk := op.(string); !ok || !parseOk {
+									op = "="
+								}
+								assigns, ok := p["assignments"]
+								if _, parseOk := assigns.([]interface{}); !ok || !parseOk {
+									return fmt.Errorf("Error: setvar actions must have assignments and assignments must be a list")
+								}
+								parsedAssigns := []VarAssignment{}
+								for _, v := range assigns.([]interface{}) {
+									castedAssign, ok := v.(map[string]interface{})
+									if !ok || len(castedAssign) != 1 {
+										return fmt.Errorf("Error: invalid variable assignment format: %T", v)
+									}
+									for varName, varValue := range castedAssign {
+										if sVarValue, ok := varValue.(string); ok {
+											parsedAssigns = append(parsedAssigns, VarAssignment{Variable: varName, Value: sVarValue})
+										} else {
+											return fmt.Errorf("Error: assignment must be a string")
+										}
+									}
+								}
+								newAct, err := NewSetvarAction(colName.(string), op.(string), parsedAssigns)
+								if err != nil {
+									return err
+								}
+								s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAct)
+							case []interface{}:
+								parsedAssigns := []VarAssignment{}
+								for _, v := range p {
+									castedAssign, ok := v.(map[string]interface{})
+									if !ok || len(castedAssign) != 1 {
+										return fmt.Errorf("Error: invalid variable assignment format: %T", v)
+									}
+									for varName, varValue := range castedAssign {
+										if sVarValue, ok := varValue.(string); ok {
+											parsedAssigns = append(parsedAssigns, VarAssignment{Variable: varName, Value: sVarValue})
+										} else {
+											return fmt.Errorf("Error: assignment must be a string")
+										}
+									}
+								}
+								newAct, err := NewSetvarAction("tx", "=", parsedAssigns)
+								if err != nil {
+									return err
+								}
+								s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAct)
+							default:
+								return fmt.Errorf("Error: invalid format for setvar action: %T", p)
+							}
+						} else {
 							switch k {
 							case "non-disruptive":
-								s.AddNonDisruptiveActionWithParam(StringToNonDisruptiveAction(a), p)
+								s.AddNonDisruptiveActionWithParam(StringToNonDisruptiveAction(a), p.(string))
 							case "flow":
-								s.AddFlowActionWithParam(StringToFlowAction(a), p)
+								s.AddFlowActionWithParam(StringToFlowAction(a), p.(string))
 							case "data":
-								s.AddDataActionWithParams(StringToDataAction(a), p)
-							}
-						case []interface{}:
-							for _, param := range p {
-								switch k {
-								case "non-disruptive":
-									s.AddNonDisruptiveActionWithParam(StringToNonDisruptiveAction(a), param.(string))
-								case "flow":
-									s.AddFlowActionWithParam(StringToFlowAction(a), param.(string))
-								case "data":
-									s.AddDataActionWithParams(StringToDataAction(a), param.(string))
-								}
+								s.AddDataActionWithParams(StringToDataAction(a), p.(string))
 							}
 						}
 					}

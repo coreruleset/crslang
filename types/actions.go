@@ -111,59 +111,90 @@ func (a ActionWithParam) GetParam() string {
 	return ""
 }
 
-type ActionMultipleParams map[string][]string
+type VarAssignment struct {
+	Variable string `yaml:"variable"`
+	Value    string `yaml:"value"`
+}
 
-// GetKey returns the action name (first key in the map)
-func (a ActionMultipleParams) GetKey() string {
-	for key := range a {
-		return key
-	}
-	return ""
+type SetvarAction struct {
+	CollectionName string          `yaml:"collection,omitempty"`
+	Operation      string          `yaml:"operation,omitempty"`
+	Assignments    []VarAssignment `yaml:"assignments,omitempty"`
+}
+
+// GetKey returns the action name (it is always "setvar")
+func (a SetvarAction) GetKey() string {
+	return SetVar.String()
 }
 
 // ToString allows to implement the Action interface
-func (a ActionMultipleParams) ToString() string {
-	if len(a) == 0 {
+func (a SetvarAction) ToString() string {
+	if len(a.Assignments) == 0 {
 		return ""
 	}
 
 	var result []string
-	// Get the first (and should be only) key-value pair
-	for action, multParams := range a {
-		for _, param := range multParams {
-			result = append(result, action+":"+param)
-		}
+	// Reconstruct the setvar actions
+	for _, asg := range a.Assignments {
+		result = append(result, SetVar.String()+":"+a.CollectionName+"."+asg.Variable+a.Operation+asg.Value)
 	}
 	return strings.Join(result, ", ")
 }
 
-func (a *ActionMultipleParams) AppendParam(param string) error {
-	if len(*a) != 1 {
-		return fmt.Errorf("Invalid state: Action should contain exactly one action type")
-	}
-
-	// Get the first (and only) key-value pair
-	for action := range *a {
-		(*a)[action] = append((*a)[action], param)
-		return nil
-	}
+func (a *SetvarAction) AppendAssignment(variable, value string) error {
+	a.Assignments = append(a.Assignments, VarAssignment{Variable: variable, Value: value})
 	return nil
 }
 
-func (a ActionMultipleParams) GetAllParams() []string {
-	if len(a) == 0 {
+func (a SetvarAction) GetAllParams() []string {
+	if len(a.Assignments) == 0 {
 		return []string{}
 	}
 
 	var result []string
-	// Get the first (and should be only) key-value pair
-	for action, multParams := range a {
-		// Iterate over all parameters and append them to the result slice
-		for _, param := range multParams {
-			result = append(result, action+":"+param)
-		}
+	// Get all the variables
+	for _, asg := range a.Assignments {
+		res := SetVar.String() + ":" + a.CollectionName + "." + asg.Variable + a.Operation + asg.Value
+		result = append(result, res)
 	}
 	return result
+}
+
+func (s VarAssignment) MarshalYAML() (interface{}, error) {
+	if s.Variable == "" || s.Value == "" {
+		return nil, fmt.Errorf("invalid variable assignment: missing variable name or value")
+	}
+	return map[string]string{s.Variable: s.Value}, nil
+}
+
+func (s SetvarAction) MarshalYAML() (interface{}, error) {
+	if s.CollectionName == "" || s.Operation == "" || len(s.Assignments) == 0 {
+		return nil, fmt.Errorf("invalid setvar action: missing collection name, operation, or assignments")
+	}
+	if (s.CollectionName == "tx" || s.CollectionName == "TX") && s.Operation == "=" {
+		// Default case
+		res := map[string][]VarAssignment{}
+		res["setvar"] = s.Assignments
+		return res, nil
+	} else {
+		// Non-default case, collection is different to `TX` or operation is different to `=`.
+		// Fields are re-mapped to a mirrored struct in order to preserve the order in the YAML
+		res := map[string]struct {
+			Collection  string
+			Operation   string
+			Assignments []VarAssignment
+		}{}
+		res["setvar"] = struct {
+			Collection  string
+			Operation   string
+			Assignments []VarAssignment
+		}{
+			Collection:  s.CollectionName,
+			Operation:   s.Operation,
+			Assignments: s.Assignments,
+		}
+		return res, nil
+	}
 }
 
 // ActionType is a constraint for all action types
@@ -186,18 +217,10 @@ func NewActionWithParam[T ActionType](action T, param string) (ActionWithParam, 
 	return ActionWithParam{actionStr: param}, nil
 }
 
-// NewActionMultipleParam creates a new ActionMultipleParams with the given action type and parameter
+// NewSetvarAction creates a new ActionMultipleParams with the given action type and parameter
 // It uses generics to accept DisruptiveAction, FlowAction, DataAction, or NonDisruptiveAction
-func NewActionMultipleParam[T ActionType](action T, params []string) (ActionMultipleParams, error) {
-	// Use the String() method to get the string representation
-	actionStr := action.String()
-
-	// Check if the action is an Unknown value
-	if actionStr == "unknown" {
-		return ActionMultipleParams{}, fmt.Errorf("invalid action: unknown action type")
-	}
-
-	return ActionMultipleParams{actionStr: params}, nil
+func NewSetvarAction(collection, operation string, vars []VarAssignment) (SetvarAction, error) {
+	return SetvarAction{CollectionName: collection, Operation: operation, Assignments: vars}, nil
 }
 
 type DisruptiveAction int
@@ -493,35 +516,37 @@ func (s *SeclangActions) SetDisruptiveActionOnly(action DisruptiveAction) error 
 }
 
 func (s *SeclangActions) AddNonDisruptiveActionWithParam(action NonDisruptiveAction, param string) error {
-	if action == SetVar {
-		// Check if there is already a setvar action in the last position
-		if len(s.NonDisruptiveActions) > 0 {
-			lastAction := s.NonDisruptiveActions[len(s.NonDisruptiveActions)-1]
-			if lastAction.GetKey() != "setvar" {
-				// If the last action is not setvar, we need to create a new one
-				newAction, err := NewActionMultipleParam(action, []string{param})
-				if err != nil {
-					return err
-				}
-				s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
-			} else {
-				// If the last action is setvar, we need to append the param to it
-				aMP, ok := lastAction.(ActionMultipleParams)
-				if !ok {
-					return fmt.Errorf("invalid action type: expected ActionMultipleParams, got %T", lastAction)
-				}
-				err := aMP.AppendParam(param)
-				if err != nil {
-					return err
-				}
+	newAction, err := NewActionWithParam(action, param)
+	if err != nil {
+		return err
+	}
+	s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
+	return nil
+}
+
+func (s *SeclangActions) AddSetvarAction(collection, variable, operation, value string) error {
+	// Check if there is already a setvar action in the last position
+	if len(s.NonDisruptiveActions) > 0 {
+		lastAction := s.NonDisruptiveActions[len(s.NonDisruptiveActions)-1]
+		if lastAction.GetKey() != SetVar.String() || lastAction.(SetvarAction).CollectionName != collection || lastAction.(SetvarAction).Operation != operation {
+			// If the last action is not setvar, we need to create a new one
+			newAction, err := NewSetvarAction(collection, operation, []VarAssignment{{Variable: variable, Value: value}})
+			if err != nil {
+				return err
 			}
+			s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
+		} else {
+			// If the last action is setvar, we need to append the param to it
+			sv, ok := lastAction.(SetvarAction)
+			if !ok {
+				return fmt.Errorf("invalid action type: expected SetvarAction, got %T", lastAction)
+			}
+			err := sv.AppendAssignment(variable, value)
+			if err != nil {
+				return err
+			}
+			s.NonDisruptiveActions[len(s.NonDisruptiveActions)-1] = sv
 		}
-	} else {
-		newAction, err := NewActionWithParam(action, param)
-		if err != nil {
-			return err
-		}
-		s.NonDisruptiveActions = append(s.NonDisruptiveActions, newAction)
 	}
 	return nil
 }

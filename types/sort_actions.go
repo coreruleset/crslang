@@ -38,8 +38,8 @@ func sortActions(d ChainableDirective) []string {
 			aList := a.GetActionsByKey(fn)
 			for _, action := range aList {
 				switch action.(type) {
-				case ActionMultipleParams:
-					results = slices.Concat(results, action.(ActionMultipleParams).GetAllParams())
+				case SetvarAction:
+					results = slices.Concat(results, action.(SetvarAction).GetAllParams())
 				default:
 					results = append(results, action.ToString())
 				}

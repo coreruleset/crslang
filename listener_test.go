@@ -27,8 +27,8 @@ func mustNewActionWithParam[T types.ActionType](action T, param string) types.Ac
 	return newAction
 }
 
-func mustNewActionMultipleParam[T types.ActionType](action T, params []string) types.Action {
-	newAction, err := types.NewActionMultipleParam(action, params)
+func mustNewSetvarAction(collection, operation string, vars []types.VarAssignment) types.Action {
+	newAction, err := types.NewSetvarAction(collection, operation, vars)
 	if err != nil {
 		panic(err)
 	}
@@ -169,29 +169,29 @@ SecAction \
 									DisruptiveAction: mustNewActionOnly(types.Pass),
 									NonDisruptiveActions: []types.Action{
 										mustNewActionOnly(types.NoLog),
-										mustNewActionMultipleParam(types.SetVar, []string{
-											"tx.blocking_inbound_anomaly_score=0",
-											"tx.detection_inbound_anomaly_score=0",
-											"tx.inbound_anomaly_score_pl1=0",
-											"tx.inbound_anomaly_score_pl2=0",
-											"tx.inbound_anomaly_score_pl3=0",
-											"tx.inbound_anomaly_score_pl4=0",
-											"tx.sql_injection_score=0",
-											"tx.xss_score=0",
-											"tx.rfi_score=0",
-											"tx.lfi_score=0",
-											"tx.rce_score=0",
-											"tx.php_injection_score=0",
-											"tx.http_violation_score=0",
-											"tx.session_fixation_score=0",
-											"tx.blocking_outbound_anomaly_score=0",
-											"tx.detection_outbound_anomaly_score=0",
-											"tx.outbound_anomaly_score_pl1=0",
-											"tx.outbound_anomaly_score_pl2=0",
-											"tx.outbound_anomaly_score_pl3=0",
-											"tx.outbound_anomaly_score_pl4=0",
-											"tx.anomaly_score=0"},
-										),
+										mustNewSetvarAction("tx", "=", []types.VarAssignment{
+											{Variable: "blocking_inbound_anomaly_score", Value: "0"},
+											{Variable: "detection_inbound_anomaly_score", Value: "0"},
+											{Variable: "inbound_anomaly_score_pl1", Value: "0"},
+											{Variable: "inbound_anomaly_score_pl2", Value: "0"},
+											{Variable: "inbound_anomaly_score_pl3", Value: "0"},
+											{Variable: "inbound_anomaly_score_pl4", Value: "0"},
+											{Variable: "sql_injection_score", Value: "0"},
+											{Variable: "xss_score", Value: "0"},
+											{Variable: "rfi_score", Value: "0"},
+											{Variable: "lfi_score", Value: "0"},
+											{Variable: "rce_score", Value: "0"},
+											{Variable: "php_injection_score", Value: "0"},
+											{Variable: "http_violation_score", Value: "0"},
+											{Variable: "session_fixation_score", Value: "0"},
+											{Variable: "blocking_outbound_anomaly_score", Value: "0"},
+											{Variable: "detection_outbound_anomaly_score", Value: "0"},
+											{Variable: "outbound_anomaly_score_pl1", Value: "0"},
+											{Variable: "outbound_anomaly_score_pl2", Value: "0"},
+											{Variable: "outbound_anomaly_score_pl3", Value: "0"},
+											{Variable: "outbound_anomaly_score_pl4", Value: "0"},
+											{Variable: "anomaly_score", Value: "0"},
+										}),
 									},
 								},
 							},
@@ -296,7 +296,7 @@ SecRule REQUEST_LINE "@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:
 									DisruptiveAction: mustNewActionOnly(types.Block),
 									NonDisruptiveActions: []types.Action{
 										mustNewActionWithParam(types.LogData, "%{request_line}"),
-										mustNewActionMultipleParam(types.SetVar, []string{"tx.inbound_anomaly_score_pl1=+%{tx.warning_anomaly_score}"}),
+										mustNewSetvarAction("tx", "=+", []types.VarAssignment{{Variable: "inbound_anomaly_score_pl1", Value: "%{tx.warning_anomaly_score}"}}),
 									},
 								},
 							},
@@ -677,16 +677,18 @@ SecComponentSignature "OWASP_CRS/4.0.1-dev"`,
 
 func TestLoadSecLang(t *testing.T) {
 	for _, test := range listenerTestCases {
-		got := types.ConfigurationList{}
-		input := antlr.NewInputStream(test.payload)
-		lexer := parser.NewSecLangLexer(input)
-		stream := antlr.NewCommonTokenStream(lexer, 0)
-		p := parser.NewSecLangParser(stream)
-		start := p.Configuration()
-		var seclangListener listener.ExtendedSeclangParserListener
-		antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
-		got = seclangListener.ConfigurationList
+		t.Run(test.name, func(t *testing.T) {
+			got := types.ConfigurationList{}
+			input := antlr.NewInputStream(test.payload)
+			lexer := parser.NewSecLangLexer(input)
+			stream := antlr.NewCommonTokenStream(lexer, 0)
+			p := parser.NewSecLangParser(stream)
+			start := p.Configuration()
+			var seclangListener listener.ExtendedSeclangParserListener
+			antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+			got = seclangListener.ConfigurationList
 
-		require.Equalf(t, test.expected, got, test.name)
+			require.Equalf(t, test.expected, got, test.name)
+		})
 	}
 }

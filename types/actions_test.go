@@ -24,8 +24,8 @@ func mustNewActionWithParam[T ActionType](action T, param string) Action {
 	return newAction
 }
 
-func mustNewActionMultipleParam[T ActionType](action T, params []string) Action {
-	newAction, err := NewActionMultipleParam(action, params)
+func mustNewSetvarAction(collection, operation string, vars []VarAssignment) Action {
+	newAction, err := NewSetvarAction(collection, operation, vars)
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +43,8 @@ disruptive: block
 non-disruptive:
     - capture
     - logdata: 'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}'
-    - setvar: tx.rfi_parameter_%{MATCHED_VAR_NAME}=.%{tx.1}
+    - setvar: 
+        - rfi_parameter_%{MATCHED_VAR_NAME}: .%{tx.1}
 flow:
     - chain`,
 			expected: SeclangActions{
@@ -51,10 +52,85 @@ flow:
 				NonDisruptiveActions: []Action{
 					mustNewActionOnly(Capture),
 					mustNewActionWithParam(LogData, "Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}"),
-					mustNewActionMultipleParam(SetVar, []string{"tx.rfi_parameter_%{MATCHED_VAR_NAME}=.%{tx.1}"}),
+					mustNewSetvarAction("tx", "=", []VarAssignment{{Variable: "rfi_parameter_%{MATCHED_VAR_NAME}", Value: ".%{tx.1}"}}),
 				},
 				FlowActions: []Action{
 					mustNewActionOnly(Chain),
+				},
+			},
+		},
+		{
+			input: `
+disruptive: pass
+non-disruptive:
+    - nolog
+    - setvar:
+        - blocking_inbound_anomaly_score: "0"
+        - detection_inbound_anomaly_score: "0"
+        - inbound_anomaly_score_pl1: "0"
+        - inbound_anomaly_score_pl2: "0"
+        - inbound_anomaly_score_pl3: "0"
+        - inbound_anomaly_score_pl4: "0"
+        - sql_injection_score: "0"
+        - xss_score: "0"
+        - rfi_score: "0"
+        - lfi_score: "0"
+        - rce_score: "0"
+        - php_injection_score: "0"
+        - http_violation_score: "0"
+        - session_fixation_score: "0"
+        - blocking_outbound_anomaly_score: "0"
+        - detection_outbound_anomaly_score: "0"
+        - outbound_anomaly_score_pl1: "0"
+        - outbound_anomaly_score_pl2: "0"
+        - outbound_anomaly_score_pl3: "0"
+        - outbound_anomaly_score_pl4: "0"
+        - anomaly_score: "0"`,
+			expected: SeclangActions{
+				DisruptiveAction: mustNewActionOnly(Pass),
+				NonDisruptiveActions: []Action{
+					mustNewActionOnly(NoLog),
+					mustNewSetvarAction("tx", "=", []VarAssignment{
+						{Variable: "blocking_inbound_anomaly_score", Value: "0"},
+						{Variable: "detection_inbound_anomaly_score", Value: "0"},
+						{Variable: "inbound_anomaly_score_pl1", Value: "0"},
+						{Variable: "inbound_anomaly_score_pl2", Value: "0"},
+						{Variable: "inbound_anomaly_score_pl3", Value: "0"},
+						{Variable: "inbound_anomaly_score_pl4", Value: "0"},
+						{Variable: "sql_injection_score", Value: "0"},
+						{Variable: "xss_score", Value: "0"},
+						{Variable: "rfi_score", Value: "0"},
+						{Variable: "lfi_score", Value: "0"},
+						{Variable: "rce_score", Value: "0"},
+						{Variable: "php_injection_score", Value: "0"},
+						{Variable: "http_violation_score", Value: "0"},
+						{Variable: "session_fixation_score", Value: "0"},
+						{Variable: "blocking_outbound_anomaly_score", Value: "0"},
+						{Variable: "detection_outbound_anomaly_score", Value: "0"},
+						{Variable: "outbound_anomaly_score_pl1", Value: "0"},
+						{Variable: "outbound_anomaly_score_pl2", Value: "0"},
+						{Variable: "outbound_anomaly_score_pl3", Value: "0"},
+						{Variable: "outbound_anomaly_score_pl4", Value: "0"},
+						{Variable: "anomaly_score", Value: "0"},
+					}),
+				},
+			},
+		},
+		{
+			input: `
+disruptive: pass
+non-disruptive:
+    - nolog
+    - setvar:
+        collection: TX
+        operation: =+
+        assignments:
+            - paramcounter_%{MATCHED_VAR_NAME}: "1"`,
+			expected: SeclangActions{
+				DisruptiveAction: mustNewActionOnly(Pass),
+				NonDisruptiveActions: []Action{
+					mustNewActionOnly(NoLog),
+					mustNewSetvarAction("TX", "=+", []VarAssignment{{Variable: "paramcounter_%{MATCHED_VAR_NAME}", Value: "1"}}),
 				},
 			},
 		},
