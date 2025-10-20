@@ -44,11 +44,13 @@ func (l *ExtendedSeclangParserListener) EnterDisruptive_action_with_params(ctx *
 }
 
 func (l *ExtendedSeclangParserListener) EnterNon_disruptive_action_with_params(ctx *parser.Non_disruptive_action_with_paramsContext) {
-	l.setParam = func(value string) {
-		action := types.StringToNonDisruptiveAction(ctx.GetText())
-		err := l.currentDirective.GetActions().AddNonDisruptiveActionWithParam(action, value)
-		if err != nil {
-			panic(fmt.Sprintf("failed to add non-disruptive action with param: %v", err))
+	if ctx.GetText() != "setvar" {
+		l.setParam = func(value string) {
+			action := types.StringToNonDisruptiveAction(ctx.GetText())
+			err := l.currentDirective.GetActions().AddNonDisruptiveActionWithParam(action, value)
+			if err != nil {
+				panic(fmt.Sprintf("failed to add non-disruptive action with param: %v", err))
+			}
 		}
 	}
 }
@@ -78,4 +80,24 @@ func (l *ExtendedSeclangParserListener) EnterAction_value_types(ctx *parser.Acti
 		l.setParam(ctx.GetText())
 		l.setParam = doNothingFuncString
 	}
+}
+
+func (l *ExtendedSeclangParserListener) EnterCol_name(ctx *parser.Col_nameContext) {
+	l.varName = ctx.GetText()
+}
+
+func (l *ExtendedSeclangParserListener) EnterSetvar_stmt(ctx *parser.Setvar_stmtContext) {
+	l.varValue = ctx.GetText()
+}
+
+func (l *ExtendedSeclangParserListener) EnterAssignment(ctx *parser.AssignmentContext) {
+	l.parameter = ctx.GetText()
+}
+
+func (l *ExtendedSeclangParserListener) EnterVar_assignment(ctx *parser.Var_assignmentContext) {
+	l.currentDirective.GetActions().AddSetvarAction(l.varName, l.varValue, l.parameter, ctx.GetText())
+	l.varName = ""
+	l.varValue = ""
+	l.parameter = ""
+	l.setParam = doNothingFuncString
 }

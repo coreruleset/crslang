@@ -33,11 +33,13 @@ const (
 	REQUEST_COOKIES
 	REQUEST_HEADERS_NAMES
 	REQUEST_HEADERS
+	RESOURCE
 	RESPONSE_HEADERS_NAMES
 	RESPONSE_HEADERS
 	RULE
 	SESSION
 	TX
+	USER
 	XML
 )
 
@@ -62,11 +64,13 @@ var (
 		"REQUEST_COOKIES":        REQUEST_COOKIES,
 		"REQUEST_HEADERS_NAMES":  REQUEST_HEADERS_NAMES,
 		"REQUEST_HEADERS":        REQUEST_HEADERS,
+		"RESOURCE":               RESOURCE,
 		"RESPONSE_HEADERS_NAMES": RESPONSE_HEADERS_NAMES,
 		"RESPONSE_HEADERS":       RESPONSE_HEADERS,
 		"RULE":                   RULE,
 		"SESSION":                SESSION,
 		"TX":                     TX,
+		"USER":                   USER,
 		"XML":                    XML,
 	}
 )
@@ -111,6 +115,8 @@ func (c CollectionName) String() string {
 		return "REQUEST_HEADERS_NAMES"
 	case REQUEST_HEADERS:
 		return "REQUEST_HEADERS"
+	case RESOURCE:
+		return "RESOURCE"
 	case RESPONSE_HEADERS_NAMES:
 		return "RESPONSE_HEADERS_NAMES"
 	case RESPONSE_HEADERS:
@@ -121,6 +127,8 @@ func (c CollectionName) String() string {
 		return "SESSION"
 	case TX:
 		return "TX"
+	case USER:
+		return "USER"
 	case XML:
 		return "XML"
 	default:

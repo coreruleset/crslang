@@ -27,6 +27,14 @@ func mustNewActionWithParam[T types.ActionType](action T, param string) types.Ac
 	return newAction
 }
 
+func mustNewSetvarAction(collection types.CollectionName, operation string, vars []types.VarAssignment) types.Action {
+	newAction, err := types.NewSetvarAction(collection, operation, vars)
+	if err != nil {
+		panic(err)
+	}
+	return newAction
+}
+
 type testCase struct {
 	name     string
 	payload  string
@@ -161,27 +169,29 @@ SecAction \
 									DisruptiveAction: mustNewActionOnly(types.Pass),
 									NonDisruptiveActions: []types.Action{
 										mustNewActionOnly(types.NoLog),
-										mustNewActionWithParam(types.SetVar, "tx.blocking_inbound_anomaly_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.detection_inbound_anomaly_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl1=0"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl2=0"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl3=0"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl4=0"),
-										mustNewActionWithParam(types.SetVar, "tx.sql_injection_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.xss_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.rfi_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.lfi_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.rce_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.php_injection_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.http_violation_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.session_fixation_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.blocking_outbound_anomaly_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.detection_outbound_anomaly_score=0"),
-										mustNewActionWithParam(types.SetVar, "tx.outbound_anomaly_score_pl1=0"),
-										mustNewActionWithParam(types.SetVar, "tx.outbound_anomaly_score_pl2=0"),
-										mustNewActionWithParam(types.SetVar, "tx.outbound_anomaly_score_pl3=0"),
-										mustNewActionWithParam(types.SetVar, "tx.outbound_anomaly_score_pl4=0"),
-										mustNewActionWithParam(types.SetVar, "tx.anomaly_score=0"),
+										mustNewSetvarAction(types.TX, "=", []types.VarAssignment{
+											{Variable: "blocking_inbound_anomaly_score", Value: "0"},
+											{Variable: "detection_inbound_anomaly_score", Value: "0"},
+											{Variable: "inbound_anomaly_score_pl1", Value: "0"},
+											{Variable: "inbound_anomaly_score_pl2", Value: "0"},
+											{Variable: "inbound_anomaly_score_pl3", Value: "0"},
+											{Variable: "inbound_anomaly_score_pl4", Value: "0"},
+											{Variable: "sql_injection_score", Value: "0"},
+											{Variable: "xss_score", Value: "0"},
+											{Variable: "rfi_score", Value: "0"},
+											{Variable: "lfi_score", Value: "0"},
+											{Variable: "rce_score", Value: "0"},
+											{Variable: "php_injection_score", Value: "0"},
+											{Variable: "http_violation_score", Value: "0"},
+											{Variable: "session_fixation_score", Value: "0"},
+											{Variable: "blocking_outbound_anomaly_score", Value: "0"},
+											{Variable: "detection_outbound_anomaly_score", Value: "0"},
+											{Variable: "outbound_anomaly_score_pl1", Value: "0"},
+											{Variable: "outbound_anomaly_score_pl2", Value: "0"},
+											{Variable: "outbound_anomaly_score_pl3", Value: "0"},
+											{Variable: "outbound_anomaly_score_pl4", Value: "0"},
+											{Variable: "anomaly_score", Value: "0"},
+										}),
 									},
 								},
 							},
@@ -286,7 +296,7 @@ SecRule REQUEST_LINE "@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:
 									DisruptiveAction: mustNewActionOnly(types.Block),
 									NonDisruptiveActions: []types.Action{
 										mustNewActionWithParam(types.LogData, "%{request_line}"),
-										mustNewActionWithParam(types.SetVar, "tx.inbound_anomaly_score_pl1=+%{tx.warning_anomaly_score}"),
+										mustNewSetvarAction(types.TX, "=+", []types.VarAssignment{{Variable: "inbound_anomaly_score_pl1", Value: "%{tx.warning_anomaly_score}"}}),
 									},
 								},
 							},
@@ -667,16 +677,18 @@ SecComponentSignature "OWASP_CRS/4.0.1-dev"`,
 
 func TestLoadSecLang(t *testing.T) {
 	for _, test := range listenerTestCases {
-		got := types.ConfigurationList{}
-		input := antlr.NewInputStream(test.payload)
-		lexer := parser.NewSecLangLexer(input)
-		stream := antlr.NewCommonTokenStream(lexer, 0)
-		p := parser.NewSecLangParser(stream)
-		start := p.Configuration()
-		var seclangListener listener.ExtendedSeclangParserListener
-		antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
-		got = seclangListener.ConfigurationList
+		t.Run(test.name, func(t *testing.T) {
+			got := types.ConfigurationList{}
+			input := antlr.NewInputStream(test.payload)
+			lexer := parser.NewSecLangLexer(input)
+			stream := antlr.NewCommonTokenStream(lexer, 0)
+			p := parser.NewSecLangParser(stream)
+			start := p.Configuration()
+			var seclangListener listener.ExtendedSeclangParserListener
+			antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+			got = seclangListener.ConfigurationList
 
-		require.Equalf(t, got, test.expected, test.name)
+			require.Equalf(t, test.expected, got, test.name)
+		})
 	}
 }

@@ -67,7 +67,6 @@ const (
 	RESPONSE_CONTENT_TYPE
 	RESPONSE_PROTOCOL
 	RESPONSE_STATUS
-	RESOURCE
 	SCRIPT_BASENAME
 	SCRIPT_FILENAME
 	SCRIPT_GID
@@ -94,7 +93,6 @@ const (
 	TIME_YEAR
 	UNIQUE_ID
 	URLENCODED_ERROR
-	USER
 	USERAGENT_IP
 	USERID
 	WEBAPPID
@@ -231,8 +229,6 @@ func (v VariableName) String() string {
 		return "RESPONSE_PROTOCOL"
 	case RESPONSE_STATUS:
 		return "RESPONSE_STATUS"
-	case RESOURCE:
-		return "RESOURCE"
 	case SCRIPT_BASENAME:
 		return "SCRIPT_BASENAME"
 	case SCRIPT_FILENAME:
@@ -285,8 +281,6 @@ func (v VariableName) String() string {
 		return "UNIQUE_ID"
 	case URLENCODED_ERROR:
 		return "URLENCODED_ERROR"
-	case USER:
-		return "USER"
 	case USERAGENT_IP:
 		return "USERAGENT_IP"
 	case USERID:
@@ -390,7 +384,6 @@ var (
 		"RESPONSE_CONTENT_TYPE":            RESPONSE_CONTENT_TYPE,
 		"RESPONSE_PROTOCOL":                RESPONSE_PROTOCOL,
 		"RESPONSE_STATUS":                  RESPONSE_STATUS,
-		"RESOURCE":                         RESOURCE,
 		"SCRIPT_BASENAME":                  SCRIPT_BASENAME,
 		"SCRIPT_FILENAME":                  SCRIPT_FILENAME,
 		"SCRIPT_GID":                       SCRIPT_GID,
@@ -417,7 +410,6 @@ var (
 		"TIME_YEAR":                        TIME_YEAR,
 		"UNIQUE_ID":                        UNIQUE_ID,
 		"URLENCODED_ERROR":                 URLENCODED_ERROR,
-		"USER":                             USER,
 		"USERAGENT_IP":                     USERAGENT_IP,
 		"USERID":                           USERID,
 		"WEBAPPID":                         WEBAPPID,
