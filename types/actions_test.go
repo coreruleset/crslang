@@ -24,7 +24,7 @@ func mustNewActionWithParam[T ActionType](action T, param string) Action {
 	return newAction
 }
 
-func mustNewSetvarAction(collection CollectionName, operation string, vars []VarAssignment) Action {
+func mustNewSetvarAction(collection CollectionName, operation VarOperation, vars []VarAssignment) Action {
 	newAction, err := NewSetvarAction(collection, operation, vars)
 	if err != nil {
 		panic(err)
@@ -52,7 +52,7 @@ flow:
 				NonDisruptiveActions: []Action{
 					mustNewActionOnly(Capture),
 					mustNewActionWithParam(LogData, "Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}"),
-					mustNewSetvarAction(TX, "=", []VarAssignment{{Variable: "rfi_parameter_%{MATCHED_VAR_NAME}", Value: ".%{tx.1}"}}),
+					mustNewSetvarAction(TX, Assign, []VarAssignment{{Variable: "rfi_parameter_%{MATCHED_VAR_NAME}", Value: ".%{tx.1}"}}),
 				},
 				FlowActions: []Action{
 					mustNewActionOnly(Chain),
@@ -90,7 +90,7 @@ non-disruptive:
 				DisruptiveAction: mustNewActionOnly(Pass),
 				NonDisruptiveActions: []Action{
 					mustNewActionOnly(NoLog),
-					mustNewSetvarAction(TX, "=", []VarAssignment{
+					mustNewSetvarAction(TX, Assign, []VarAssignment{
 						{Variable: "blocking_inbound_anomaly_score", Value: "0"},
 						{Variable: "detection_inbound_anomaly_score", Value: "0"},
 						{Variable: "inbound_anomaly_score_pl1", Value: "0"},
@@ -130,7 +130,7 @@ non-disruptive:
 				DisruptiveAction: mustNewActionOnly(Pass),
 				NonDisruptiveActions: []Action{
 					mustNewActionOnly(NoLog),
-					mustNewSetvarAction(TX, "=+", []VarAssignment{{Variable: "paramcounter_%{MATCHED_VAR_NAME}", Value: "1"}}),
+					mustNewSetvarAction(TX, Increment, []VarAssignment{{Variable: "paramcounter_%{MATCHED_VAR_NAME}", Value: "1"}}),
 				},
 			},
 		},

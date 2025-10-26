@@ -240,7 +240,11 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 								if cName == UNKNOWN_COLLECTION {
 									return fmt.Errorf("Collection name %s is not valid", cName)
 								}
-								newAct, err := NewSetvarAction(cName, op.(string), parsedAssigns)
+								vOp := stringToVarOperation(op.(string))
+								if vOp == UnknownOp {
+									return fmt.Errorf("invalid setvar action: invalid operation '%s'", op)
+								}
+								newAct, err := NewSetvarAction(cName, vOp, parsedAssigns)
 								if err != nil {
 									return err
 								}
@@ -260,7 +264,7 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 										}
 									}
 								}
-								newAct, err := NewSetvarAction(TX, "=", parsedAssigns)
+								newAct, err := NewSetvarAction(TX, Assign, parsedAssigns)
 								if err != nil {
 									return err
 								}
