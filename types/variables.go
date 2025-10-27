@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+
+	"go.yaml.in/yaml/v4"
+)
 
 type Variable struct {
 	Name     VariableName `yaml:"name"`
@@ -462,9 +466,9 @@ func (v VariableName) MarshalYAML() (interface{}, error) {
 	return v.String(), nil
 }
 
-func (v *VariableName) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (v *VariableName) UnmarshalYAML(value *yaml.Node) error {
 	var name string
-	if err := unmarshal(&name); err != nil {
+	if err := value.Decode(&name); err != nil {
 		return err
 	}
 	variableConst := stringToVariableName(name)
@@ -472,5 +476,59 @@ func (v *VariableName) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return fmt.Errorf("Variable name %s is not valid", name)
 	}
 	*v = variableConst
+	return nil
+}
+
+func (v Variable) MarshalYAML() (interface{}, error) {
+	name, err := v.Name.MarshalYAML()
+	if err != nil {
+		return nil, err
+	}
+	if !v.Excluded {
+		return name, nil
+	} else {
+		return struct {
+			Name     string
+			Excluded bool
+		}{Name: name.(string), Excluded: true}, nil
+	}
+}
+
+func (v *Variable) UnmarshalYAML(value *yaml.Node) error {
+	var res Variable
+	var name VariableName
+
+	if value.Kind == yaml.ScalarNode {
+		if err := name.UnmarshalYAML(value); err != nil {
+			return err
+		}
+		res.Name = name
+		res.Excluded = false
+	} else if value.Kind == yaml.MappingNode {
+		for i := 0; i < len(value.Content); i += 2 {
+			keyNode := value.Content[i]
+			valNode := value.Content[i+1]
+			var key string
+			if err := keyNode.Decode(&key); err != nil {
+				return err
+			}
+			switch key {
+			case "name":
+				if err := name.UnmarshalYAML(valNode); err != nil {
+					return err
+				}
+				res.Name = name
+			case "excluded":
+				var excluded bool
+				if err := valNode.Decode(&excluded); err != nil {
+					return err
+				}
+				res.Excluded = excluded
+			default:
+				return fmt.Errorf("unknown field '%s' in Variable", key)
+			}
+		}
+	}
+	*v = res
 	return nil
 }

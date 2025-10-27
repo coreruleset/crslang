@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v4"
 )
 
 var (
-	varTests = []struct {
+	varNameTests = []struct {
 		variable VariableName
 		yamlStr  string
 	}{
@@ -115,10 +116,51 @@ var (
 		{REQBODY_PROCESSOR_ERROR_MSG, "REQBODY_PROCESSOR_ERROR_MSG"},
 		{STATUS, "STATUS"},
 	}
+	varTests = []struct {
+		name          string
+		input         string
+		output        Variable
+		expectedError string
+	}{
+		{
+			name:  "Only name variable",
+			input: "REQUEST_METHOD",
+			output: Variable{
+				Name: REQUEST_METHOD,
+			},
+		},
+		{
+			name:  "Only name variable with property name",
+			input: "name: REQUEST_METHOD",
+			output: Variable{
+				Name: REQUEST_METHOD,
+			},
+		},
+		{
+			name: "Variable with exclude property",
+			input: `
+name: REQUEST_METHOD
+excluded: true
+`,
+			output: Variable{
+				Name:     REQUEST_METHOD,
+				Excluded: true,
+			},
+		},
+		{
+			name: "Variable with unknown property",
+			input: `
+name: REQUEST_METHOD
+unknown: true
+`,
+			output:        Variable{},
+			expectedError: "yaml: unmarshal errors:\n  line 2: unknown field 'unknown' in Variable",
+		},
+	}
 )
 
 func TestVariableNameToString(t *testing.T) {
-	for _, tt := range varTests {
+	for _, tt := range varNameTests {
 		t.Run(tt.yamlStr, func(t *testing.T) {
 			if tt.variable.String() != tt.yamlStr {
 				t.Errorf("Expected %q, got %q", tt.yamlStr, tt.variable.String())
@@ -128,7 +170,7 @@ func TestVariableNameToString(t *testing.T) {
 }
 
 func TestStringToVariableName(t *testing.T) {
-	for _, tt := range varTests {
+	for _, tt := range varNameTests {
 		t.Run(tt.yamlStr, func(t *testing.T) {
 			variable := stringToVariableName(tt.yamlStr)
 			if variable != tt.variable {
@@ -139,7 +181,7 @@ func TestStringToVariableName(t *testing.T) {
 }
 
 func TestMarshalVariableName(t *testing.T) {
-	for _, tt := range varTests {
+	for _, tt := range varNameTests {
 		t.Run(tt.yamlStr, func(t *testing.T) {
 			data, err := yaml.Marshal(tt.variable)
 			if err != nil {
@@ -159,4 +201,18 @@ func TestUnknownVariableName(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, "Unknown variable name", err.Error())
 	})
+}
+
+func TestUnmarshalVariable(t *testing.T) {
+	for _, tt := range varTests {
+		t.Run(tt.name, func(t *testing.T) {
+			variable := Variable{}
+			err := yaml.Unmarshal([]byte(tt.input), &variable)
+			if err != nil {
+				assert.Equal(t, tt.expectedError, err.Error())
+			} else {
+				require.Equal(t, tt.output, variable)
+			}
+		})
+	}
 }
