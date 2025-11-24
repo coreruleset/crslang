@@ -3,10 +3,10 @@ package types
 import "strconv"
 
 type UpdateActionDirective struct {
-	Kind    Kind         `yaml:"kind"`
-	Comment string       `yaml:"comment,omitempty"`
-	Id      int          `yaml:"id"`
-	Modify  ModifyAction `yaml:"modify"`
+	Kind     Kind         `yaml:"kind"`
+	Comments []string     `yaml:"comments,omitempty"`
+	Id       int          `yaml:"id"`
+	Modify   ModifyAction `yaml:"modify"`
 }
 
 func (d UpdateActionDirective) GetKind() Kind {
@@ -49,7 +49,7 @@ func (d *UpdateActionDirective) AddTransformation(t string) error {
 }
 
 func (d UpdateActionDirective) ToSeclang() string {
-	result := d.Comment + "SecRuleUpdateActionById " + strconv.Itoa(d.Id) + " \""
+	result := commentsToSeclang(d.Comments) + "SecRuleUpdateActionById " + strconv.Itoa(d.Id) + " \""
 	actionString := ""
 	actionString += d.Modify.Metadata.ToString()
 	if actionString != "" {
@@ -68,7 +68,7 @@ func (d UpdateActionDirective) AppendChainedDirective(directive ChainableDirecti
 	// Do nothing
 }
 
-func (m *UpdateActionMetadata) SetComment(value string) {
+func (m *UpdateActionMetadata) SetComments(values []string) {
 	// Do nothing
 }
 

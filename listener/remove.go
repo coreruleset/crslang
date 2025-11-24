@@ -3,16 +3,16 @@ package listener
 import (
 	"strconv"
 
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_msg(ctx *parser.Remove_rule_by_msgContext) {
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
-	l.appendComment = func(comment string) {
-		l.removeDirective.Metadata.Comment = comment
+	l.appendComment = func(comments []string) {
+		l.removeDirective.Metadata.Comments = comments
 	}
 	l.setParam = func(value string) {
 		l.removeDirective.Msgs = append(l.removeDirective.Msgs, value)
@@ -26,8 +26,8 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_tag(ctx *parser.Remo
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
-	l.appendComment = func(comment string) {
-		l.removeDirective.Metadata.Comment = comment
+	l.appendComment = func(comments []string) {
+		l.removeDirective.Metadata.Comments = comments
 	}
 	l.setParam = func(value string) {
 		l.removeDirective.Tags = append(l.removeDirective.Tags, value)
@@ -41,8 +41,8 @@ func (l *ExtendedSeclangParserListener) EnterRemove_rule_by_id(ctx *parser.Remov
 	l.removeDirective = types.RemoveRuleDirective{
 		Kind: types.Remove,
 	}
-	l.appendComment = func(comment string) {
-		l.removeDirective.Metadata.Comment = comment
+	l.appendComment = func(comments []string) {
+		l.removeDirective.Metadata.Comments = comments
 	}
 	l.appendDirective = func() {
 		l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.removeDirective)
@@ -79,4 +79,8 @@ func (l *ExtendedSeclangParserListener) EnterRange_end(ctx *parser.Range_endCont
 
 func (l *ExtendedSeclangParserListener) ExitRemove_rule_by_id_int_range(ctx *parser.Remove_rule_by_id_int_rangeContext) {
 	l.removeDirective.IdRanges = append(l.removeDirective.IdRanges, l.idRange)
+}
+
+func (l *ExtendedSeclangParserListener) EnterString_remove_rules_values(ctx *parser.String_remove_rules_valuesContext) {
+	l.setParam(ctx.GetText())
 }

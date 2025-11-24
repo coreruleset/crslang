@@ -29,7 +29,7 @@ func (d DefaultAction) GetActions() *SeclangActions {
 
 func (s DefaultAction) ToSeclang() string {
 	result := ""
-	result += s.Metadata.Comment + "SecDefaultAction \"phase:" + s.Metadata.Phase
+	result += commentsToSeclang(s.Metadata.Comments) + "SecDefaultAction \"phase:" + s.Metadata.Phase
 	actions := s.Actions.ToString()
 	transformations := s.Transformations.ToString()
 	if actions != "" {

@@ -33,7 +33,7 @@ func (d CommentDirective) ToSeclang() string {
 
 type ConfigurationDirective struct {
 	Kind      Kind                       `yaml:"kind"`
-	Metadata  *CommentMetadata           `yaml:",inline"`
+	Metadata  CommentMetadata            `yaml:",inline"`
 	Name      ConfigurationDirectiveType `yaml:"name"`
 	Parameter string                     `yaml:"parameter"`
 }
@@ -191,7 +191,7 @@ var (
 func NewConfigurationDirective() *ConfigurationDirective {
 	c := new(ConfigurationDirective)
 	c.Kind = ConfigurationKind
-	c.Metadata = new(CommentMetadata)
+	// c.Metadata = new(CommentMetadata)
 	return c
 }
 
@@ -205,13 +205,13 @@ func (c *ConfigurationDirective) SetName(name string) error {
 }
 
 func (c ConfigurationDirective) GetMetadata() Metadata {
-	return c.Metadata
+	return &c.Metadata
 }
 
 // TODO: add quotes around the value when the parameter is a string
 func (c ConfigurationDirective) ToSeclang() string {
 	result := ""
-	if c.Metadata != nil {
+	if len(c.Metadata.Comments) != 0 {
 		result += c.Metadata.ToSeclang()
 	}
 	result += string(c.Name) + " " + c.Parameter

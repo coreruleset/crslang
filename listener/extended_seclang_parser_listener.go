@@ -1,8 +1,10 @@
 package listener
 
 import (
-	"github.com/coreruleset/seclang_parser/parser"
+	"strings"
+
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 type BaseDirective interface {
@@ -24,8 +26,8 @@ type BaseChainableDirective interface {
 
 type ExtendedSeclangParserListener struct {
 	*parser.BaseSecLangParserListener
-	comment                string
-	appendComment          func(value string)
+	comments               []string
+	appendComment          func(values []string)
 	setParam               func(value string)
 	addVariable            func() error
 	appendDirective        func()
@@ -53,8 +55,8 @@ func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parser.Configura
 	l.DirectiveList = new(types.DirectiveList)
 	l.setParam = doNothingFuncString
 	l.appendDirective = doNothingFunc
-	l.appendComment = func(value string) {
-		l.DirectiveList.Directives = append(l.DirectiveList.Directives, types.CommentMetadata{Comment: value})
+	l.appendComment = func(values []string) {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, types.CommentMetadata{Comments: values})
 	}
 	l.previousDirective = nil
 }
@@ -66,17 +68,23 @@ func (l *ExtendedSeclangParserListener) ExitConfiguration(ctx *parser.Configurat
 }
 
 func (l *ExtendedSeclangParserListener) ExitStmt(ctx *parser.StmtContext) {
-	if l.comment != "" {
-		l.appendComment(l.comment)
-		l.comment = ""
+	if len(l.comments) > 0 {
+		l.appendComment(l.comments)
+		l.comments = nil
 	}
-	l.appendComment = func(value string) {
-		l.DirectiveList.Directives = append(l.DirectiveList.Directives, types.CommentMetadata{Comment: value})
+	l.appendComment = func(values []string) {
+		l.DirectiveList.Directives = append(l.DirectiveList.Directives, types.CommentMetadata{Comments: values})
 	}
 	l.appendDirective()
 	l.appendDirective = doNothingFunc
 }
 
 func (l *ExtendedSeclangParserListener) EnterComment(ctx *parser.CommentContext) {
-	l.comment = ctx.GetText()
+	// ctx.COMMENT() can be nil if there is only a HASH without comment text
+	if ctx.COMMENT() != nil {
+		// Remove leading space after the hash if any
+		l.comments = append(l.comments, strings.TrimPrefix(ctx.COMMENT().GetText(), " "))
+	} else {
+		l.comments = append(l.comments, "")
+	}
 }

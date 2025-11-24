@@ -3,14 +3,14 @@ package listener
 import (
 	"strconv"
 
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_id(ctx *parser.Update_target_by_idContext) {
 	l.updateTargetDirective = types.NewUpdateTargetDirective()
-	l.appendComment = func(comment string) {
-		l.updateTargetDirective.Metadata.Comment = comment
+	l.appendComment = func(comments []string) {
+		l.updateTargetDirective.Metadata.Comments = comments
 	}
 	l.appendDirective = func() {
 		l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.updateTargetDirective)
@@ -26,8 +26,8 @@ func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_id(ctx *parser.Upd
 
 func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_tag(ctx *parser.Update_target_by_tagContext) {
 	l.updateTargetDirective = types.NewUpdateTargetDirective()
-	l.appendComment = func(comment string) {
-		l.updateTargetDirective.Metadata.Comment = comment
+	l.appendComment = func(comments []string) {
+		l.updateTargetDirective.Metadata.Comments = comments
 	}
 	l.appendDirective = func() {
 		l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.updateTargetDirective)
@@ -39,8 +39,8 @@ func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_tag(ctx *parser.Up
 
 func (l *ExtendedSeclangParserListener) EnterUpdate_target_by_msg(ctx *parser.Update_target_by_msgContext) {
 	l.updateTargetDirective = types.NewUpdateTargetDirective()
-	l.appendComment = func(comment string) {
-		l.updateTargetDirective.Metadata.Comment = comment
+	l.appendComment = func(comments []string) {
+		l.updateTargetDirective.Metadata.Comments = comments
 	}
 	l.appendDirective = func() {
 		l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.updateTargetDirective)

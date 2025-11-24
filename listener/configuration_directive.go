@@ -1,14 +1,14 @@
 package listener
 
 import (
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_with_param(ctx *parser.Engine_config_directive_with_paramContext) {
 	l.configurationDirective = types.NewConfigurationDirective()
 	l.configurationDirective.SetName(ctx.GetText())
-	l.appendComment = l.configurationDirective.GetMetadata().SetComment
+	l.appendComment = l.configurationDirective.GetMetadata().SetComments
 	l.appendDirective = func() {
 		l.DirectiveList.Directives = append(l.DirectiveList.Directives, *l.configurationDirective)
 	}
@@ -21,7 +21,7 @@ func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_with_param(
 func (l *ExtendedSeclangParserListener) EnterEngine_config_sec_cache_transformations(ctx *parser.Engine_config_sec_cache_transformationsContext) {
 	l.configurationDirective = types.NewConfigurationDirective()
 	l.configurationDirective.SetName(ctx.GetText())
-	l.appendComment = l.configurationDirective.GetMetadata().SetComment
+	l.appendComment = l.configurationDirective.GetMetadata().SetComments
 	l.setParam = func(value string) {
 		l.configurationDirective.Parameter = value
 		l.setParam = func(value2 string) {
@@ -38,7 +38,7 @@ func (l *ExtendedSeclangParserListener) EnterOption_list(ctx *parser.Option_list
 func (l *ExtendedSeclangParserListener) EnterString_engine_config_directive(ctx *parser.String_engine_config_directiveContext) {
 	l.configurationDirective = types.NewConfigurationDirective()
 	l.configurationDirective.SetName(ctx.GetText())
-	l.appendComment = l.configurationDirective.GetMetadata().SetComment
+	l.appendComment = l.configurationDirective.GetMetadata().SetComments
 	l.appendDirective = func() {
 		l.DirectiveList.Directives = append(l.DirectiveList.Directives, *l.configurationDirective)
 	}
@@ -55,7 +55,7 @@ func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parser.Se
 	if err != nil {
 		panic(err)
 	}
-	l.appendComment = l.configurationDirective.GetMetadata().SetComment
+	l.appendComment = l.configurationDirective.GetMetadata().SetComments
 	l.setParam = func(value string) {
 		l.configurationDirective.Parameter = value
 		l.setParam = doNothingFuncString

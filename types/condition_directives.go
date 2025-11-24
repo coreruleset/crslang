@@ -349,6 +349,10 @@ func loadConditionDirective(yamlDirective yaml.Node) SeclangDirective {
 		directive := ConfigurationDirective{}
 		err = yaml.Unmarshal(rawDirective, &directive)
 		if err != nil {
+			fmt.Printf("%s %v\n", err.Error(), yamlDirective.Content[2].Value)
+			for _, c := range yamlDirective.Content[3].Content {
+				fmt.Printf("-> %s\n", c.Value)
+			}
 			panic(err)
 		}
 		return directive

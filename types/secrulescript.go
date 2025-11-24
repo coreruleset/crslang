@@ -43,7 +43,7 @@ func (s SecRuleScript) ToSeclangWithIdent(initialString string) string {
 	auxString := ",\\\n" + initialString + "    "
 	endString := ""
 	result := ""
-	result += s.Metadata.Comment + initialString + "SecRuleScript "
+	result += commentsToSeclang(s.Metadata.Comments) + initialString + "SecRuleScript "
 	result += s.ScriptPath + " "
 
 	sortedActions := sortActions(&s)

@@ -1,8 +1,8 @@
 package listener
 
 import (
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 func (l *ExtendedSeclangParserListener) EnterRule_script_directive(ctx *parser.Rule_script_directiveContext) {
@@ -15,5 +15,5 @@ func (l *ExtendedSeclangParserListener) EnterRule_script_directive(ctx *parser.R
 			l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.currentDirective.(*types.SecRuleScript))
 		}
 	}
-	l.appendComment = l.currentDirective.GetMetadata().SetComment
+	l.appendComment = l.currentDirective.GetMetadata().SetComments
 }

@@ -1,8 +1,8 @@
 package listener
 
 import (
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 // SecDefaultAction
@@ -11,7 +11,7 @@ func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_default_action(ctx *
 	l.appendDirective = func() {
 		l.DirectiveList.Directives = append(l.DirectiveList.Directives, *l.currentDirective.(*types.DefaultAction))
 	}
-	l.appendComment = l.currentDirective.GetMetadata().SetComment
+	l.appendComment = l.currentDirective.GetMetadata().SetComments
 }
 
 // SecAction
@@ -25,5 +25,5 @@ func (l *ExtendedSeclangParserListener) EnterConfig_dir_sec_action(ctx *parser.C
 			l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.currentDirective.(*types.SecAction))
 		}
 	}
-	l.appendComment = l.currentDirective.GetMetadata().SetComment
+	l.appendComment = l.currentDirective.GetMetadata().SetComments
 }

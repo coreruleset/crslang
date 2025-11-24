@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 func (l *ExtendedSeclangParserListener) EnterUpdate_action_rule(ctx *parser.Update_action_ruleContext) {
@@ -14,8 +14,8 @@ func (l *ExtendedSeclangParserListener) EnterUpdate_action_rule(ctx *parser.Upda
 		fmt.Printf("Appending directive: %v\n", l.currentDirective.(*types.UpdateActionDirective).ToSeclang())
 		l.DirectiveList.Directives = append(l.DirectiveList.Directives, l.currentDirective.(*types.UpdateActionDirective))
 	}
-	l.appendComment = func(comment string) {
-		l.currentDirective.(*types.UpdateActionDirective).Comment = comment
+	l.appendComment = func(comments []string) {
+		l.currentDirective.(*types.UpdateActionDirective).Comments = comments
 	}
 }
 

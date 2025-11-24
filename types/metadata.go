@@ -5,7 +5,7 @@ import (
 )
 
 type Metadata interface {
-	SetComment(value string)
+	SetComments(values []string)
 	SetId(value string)
 	SetPhase(value string)
 	SetMsg(value string)
@@ -17,15 +17,15 @@ type Metadata interface {
 }
 
 type CommentMetadata struct {
-	Comment string `yaml:"comment,omitempty"`
+	Comments []string `yaml:"comments,omitempty"`
 }
 
 func (c CommentMetadata) GetKind() Kind {
 	return UnknownKind
 }
 
-func (c *CommentMetadata) SetComment(value string) {
-	c.Comment = value
+func (c *CommentMetadata) SetComments(values []string) {
+	c.Comments = values
 }
 
 func (c *CommentMetadata) SetId(value string) {
@@ -61,7 +61,27 @@ func (c *CommentMetadata) SetVer(value string) {
 }
 
 func (c CommentMetadata) ToSeclang() string {
-	return c.Comment
+	result := ""
+	for _, comment := range c.Comments {
+		if comment == "" {
+			result += "#\n"
+		} else {
+			result += "# " + comment + "\n"
+		}
+	}
+	return result
+}
+
+func commentsToSeclang(comments []string) string {
+	result := ""
+	for _, comment := range comments {
+		if comment == "" {
+			result += "#\n"
+		} else {
+			result += "# " + comment + "\n"
+		}
+	}
+	return result
 }
 
 type SecRuleMetadata struct {
