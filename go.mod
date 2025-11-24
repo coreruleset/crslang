@@ -4,7 +4,7 @@ go 1.22.2
 
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.1
-	github.com/coreruleset/seclang_parser v0.2.0
+	github.com/coreruleset/seclang_parser v0.3.0
 	github.com/magefile/mage v1.15.0
 	github.com/stretchr/testify v1.11.1
 	go.yaml.in/yaml/v4 v4.0.0-rc.3

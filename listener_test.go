@@ -64,19 +64,19 @@ var (
 					{
 						Directives: []types.SeclangDirective{
 							types.CommentMetadata{
-								Comment: `#
-# -- [[ Introduction ]] --------------------------------------------------------
-#
-# The OWASP ModSecurity Core Rule Set (CRS) is a set of generic attack
-# detection rules that provide a base level of protection for any web
-# application. They are written for the open source, cross-platform
-# ModSecurity Web Application Firewall.
-#
-# See also:
-# https://coreruleset.org/
-# https://github.com/coreruleset/coreruleset
-# https://owasp.org/www-project-modsecurity-core-rule-set/
-#
+								Comment: `
+-- [[ Introduction ]] --------------------------------------------------------
+
+The OWASP ModSecurity Core Rule Set (CRS) is a set of generic attack
+detection rules that provide a base level of protection for any web
+application. They are written for the open source, cross-platform
+ModSecurity Web Application Firewall.
+
+See also:
+https://coreruleset.org/
+https://github.com/coreruleset/coreruleset
+https://owasp.org/www-project-modsecurity-core-rule-set/
+
 `,
 							},
 						},
@@ -148,10 +148,9 @@ SecAction \
 								Metadata: &types.SecRuleMetadata{
 									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
 										CommentMetadata: types.CommentMetadata{
-											Comment: `# Initialize anomaly scoring variables.
-# All _score variables start at 0, and are incremented by the various rules
-# upon detection of a possible attack.
-
+											Comment: `Initialize anomaly scoring variables.
+All _score variables start at 0, and are incremented by the various rules
+upon detection of a possible attack.
 `,
 										},
 										Phase: "1",
@@ -249,27 +248,27 @@ SecRule REQUEST_LINE "@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:
 								Metadata: &types.SecRuleMetadata{
 									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
 										CommentMetadata: types.CommentMetadata{
-											Comment: `#
-# Validate request line against the format specified in the HTTP RFC
-#
-# -=[ Rule Logic ]=-
-#
-# Uses rule negation against the regex for positive security.   The regex specifies the proper
-# construction of URI request lines such as:
-#
-#   "http" "://" authority path-abempty [ "?" query ]
-#
-# It also outlines proper construction for CONNECT, OPTIONS and GET requests.
-#
-# Regular expression generated from regex-assembly/920100.ra.
-# To update the regular expression run the following shell script
-# (consult https://coreruleset.org/docs/development/regex_assembly/ for details):
-#   crs-toolchain regex update 920100
-#
-# -=[ References ]=-
-# https://www.rfc-editor.org/rfc/rfc9110.html#section-4.2.1
-# http://capec.mitre.org/data/definitions/272.html
-#
+											Comment: `
+Validate request line against the format specified in the HTTP RFC
+
+-=[ Rule Logic ]=-
+
+Uses rule negation against the regex for positive security.   The regex specifies the proper
+construction of URI request lines such as:
+
+  "http" "://" authority path-abempty [ "?" query ]
+
+It also outlines proper construction for CONNECT, OPTIONS and GET requests.
+
+Regular expression generated from regex-assembly/920100.ra.
+To update the regular expression run the following shell script
+(consult https://coreruleset.org/docs/development/regex_assembly/ for details):
+  crs-toolchain regex update 920100
+
+-=[ References ]=-
+https://www.rfc-editor.org/rfc/rfc9110.html#section-4.2.1
+http://capec.mitre.org/data/definitions/272.html
+
 `,
 										},
 										Phase: "1",
@@ -330,11 +329,11 @@ SecRule ARGS_GET:fbclid "@rx [a-zA-Z0-9_-]{61,61}" \
 								Metadata: &types.SecRuleMetadata{
 									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
 										CommentMetadata: types.CommentMetadata{
-											Comment: `#
-# -=[ Exclusion rule for 942440 ]=-
-#
-# Prevent FPs against Facebook click identifier
-#
+											Comment: `
+-=[ Exclusion rule for 942440 ]=-
+
+Prevent FPs against Facebook click identifier
+
 `,
 										},
 										Phase: "2",
@@ -484,11 +483,11 @@ SecRule REQUEST_LINE "@streq GET /" \
 								Metadata: &types.SecRuleMetadata{
 									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
 										CommentMetadata: types.CommentMetadata{
-											Comment: `# This file is used as an exception mechanism to remove common false positives
-# that may be encountered.
-#
-# Exception for Apache SSL pinger
-#
+											Comment: `This file is used as an exception mechanism to remove common false positives
+that may be encountered.
+
+Exception for Apache SSL pinger
+
 `,
 										},
 										Phase: "1",
@@ -602,7 +601,7 @@ SecRule REQBODY_PROCESSOR "!@rx (?:URLENCODED|MULTIPART|XML|JSON)" \
 								Metadata: &types.SecRuleMetadata{
 									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
 										CommentMetadata: types.CommentMetadata{
-											Comment: `# Force body variable
+											Comment: `Force body variable
 `,
 										},
 										Phase: "1",
