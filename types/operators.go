@@ -264,10 +264,14 @@ func (o *Operator) SetOperatorNot(not bool) {
 }
 
 func (o *Operator) ToString() string {
+	neg := ""
+	if o.Negate {
+		neg = "!"
+	}
 	if o.Value != "" {
-		return "@" + o.Name.String() + " " + o.Value
+		return neg + "@" + o.Name.String() + " " + o.Value
 	} else {
-		return "@" + o.Name.String()
+		return neg + "@" + o.Name.String()
 	}
 }
 
@@ -278,6 +282,9 @@ func (o Operator) MarshalYAML() (interface{}, error) {
 		return nil, err
 	}
 	mapOperator[oName] = o.Value
+	if o.Negate {
+		mapOperator["negate"] = o.Negate
+	}
 	return mapOperator, nil
 }
 
