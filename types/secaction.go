@@ -53,7 +53,7 @@ func (s SecAction) ToSeclangWithIdent(initialString string) string {
 	endString := ""
 
 	result := ""
-	result += s.Metadata.Comment + initialString + "SecAction"
+	result += commentToSeclang(s.Metadata.Comment) + initialString + "SecAction"
 	sortedActions := sortActions(&s)
 	for i, action := range sortedActions {
 		if i == 0 {

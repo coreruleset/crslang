@@ -1,8 +1,10 @@
 package listener
 
 import (
-	"github.com/coreruleset/seclang_parser/parser"
+	"strings"
+
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 type BaseDirective interface {
@@ -78,5 +80,11 @@ func (l *ExtendedSeclangParserListener) ExitStmt(ctx *parser.StmtContext) {
 }
 
 func (l *ExtendedSeclangParserListener) EnterComment(ctx *parser.CommentContext) {
-	l.comment = ctx.GetText()
+	// ctx.COMMENT() can be nil if there is only a HASH without comment text
+	if ctx.COMMENT() != nil {
+		// Remove leading space after the hash if any
+		l.comment += strings.TrimPrefix(ctx.COMMENT().GetText(), " ") + "\n"
+	} else {
+		l.comment += "\n"
+	}
 }
