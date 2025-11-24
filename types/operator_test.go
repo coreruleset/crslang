@@ -53,9 +53,10 @@ var (
 		{Within, "within"},
 	}
 	operatorUnmarshalTests = []struct {
-		name     string
-		input    string
-		expected Operator
+		name           string
+		input          string
+		expected       Operator
+		expectedString string
 	}{
 		{
 			name: "Standard format",
@@ -65,6 +66,7 @@ value: ^.*$`,
 				Name:  Rx,
 				Value: "^.*$",
 			},
+			expectedString: "@rx ^.*$",
 		},
 		{
 			name: "Standard format, negated",
@@ -76,6 +78,7 @@ negate: true`,
 				Value:  "^.*$",
 				Negate: true,
 			},
+			expectedString: "!@rx ^.*$",
 		},
 		{
 			name:  "Compact format",
@@ -84,6 +87,7 @@ negate: true`,
 				Name:  Rx,
 				Value: "^.*$",
 			},
+			expectedString: "@rx ^.*$",
 		},
 		{
 			name: "Compact format, negated",
@@ -94,6 +98,7 @@ negate: true`,
 				Value:  "^.*$",
 				Negate: true,
 			},
+			expectedString: "!@rx ^.*$",
 		},
 	}
 )
@@ -142,6 +147,7 @@ func TestUnmarshalOperator(t *testing.T) {
 				t.Fatalf("Failed to unmarshal: %v", err)
 			}
 			require.Equal(t, tt.expected, result)
+			require.Equal(t, tt.expectedString, result.ToString())
 		})
 	}
 }
