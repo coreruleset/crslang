@@ -433,29 +433,6 @@ func castConditions(condition *yaml.Node) (Condition, error) {
 	if err != nil {
 		return Condition{}, err
 	}
-	// switch condition.Content[0].Value {
-	// case "alwaysMatch":
-	// 	rawDirective, err := yaml.Marshal(condition)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	ruleCondition := Condition{}
-	// 	err = yaml.Unmarshal(rawDirective, &ruleCondition)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	return ruleCondition
-	// case "script":
-	// 	return Condition{Script: condition.Content[1].Value}
-	// case "variables", "collections":
-	// 	rawDirective, err := yaml.Marshal(condition)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	ruleCondition := Condition{}
-	// 	err = yaml.Unmarshal(rawDirective, &ruleCondition)
-	// 	return ruleCondition
-	// }
 	return ruleCondition, nil
 }
 
