@@ -62,16 +62,7 @@ func (c *CommentMetadata) SetVer(value string) {
 }
 
 func (c CommentMetadata) ToSeclang() string {
-	lines := strings.Split(c.Comment, "\n")
-	res := ""
-	for i, line := range lines {
-		if i != len(lines)-1 || line != "" {
-			res += "# " + line + "\n"
-		} else if i != len(lines)-1 {
-			res += "#\n"
-		}
-	}
-	return res
+	return commentToSeclang(c.Comment)
 }
 
 // commentToSeclang converts comment strings to SecLang format by replacing newlines with newline + #

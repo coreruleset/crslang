@@ -11,6 +11,11 @@ var (
 		expected string
 	}{
 		{
+			name:     "Empty string",
+			input:    "",
+			expected: "",
+		},
+		{
 			name:     "Single line comment",
 			input:    "This is a simple comment.\n",
 			expected: "# This is a simple comment.\n",
