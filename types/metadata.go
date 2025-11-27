@@ -62,12 +62,30 @@ func (c *CommentMetadata) SetVer(value string) {
 }
 
 func (c CommentMetadata) ToSeclang() string {
-	return "# " + strings.ReplaceAll(c.Comment, "\n", "\n# ")
+	lines := strings.Split(c.Comment, "\n")
+	res := ""
+	for i, line := range lines {
+		if i != len(lines)-1 || line != "" {
+			res += "# " + line + "\n"
+		} else if i != len(lines)-1 {
+			res += "#\n"
+		}
+	}
+	return res
 }
 
 // commentToSeclang converts comment strings to SecLang format by replacing newlines with newline + #
 func commentToSeclang(comment string) string {
-	return "# " + strings.ReplaceAll(comment, "\n", "\n# ")
+	lines := strings.Split(comment, "\n")
+	res := ""
+	for i, line := range lines {
+		if i != len(lines)-1 || line != "" {
+			res += "# " + line + "\n"
+		} else if i != len(lines)-1 {
+			res += "#\n"
+		}
+	}
+	return res
 }
 
 type SecRuleMetadata struct {
