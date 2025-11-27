@@ -67,7 +67,155 @@ go test -v
 
 ## 📚 Documentation
 
-For more detailed information about the project structure and API, check out the source code and test files.
+For detailed information about the project structure and API, check out the source code and test files.
+
+### Rule examples
+
+```yaml
+- kind: rule
+  metadata:
+    comment: ...
+    phase: "1"
+    id: 920300
+    message: Request Missing an Accept Header
+    severity: NOTICE
+    tags:
+      - application-multi
+      - language-multi
+      - platform-multi
+      - attack-protocol
+      - paranoia-level/3
+      - OWASP_CRS
+      - capec/1000/210/272
+      - PCI/6.5.10
+    version: OWASP_CRS/4.0.1-dev
+  conditions:
+    - collections:
+        - name: REQUEST_HEADERS
+          arguments:
+            - Accept
+          count: true
+      operator:
+        eq: "0"
+      transformations:
+        - none
+    - variables:
+        - REQUEST_METHOD
+      operator:
+        negate: true
+        rx: ^(?:OPTIONS|CONNECT)$
+    - collections:
+        - name: REQUEST_HEADERS
+          arguments:
+            - User-Agent
+      operator:
+        negate: true
+        pm: AppleWebKit Android
+      transformations:
+        - none
+  actions:
+    disruptive: pass
+    non-disruptive:
+      - setvar:
+          collection: TX
+          operation: =+
+          assignments:
+            - inbound_anomaly_score_pl3: "%{tx.notice_anomaly_score}"
+    flow:
+      - chain
+```
+
+```yaml
+- kind: rule
+  metadata:
+    comment: ...
+    phase: "1"
+    id: 920170
+    message: GET or HEAD Request with Body Content
+    severity: CRITICAL
+    tags:
+      - application-multi
+      - language-multi
+      - platform-multi
+      - attack-protocol
+      - paranoia-level/1
+      - OWASP_CRS
+      - capec/1000/210/272
+    version: OWASP_CRS/4.0.1-dev
+  conditions:
+    - variables:
+        - REQUEST_METHOD
+      operator:
+        rx: ^(?:GET|HEAD)$
+      transformations:
+        - none
+  actions:
+    disruptive: block
+    non-disruptive:
+      - logdata: "%{MATCHED_VAR}"
+    flow:
+      - chain
+  chained-rule:
+    kind: rule
+    conditions:
+      - collections:
+          - name: REQUEST_HEADERS
+            arguments:
+              - Content-Length
+        operator:
+          negate: true
+          rx: ^0?$
+        transformations:
+          - none
+    actions:
+      non-disruptive:
+        - setvar:
+            collection: TX
+            operation: =+
+            assignments:
+              - inbound_anomaly_score_pl1: "%{tx.critical_anomaly_score}"
+```
+
+```yaml
+- kind: rule
+  metadata:
+    comment: ...
+    phase: "1"
+    id: 901200
+    tags:
+      - OWASP_CRS
+    version: OWASP_CRS/4.0.1-dev
+  conditions:
+    - alwaysMatch: true
+      transformations:
+        - none
+  actions:
+    disruptive: pass
+    non-disruptive:
+      - nolog
+      - setvar:
+          - blocking_inbound_anomaly_score: "0"
+          - detection_inbound_anomaly_score: "0"
+          - inbound_anomaly_score_pl1: "0"
+          - inbound_anomaly_score_pl2: "0"
+          - inbound_anomaly_score_pl3: "0"
+          - inbound_anomaly_score_pl4: "0"
+          - sql_injection_score: "0"
+          - xss_score: "0"
+          - rfi_score: "0"
+          - lfi_score: "0"
+          - rce_score: "0"
+          - php_injection_score: "0"
+          - http_violation_score: "0"
+          - session_fixation_score: "0"
+          - blocking_outbound_anomaly_score: "0"
+          - detection_outbound_anomaly_score: "0"
+          - outbound_anomaly_score_pl1: "0"
+          - outbound_anomaly_score_pl2: "0"
+          - outbound_anomaly_score_pl3: "0"
+          - outbound_anomaly_score_pl4: "0"
+          - anomaly_score: "0"
+```
 
 ## 🤝 Contributing
 
