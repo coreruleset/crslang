@@ -8,36 +8,17 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-type Condition interface {
-	ConditionToSeclang() string
-}
-
-type SecRuleCondition struct {
+// Condition represents a condition defined in a rule. It can represent SecActions, SecRules, or Script conditions.
+type Condition struct {
+	// SecRule conditions are represented by Variables, Collections, Operator, and Transformations.
 	Variables       []Variable   `yaml:"variables,omitempty"`
 	Collections     []Collection `yaml:"collections,omitempty"`
-	Operator        Operator     `yaml:"operator"`
+	Operator        Operator     `yaml:"operator,omitempty"`
 	Transformations `yaml:",inline,omitempty"`
-}
-
-func (s SecRuleCondition) ConditionToSeclang() string {
-	return "New sec rule condition"
-}
-
-type SecActionCondition struct {
-	AlwaysMatch     bool `yaml:"alwaysMatch,omitempty"`
-	Transformations `yaml:",inline,omitempty"`
-}
-
-func (s SecActionCondition) ConditionToSeclang() string {
-	return "New sec action condition"
-}
-
-type ScriptCondition struct {
+	// SecAction conditions are represented by an AlwaysMatch flag and it can also have Transformations.
+	AlwaysMatch bool `yaml:"always-match,omitempty"`
+	// Script conditions are represented by a ScriptPath.
 	Script string `yaml:"script,omitempty"`
-}
-
-func (s ScriptCondition) ConditionToSeclang() string {
-	return "New script condition"
 }
 
 type RuleWithCondition struct {
@@ -95,11 +76,11 @@ func RuleToCondition(directive ChainableDirective) *RuleWithCondition {
 			"rule",
 			*rule.Metadata,
 			[]Condition{
-				SecRuleCondition{
-					rule.Variables,
-					rule.Collections,
-					rule.Operator,
-					rule.Transformations,
+				{
+					Variables:       rule.Variables,
+					Collections:     rule.Collections,
+					Operator:        rule.Operator,
+					Transformations: rule.Transformations,
 				},
 			},
 			*rule.Actions,
@@ -111,7 +92,7 @@ func RuleToCondition(directive ChainableDirective) *RuleWithCondition {
 			"rule",
 			*action.Metadata,
 			[]Condition{
-				SecActionCondition{
+				{
 					AlwaysMatch:     true,
 					Transformations: action.Transformations,
 				},
@@ -125,7 +106,7 @@ func RuleToCondition(directive ChainableDirective) *RuleWithCondition {
 			"rule",
 			*script.Metadata,
 			[]Condition{
-				ScriptCondition{
+				{
 					Script: script.ScriptPath,
 				},
 			},
@@ -426,7 +407,10 @@ func loadRuleWithConditions(yamlDirective yaml.Node) *RuleWithCondition {
 	}
 	if loaderDirective.Conditions.Kind == yaml.SequenceNode {
 		for _, condition := range loaderDirective.Conditions.Content {
-			loadedCondition := castConditions(condition)
+			loadedCondition, err := castConditions(condition)
+			if err != nil {
+				panic(err)
+			}
 			directive.Conditions = append(directive.Conditions, loadedCondition)
 		}
 	}
@@ -439,31 +423,17 @@ func loadRuleWithConditions(yamlDirective yaml.Node) *RuleWithCondition {
 }
 
 // castConditions casts a directive condition to the correct type
-func castConditions(condition *yaml.Node) Condition {
-	switch condition.Content[0].Value {
-	case "alwaysMatch":
-		rawDirective, err := yaml.Marshal(condition)
-		if err != nil {
-			panic(err)
-		}
-		ruleCondition := SecActionCondition{}
-		err = yaml.Unmarshal(rawDirective, &ruleCondition)
-		if err != nil {
-			panic(err)
-		}
-		return ruleCondition
-	case "script":
-		return ScriptCondition{Script: condition.Content[1].Value}
-	case "variables", "collections":
-		rawDirective, err := yaml.Marshal(condition)
-		if err != nil {
-			panic(err)
-		}
-		ruleCondition := SecRuleCondition{}
-		err = yaml.Unmarshal(rawDirective, &ruleCondition)
-		return ruleCondition
+func castConditions(condition *yaml.Node) (Condition, error) {
+	rawDirective, err := yaml.Marshal(condition)
+	if err != nil {
+		return Condition{}, err
 	}
-	return nil
+	ruleCondition := Condition{}
+	err = yaml.Unmarshal(rawDirective, &ruleCondition)
+	if err != nil {
+		return Condition{}, err
+	}
+	return ruleCondition, nil
 }
 
 func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationList) *ConfigurationList {
@@ -515,13 +485,12 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 	}
 
 	for i, condition := range conditionDirective.Conditions {
-		switch condition.(type) {
-		case SecRuleCondition:
+		if condition.Operator.Name != UnknownOperator {
 			secruleDirective := new(SecRule)
-			secruleDirective.Variables = condition.(SecRuleCondition).Variables
-			secruleDirective.Collections = condition.(SecRuleCondition).Collections
-			secruleDirective.Transformations = condition.(SecRuleCondition).Transformations
-			secruleDirective.Operator = condition.(SecRuleCondition).Operator
+			secruleDirective.Variables = condition.Variables
+			secruleDirective.Collections = condition.Collections
+			secruleDirective.Transformations = condition.Transformations
+			secruleDirective.Operator = condition.Operator
 			if i == 0 {
 				secruleDirective.Metadata = CopySecRuleMetadata(conditionDirective.Metadata)
 				secruleDirective.Actions = CopyActions(conditionDirective.Actions)
@@ -539,9 +508,9 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				}
 			}
 			directiveAux = secruleDirective
-		case SecActionCondition:
+		} else if condition.AlwaysMatch {
 			secactionDirective := new(SecAction)
-			secactionDirective.Transformations = condition.(SecActionCondition).Transformations
+			secactionDirective.Transformations = condition.Transformations
 			if i == 0 {
 				secactionDirective.Metadata = CopySecRuleMetadata(conditionDirective.Metadata)
 				secactionDirective.Actions = CopyActions(conditionDirective.Actions)
@@ -559,9 +528,9 @@ func FromConditionToUnmorfattedDirective(conditionDirective RuleWithCondition) C
 				}
 			}
 			directiveAux = secactionDirective
-		case ScriptCondition:
+		} else if condition.Script != "" {
 			secscriptDirective := new(SecRuleScript)
-			secscriptDirective.ScriptPath = condition.(ScriptCondition).Script
+			secscriptDirective.ScriptPath = condition.Script
 			if i == 0 {
 				secscriptDirective.Metadata = CopySecRuleMetadata(conditionDirective.Metadata)
 				secscriptDirective.Actions = CopyActions(conditionDirective.Actions)
