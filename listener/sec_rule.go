@@ -1,11 +1,11 @@
 package listener
 
 import (
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
-func (l *ExtendedSeclangParserListener) EnterRules_directive(ctx *parser.Rules_directiveContext) {
+func (l *ExtendedSeclangParserListener) EnterEngine_config_rule_directive(ctx *parser.Engine_config_rule_directiveContext) {
 	l.currentDirective = types.NewSecRule()
 	l.currentDirective.(*types.SecRule).SetOperatorName("rx")
 	if l.previousDirective != nil {

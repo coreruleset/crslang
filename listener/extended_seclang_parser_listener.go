@@ -84,7 +84,8 @@ func (l *ExtendedSeclangParserListener) EnterComment(ctx *parser.CommentContext)
 	if ctx.COMMENT() != nil {
 		// Remove leading space after the hash if any
 		l.comment += strings.TrimPrefix(ctx.COMMENT().GetText(), " ") + "\n"
-	} else {
+		// Ignore initial empty comment lines because YAML libraries do not work well with them
+	} else if l.comment != "" {
 		l.comment += "\n"
 	}
 }

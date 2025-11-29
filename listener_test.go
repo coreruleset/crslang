@@ -64,8 +64,7 @@ var (
 					{
 						Directives: []types.SeclangDirective{
 							types.CommentMetadata{
-								Comment: `
--- [[ Introduction ]] --------------------------------------------------------
+								Comment: `-- [[ Introduction ]] --------------------------------------------------------
 
 The OWASP ModSecurity Core Rule Set (CRS) is a set of generic attack
 detection rules that provide a base level of protection for any web
@@ -248,8 +247,7 @@ SecRule REQUEST_LINE "@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:
 								Metadata: &types.SecRuleMetadata{
 									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
 										CommentMetadata: types.CommentMetadata{
-											Comment: `
-Validate request line against the format specified in the HTTP RFC
+											Comment: `Validate request line against the format specified in the HTTP RFC
 
 -=[ Rule Logic ]=-
 
@@ -329,8 +327,7 @@ SecRule ARGS_GET:fbclid "@rx [a-zA-Z0-9_-]{61,61}" \
 								Metadata: &types.SecRuleMetadata{
 									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
 										CommentMetadata: types.CommentMetadata{
-											Comment: `
--=[ Exclusion rule for 942440 ]=-
+											Comment: `-=[ Exclusion rule for 942440 ]=-
 
 Prevent FPs against Facebook click identifier
 
