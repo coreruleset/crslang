@@ -70,7 +70,7 @@ func commentToSeclang(comment string) string {
 	lines := strings.Split(comment, "\n")
 	res := ""
 	for i, line := range lines {
-		if i != len(lines)-1 || line != "" {
+		if i != len(lines)-1 && line != "" {
 			res += "# " + line + "\n"
 		} else if i != len(lines)-1 {
 			res += "#\n"
