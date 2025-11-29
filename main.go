@@ -23,6 +23,8 @@ var (
 
 func main() {
 	toSeclang := flag.Bool("s", false, "Transalates the specified CRSLang file to Seclang files, instead of the default Seclang to CRSLang.")
+	// Experimental flag
+	dirMode := flag.Bool("d", false, "If set, the script output will be divided into multiple files when translating from Seclang to CRSLang.")
 	output := flag.String("o", "", "Output file name used in translation from Seclang to CRSLang. Output folder used in translation from CRSLang to Seclang.")
 
 	flag.Usage = func() {
@@ -50,14 +52,56 @@ Flags:
 		configList := LoadSeclang(pathArg)
 
 		configList = *ToCRSLang(configList)
+		if !*dirMode {
+			if *output == "" {
+				*output = "crslang"
+			}
 
-		if *output == "" {
-			*output = "crslang"
-		}
-
-		err := printYAML(configList, *output+".yaml")
-		if err != nil {
-			log.Fatal(err.Error())
+			err := printYAML(configList, *output+".yaml")
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+		} else {
+			// EXPERIMENTAL: output each group and rule in separate files
+			for _, dirList := range configList.Groups {
+				groupFolder := *output + "/" + dirList.Id + "/"
+				ruleFolder := groupFolder + "/rules/"
+				err := os.MkdirAll(ruleFolder, os.ModePerm)
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+				listWithoutRules := []types.SeclangDirective{}
+				for _, directive := range dirList.Directives {
+					if directive.GetKind() == types.RuleKind {
+						rule, ok := directive.(*types.RuleWithCondition)
+						lastDigits := rule.Metadata.Id % 1000
+						if lastDigits/100 != 0 {
+							if !ok {
+								log.Fatal("Error casting to RuleDirective")
+							}
+							fileName := ruleFolder + strconv.Itoa(rule.Metadata.Id) + ".yaml"
+							err := printYAML(directive, fileName)
+							if err != nil {
+								log.Fatal(err.Error())
+							}
+						} else {
+							listWithoutRules = append(listWithoutRules, directive)
+						}
+					} else {
+						listWithoutRules = append(listWithoutRules, directive)
+					}
+				}
+				group := types.Group{
+					Id:         dirList.Id,
+					Tags:       dirList.Tags,
+					Directives: listWithoutRules,
+					Marker:     dirList.Marker,
+				}
+				err = printYAML(group, groupFolder+"group.yaml")
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+			}
 		}
 	} else {
 		if filepath.Ext(pathArg) != ".yaml" {
@@ -75,8 +119,8 @@ Flags:
 
 // LoadSeclang loads seclang directives from an input file or folder and returns a ConfigurationList
 // if a folder is specified it loads all .conf files in the folder
-func LoadSeclang(input string) types.ConfigurationList {
-	resultConfigs := []types.DirectiveList{}
+func LoadSeclang(input string) types.Ruleset {
+	resultConfigs := []types.Group{}
 	filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -92,25 +136,25 @@ func LoadSeclang(input string) types.ConfigurationList {
 			start := p.Configuration()
 			var seclangListener listener.ExtendedSeclangParserListener
 			antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
-			for i := range seclangListener.ConfigurationList.DirectiveList {
-				seclangListener.ConfigurationList.DirectiveList[i].Id = strings.TrimSuffix(filepath.Base(info.Name()), filepath.Ext(info.Name()))
-				if len(seclangListener.ConfigurationList.DirectiveList) > 1 {
-					seclangListener.ConfigurationList.DirectiveList[i].Id += "_" + strconv.Itoa(i+1)
+			for i := range seclangListener.ConfigurationList.Groups {
+				seclangListener.ConfigurationList.Groups[i].Id = strings.TrimSuffix(filepath.Base(info.Name()), filepath.Ext(info.Name()))
+				if len(seclangListener.ConfigurationList.Groups) > 1 {
+					seclangListener.ConfigurationList.Groups[i].Id += "_" + strconv.Itoa(i+1)
 				}
 			}
-			resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
+			resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.Groups...)
 		}
 		return nil
 	})
-	configList := types.ConfigurationList{DirectiveList: resultConfigs}
+	configList := types.Ruleset{Groups: resultConfigs}
 	return configList
 }
 
 // PrintSeclang writes seclang directives to files specified in directive list ids.
-func PrintSeclang(configList types.ConfigurationList, dir string) error {
+func PrintSeclang(configList types.Ruleset, dir string) error {
 	unfDirs := types.FromCRSLangToUnformattedDirectives(configList)
 
-	for _, dirList := range unfDirs.DirectiveList {
+	for _, dirList := range unfDirs.Groups {
 		seclangDirectives := dirList.ToSeclang()
 		err := writeToFile([]byte(seclangDirectives), dir+dirList.Id+".conf")
 		if err != nil {
@@ -122,10 +166,14 @@ func PrintSeclang(configList types.ConfigurationList, dir string) error {
 }
 
 // ToCRSLang process previously loaded seclang directives to CRSLang schema directives
-func ToCRSLang(configList types.ConfigurationList) *types.ConfigurationList {
+func ToCRSLang(configList types.Ruleset) *types.Ruleset {
 	configListWithConditions := types.ToDirectiveWithConditions(configList)
 
 	configListWithConditions.ExtractDefaultValues()
+	// EXPERIMENTAL: extract default values for each group
+	for i := range configListWithConditions.Groups {
+		configListWithConditions.Groups[i].ExtractDefaultValues()
+	}
 	return configListWithConditions
 }
 

@@ -1,8 +1,8 @@
 package listener
 
 import (
-	"github.com/coreruleset/seclang_parser/parser"
 	"github.com/coreruleset/crslang/types"
+	"github.com/coreruleset/seclang_parser/parser"
 )
 
 func (l *ExtendedSeclangParserListener) EnterEngine_config_directive_with_param(ctx *parser.Engine_config_directive_with_paramContext) {
@@ -62,7 +62,7 @@ func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parser.Se
 	}
 	l.appendDirective = func() {
 		l.DirectiveList.Marker = *l.configurationDirective
-		l.ConfigurationList.DirectiveList = append(l.ConfigurationList.DirectiveList, *l.DirectiveList)
-		l.DirectiveList = new(types.DirectiveList)
+		l.ConfigurationList.Groups = append(l.ConfigurationList.Groups, *l.DirectiveList)
+		l.DirectiveList = new(types.Group)
 	}
 }

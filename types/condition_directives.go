@@ -37,10 +37,10 @@ func (s *RuleWithCondition) GetKind() Kind {
 	return s.Kind
 }
 
-func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList {
-	result := new(ConfigurationList)
-	for _, config := range configList.DirectiveList {
-		configWrapper := new(DirectiveList)
+func ToDirectiveWithConditions(configList Ruleset) *Ruleset {
+	result := new(Ruleset)
+	for _, config := range configList.Groups {
+		configWrapper := new(Group)
 		configWrapper.Id = config.Id
 		configWrapper.Marker = config.Marker
 		for _, directive := range config.Directives {
@@ -62,7 +62,7 @@ func ToDirectiveWithConditions(configList ConfigurationList) *ConfigurationList 
 			}
 			configWrapper.Directives = append(configWrapper.Directives, directiveWrapper)
 		}
-		result.DirectiveList = append(result.DirectiveList, *configWrapper)
+		result.Groups = append(result.Groups, *configWrapper)
 	}
 	return result
 }
@@ -272,7 +272,7 @@ func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
 }
 
 // LoadDirectivesWithConditionsFromFile loads condition format directives from a yaml file
-func LoadDirectivesWithConditionsFromFile(filename string) ConfigurationList {
+func LoadDirectivesWithConditionsFromFile(filename string) Ruleset {
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
@@ -282,14 +282,14 @@ func LoadDirectivesWithConditionsFromFile(filename string) ConfigurationList {
 }
 
 // LoadDirectivesWithConditions loads condition format directives from a yaml file
-func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationList {
+func LoadDirectivesWithConditions(yamlFile []byte) Ruleset {
 	var config configurationYamlLoader
 	err := yaml.Unmarshal(yamlFile, &config)
 	configs := config.DirectiveList
 	if err != nil {
 		panic(err)
 	}
-	var resultConfigs []DirectiveList
+	var resultConfigs []Group
 	for _, config := range configs {
 		var directives []SeclangDirective
 		for _, yamlDirective := range config.Directives {
@@ -300,9 +300,9 @@ func LoadDirectivesWithConditions(yamlFile []byte) ConfigurationList {
 				directives = append(directives, directive)
 			}
 		}
-		resultConfigs = append(resultConfigs, DirectiveList{Id: config.Id, Directives: directives, Marker: config.Marker})
+		resultConfigs = append(resultConfigs, Group{Id: config.Id, Directives: directives, Marker: config.Marker})
 	}
-	return ConfigurationList{Global: config.Global, DirectiveList: resultConfigs}
+	return Ruleset{Global: config.Global, Groups: resultConfigs}
 }
 
 // loadConditionDirective loads the different kind of directives
@@ -436,10 +436,10 @@ func castConditions(condition *yaml.Node) (Condition, error) {
 	return ruleCondition, nil
 }
 
-func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationList) *ConfigurationList {
-	result := new(ConfigurationList)
-	for _, config := range configListWrapped.DirectiveList {
-		configList := new(DirectiveList)
+func FromCRSLangToUnformattedDirectives(configListWrapped Ruleset) *Ruleset {
+	result := new(Ruleset)
+	for _, config := range configListWrapped.Groups {
+		configList := new(Group)
 		configList.Id = config.Id
 		configList.Marker = config.Marker
 		for _, directiveWrapped := range config.Directives {
@@ -467,7 +467,7 @@ func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationList) *Co
 			}
 			configList.Directives = append(configList.Directives, directive)
 		}
-		result.DirectiveList = append(result.DirectiveList, *configList)
+		result.Groups = append(result.Groups, *configList)
 	}
 	return result
 }

@@ -43,8 +43,8 @@ type ExtendedSeclangParserListener struct {
 	varExcluded            bool
 	varCount               bool
 	parameter              string
-	DirectiveList          *types.DirectiveList
-	ConfigurationList      types.ConfigurationList
+	DirectiveList          *types.Group
+	ConfigurationList      types.Ruleset
 }
 
 func doNothingFunc() {}
@@ -52,7 +52,7 @@ func doNothingFunc() {}
 func doNothingFuncString(value string) {}
 
 func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parser.ConfigurationContext) {
-	l.DirectiveList = new(types.DirectiveList)
+	l.DirectiveList = new(types.Group)
 	l.setParam = doNothingFuncString
 	l.appendDirective = doNothingFunc
 	l.appendComment = func(value string) {
@@ -63,7 +63,7 @@ func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parser.Configura
 
 func (l *ExtendedSeclangParserListener) ExitConfiguration(ctx *parser.ConfigurationContext) {
 	if l.DirectiveList != nil && (len(l.DirectiveList.Directives) > 0 || l.DirectiveList.Marker.Name != "") {
-		l.ConfigurationList.DirectiveList = append(l.ConfigurationList.DirectiveList, *l.DirectiveList)
+		l.ConfigurationList.Groups = append(l.ConfigurationList.Groups, *l.DirectiveList)
 	}
 }
 
