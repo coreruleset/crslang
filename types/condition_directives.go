@@ -394,46 +394,13 @@ func loadRuleWithConditions(yamlDirective yaml.Node) *RuleWithCondition {
 		panic(err)
 	}
 
-	loaderDirective := conditionDirectiveLoader{}
-	err = yaml.Unmarshal(rawDirective, &loaderDirective)
+	directive := RuleWithCondition{}
+	err = yaml.Unmarshal(rawDirective, &directive)
 	if err != nil {
 		print(string(rawDirective))
 		panic(err)
 	}
-	directive := &RuleWithCondition{
-		Kind:     RuleKind,
-		Metadata: loaderDirective.Metadata,
-		Actions:  loaderDirective.Actions,
-	}
-	if loaderDirective.Conditions.Kind == yaml.SequenceNode {
-		for _, condition := range loaderDirective.Conditions.Content {
-			loadedCondition, err := castConditions(condition)
-			if err != nil {
-				panic(err)
-			}
-			directive.Conditions = append(directive.Conditions, loadedCondition)
-		}
-	}
-	var loadedChainedRule *RuleWithCondition
-	if len(loaderDirective.ChainedRule.Content) > 0 {
-		loadedChainedRule = loadRuleWithConditions(loaderDirective.ChainedRule)
-		directive.ChainedRule = loadedChainedRule
-	}
-	return directive
-}
-
-// castConditions casts a directive condition to the correct type
-func castConditions(condition *yaml.Node) (Condition, error) {
-	rawDirective, err := yaml.Marshal(condition)
-	if err != nil {
-		return Condition{}, err
-	}
-	ruleCondition := Condition{}
-	err = yaml.Unmarshal(rawDirective, &ruleCondition)
-	if err != nil {
-		return Condition{}, err
-	}
-	return ruleCondition, nil
+	return &directive
 }
 
 func FromCRSLangToUnformattedDirectives(configListWrapped ConfigurationList) *ConfigurationList {
