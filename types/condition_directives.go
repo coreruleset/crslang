@@ -142,15 +142,6 @@ type yamlLoaderConditionRules struct {
 	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 }
 
-// conditionDirectiveLoader is a auxiliary struct to load condition directives
-type conditionDirectiveLoader struct {
-	Kind        string          `yaml:"kind"`
-	Metadata    SecRuleMetadata `yaml:"metadata,omitempty"`
-	Conditions  yaml.Node       `yaml:"conditions,omitempty"`
-	Actions     SeclangActions  `yaml:"actions,omitempty"`
-	ChainedRule yaml.Node       `yaml:"chainedRule"`
-}
-
 // UnmarshalYAML unmarshals a YAML node into a SeclangActions struct
 // it converts the actions to their respective types
 func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
