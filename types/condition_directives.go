@@ -142,15 +142,6 @@ type yamlLoaderConditionRules struct {
 	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 }
 
-// conditionDirectiveLoader is a auxiliary struct to load condition directives
-type conditionDirectiveLoader struct {
-	Kind        string          `yaml:"kind"`
-	Metadata    SecRuleMetadata `yaml:"metadata,omitempty"`
-	Conditions  yaml.Node       `yaml:"conditions,omitempty"`
-	Actions     SeclangActions  `yaml:"actions,omitempty"`
-	ChainedRule yaml.Node       `yaml:"chainedRule"`
-}
-
 // UnmarshalYAML unmarshals a YAML node into a SeclangActions struct
 // it converts the actions to their respective types
 func (s *SeclangActions) UnmarshalYAML(value *yaml.Node) error {
@@ -394,46 +385,13 @@ func loadRuleWithConditions(yamlDirective yaml.Node) *RuleWithCondition {
 		panic(err)
 	}
 
-	loaderDirective := conditionDirectiveLoader{}
-	err = yaml.Unmarshal(rawDirective, &loaderDirective)
+	directive := RuleWithCondition{}
+	err = yaml.Unmarshal(rawDirective, &directive)
 	if err != nil {
 		print(string(rawDirective))
 		panic(err)
 	}
-	directive := &RuleWithCondition{
-		Kind:     RuleKind,
-		Metadata: loaderDirective.Metadata,
-		Actions:  loaderDirective.Actions,
-	}
-	if loaderDirective.Conditions.Kind == yaml.SequenceNode {
-		for _, condition := range loaderDirective.Conditions.Content {
-			loadedCondition, err := castConditions(condition)
-			if err != nil {
-				panic(err)
-			}
-			directive.Conditions = append(directive.Conditions, loadedCondition)
-		}
-	}
-	var loadedChainedRule *RuleWithCondition
-	if len(loaderDirective.ChainedRule.Content) > 0 {
-		loadedChainedRule = loadRuleWithConditions(loaderDirective.ChainedRule)
-		directive.ChainedRule = loadedChainedRule
-	}
-	return directive
-}
-
-// castConditions casts a directive condition to the correct type
-func castConditions(condition *yaml.Node) (Condition, error) {
-	rawDirective, err := yaml.Marshal(condition)
-	if err != nil {
-		return Condition{}, err
-	}
-	ruleCondition := Condition{}
-	err = yaml.Unmarshal(rawDirective, &ruleCondition)
-	if err != nil {
-		return Condition{}, err
-	}
-	return ruleCondition, nil
+	return &directive
 }
 
 func FromCRSLangToUnformattedDirectives(configListWrapped Ruleset) *Ruleset {
