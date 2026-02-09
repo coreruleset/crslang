@@ -62,45 +62,9 @@ Flags:
 				log.Fatal(err.Error())
 			}
 		} else {
-			// EXPERIMENTAL: output each group and rule in separate files
-			for _, dirList := range configList.Groups {
-				groupFolder := *output + "/" + dirList.Id + "/"
-				ruleFolder := groupFolder + "/rules/"
-				err := os.MkdirAll(ruleFolder, os.ModePerm)
-				if err != nil {
-					log.Fatal(err.Error())
-				}
-				listWithoutRules := []types.SeclangDirective{}
-				for _, directive := range dirList.Directives {
-					if directive.GetKind() == types.RuleKind {
-						rule, ok := directive.(*types.RuleWithCondition)
-						lastDigits := rule.Metadata.Id % 1000
-						if lastDigits/100 != 0 {
-							if !ok {
-								log.Fatal("Error casting to RuleDirective")
-							}
-							fileName := ruleFolder + strconv.Itoa(rule.Metadata.Id) + ".yaml"
-							err := printYAML(directive, fileName)
-							if err != nil {
-								log.Fatal(err.Error())
-							}
-						} else {
-							listWithoutRules = append(listWithoutRules, directive)
-						}
-					} else {
-						listWithoutRules = append(listWithoutRules, directive)
-					}
-				}
-				group := types.Group{
-					Id:         dirList.Id,
-					Tags:       dirList.Tags,
-					Directives: listWithoutRules,
-					Marker:     dirList.Marker,
-				}
-				err = printYAML(group, groupFolder+"group.yaml")
-				if err != nil {
-					log.Fatal(err.Error())
-				}
+			err := writeRuleSeparately(configList, *output)
+			if err != nil {
+				log.Fatal(err.Error())
 			}
 		}
 	} else {
@@ -175,6 +139,64 @@ func ToCRSLang(configList types.Ruleset) *types.Ruleset {
 		configListWithConditions.Groups[i].ExtractDefaultValues()
 	}
 	return configListWithConditions
+}
+
+func writeRuleSeparately(rulset types.Ruleset, output string) error {
+	// EXPERIMENTAL: output each group and rule in separate files
+	for _, group := range rulset.Groups {
+		groupFolder := output + "/" + group.Id + "/"
+		ruleFolder := groupFolder + "/rules/"
+		err := os.MkdirAll(ruleFolder, os.ModePerm)
+		if err != nil {
+			return err
+		}
+		ruleIds := []string{}
+		comments := []string{}
+		configs := []types.ConfigurationDirective{}
+		for _, directive := range group.Directives {
+			if directive.GetKind() == types.RuleKind {
+				rule, ok := directive.(*types.RuleWithCondition)
+				if !ok {
+					return fmt.Errorf("Error casting to RuleWithCondition")
+				}
+				// Ignore paranoia level check rules
+				lastDigits := rule.Metadata.Id % 1000
+				if lastDigits/100 != 0 {
+					fileName := ruleFolder + strconv.Itoa(rule.Metadata.Id) + ".yaml"
+					err := printYAML(directive, fileName)
+					if err != nil {
+						return err
+					}
+					ruleIds = append(ruleIds, strconv.Itoa(rule.Metadata.Id))
+				}
+			} else if directive.GetKind() == types.CommentKind {
+				comment, ok := directive.(types.CommentDirective)
+				if !ok {
+					return fmt.Errorf("Error casting to Comment %T", directive)
+				}
+				comments = append(comments, comment.Metadata.Comment)
+			} else if directive.GetKind() == types.ConfigurationKind {
+				config, ok := directive.(types.ConfigurationDirective)
+				if !ok {
+					return fmt.Errorf("Error casting to Configuration %T", directive)
+				}
+				configs = append(configs, config)
+			}
+		}
+		newGroup := types.Group{
+			Id:             group.Id,
+			Tags:           group.Tags,
+			Comments:       comments,
+			Rules:          ruleIds,
+			Configurations: configs,
+			Marker:         group.Marker,
+		}
+		err = printYAML(newGroup, groupFolder+"group.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // printYAML marshal and write structures to a yaml file

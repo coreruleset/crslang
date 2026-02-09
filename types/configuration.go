@@ -15,10 +15,13 @@ type Ruleset struct {
 }
 
 type Group struct {
-	Id         string                 `yaml:"id"`
-	Tags       []string               `yaml:"tags,omitempty"`
-	Directives []SeclangDirective     `yaml:"directives,omitempty"`
-	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
+	Id             string                   `yaml:"id"`
+	Tags           []string                 `yaml:"tags,omitempty"`
+	Comments       []string                 `yaml:"comments,omitempty"`
+	Configurations []ConfigurationDirective `yaml:"configurations,omitempty"`
+	Directives     []SeclangDirective       `yaml:"directives,omitempty"`
+	Rules          []string                 `yaml:"rules,omitempty"`
+	Marker         ConfigurationDirective   `yaml:"marker,omitempty"`
 }
 
 func (d Group) ToSeclang() string {
@@ -130,12 +133,13 @@ func (g *Group) ExtractDefaultValues() {
 		}
 	}
 
-	// Clear version and tags in rules since they are now in the global section
+	// Clear tags in rules since they are now in the global section
 	for _, rule := range rules {
 		rule.Metadata.Tags = slices.DeleteFunc(rule.Metadata.Tags, func(s string) bool {
 			return slices.Contains(tags, s)
 		})
 	}
 
-	g.Tags = tags
+	g.Tags = append([]string{}, tags...)
+
 }
