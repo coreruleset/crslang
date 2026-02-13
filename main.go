@@ -142,8 +142,11 @@ func ToCRSLang(configList types.Ruleset) *types.Ruleset {
 }
 
 func writeRuleSeparately(rulset types.Ruleset, output string) error {
+	groups := []string{}
+
 	// EXPERIMENTAL: output each group and rule in separate files
 	for _, group := range rulset.Groups {
+		groups = append(groups, group.Id)
 		groupFolder := output + "/" + group.Id + "/"
 		ruleFolder := groupFolder + "/rules/"
 		err := os.MkdirAll(ruleFolder, os.ModePerm)
@@ -195,6 +198,15 @@ func writeRuleSeparately(rulset types.Ruleset, output string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	newRuleset := types.Ruleset{
+		Global:    rulset.Global,
+		GroupsIds: groups,
+	}
+	err := printYAML(newRuleset, output+"/ruleset.yaml")
+	if err != nil {
+		return err
 	}
 	return nil
 }

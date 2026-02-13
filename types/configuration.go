@@ -10,8 +10,9 @@ type DefaultConfigs struct {
 }
 
 type Ruleset struct {
-	Global DefaultConfigs `yaml:"global,omitempty"`
-	Groups []Group        `yaml:"groups,omitempty"`
+	Global    DefaultConfigs `yaml:"global,omitempty"`
+	GroupsIds []string       `yaml:"groups_ids,omitempty"`
+	Groups    []Group        `yaml:"groups,omitempty"`
 }
 
 type Group struct {
