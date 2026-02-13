@@ -112,18 +112,18 @@ func (g *Group) ExtractDefaultValues() {
 			if lastDigits/100 != 0 {
 				rule := g.Directives[j].(*RuleWithCondition)
 				rules = append(rules, rule)
+				auxTags := []string{}
 				if !directiveFound {
 					directiveFound = true
-					tags = rule.Metadata.Tags
+					auxTags = append(auxTags, rule.Metadata.Tags...)
 				} else {
-					auxTags := []string{}
 					for _, tag := range tags {
 						if slices.Contains(rule.Metadata.Tags, tag) {
 							auxTags = append(auxTags, tag)
 						}
 					}
-					tags = auxTags
 				}
+				tags = auxTags
 				// If tags are empty after found a rule it means there is no common value
 				// so we can stop the search
 				if len(tags) == 0 {
