@@ -68,15 +68,26 @@ Flags:
 			}
 		}
 	} else {
-		if filepath.Ext(pathArg) != ".yaml" {
-			log.Fatal("Only .yaml files are allowed")
-		}
+		if !*dirMode {
+			if filepath.Ext(pathArg) != ".yaml" {
+				log.Fatal("Only .yaml files are allowed")
+			}
 
-		configList := types.LoadDirectivesWithConditionsFromFile(pathArg)
+			configList := types.LoadDirectivesWithConditionsFromFile(pathArg)
 
-		err := PrintSeclang(configList, *output)
-		if err != nil {
-			log.Fatal(err.Error())
+			err := PrintSeclang(configList, *output)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+		} else {
+			/* Expiremental load rule from dir */
+			_, err := loadRulesFromDirectory(pathArg)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			if err != nil {
+				log.Fatal(err.Error())
+			}
 		}
 	}
 }
@@ -209,6 +220,57 @@ func writeRuleSeparately(rulset types.Ruleset, output string) error {
 		return err
 	}
 	return nil
+}
+
+func loadRulesFromDirectory(dir string) (types.Ruleset, error) {
+	info, err := os.Stat(dir)
+
+	if err != nil {
+		return types.Ruleset{}, err
+	} else if !info.IsDir() {
+		return types.Ruleset{}, fmt.Errorf("path is not a directory: %s", dir)
+	}
+
+	rFile, err := os.ReadFile(dir + "/ruleset.yaml")
+
+	if err != nil {
+		return types.Ruleset{}, err
+	}
+
+	ruleset := types.Ruleset{}
+	err = yaml.Unmarshal([]byte(rFile), &ruleset)
+
+	if err != nil {
+		return types.Ruleset{}, err
+	}
+
+	for _, groupId := range ruleset.GroupsIds {
+		groupFile, err := os.ReadFile(dir + "/" + groupId + "/group.yaml")
+		if err != nil {
+			return types.Ruleset{}, err
+		}
+		group := types.Group{}
+		err = yaml.Unmarshal([]byte(groupFile), &group)
+		if err != nil {
+			return types.Ruleset{}, err
+		}
+		for _, ruleId := range group.Rules {
+			ruleFile, err := os.ReadFile(dir + "/" + groupId + "/rules/" + ruleId + ".yaml")
+			if err != nil {
+				return types.Ruleset{}, err
+			}
+			rule := types.RuleWithCondition{}
+			err = yaml.Unmarshal([]byte(ruleFile), &rule)
+			if err != nil {
+				return types.Ruleset{}, err
+			}
+			group.Directives = append(group.Directives, &rule)
+		}
+		group.Rules = nil
+		ruleset.Groups = append(ruleset.Groups, group)
+	}
+	ruleset.GroupsIds = nil
+	return ruleset, nil
 }
 
 // printYAML marshal and write structures to a yaml file
