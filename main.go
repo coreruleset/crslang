@@ -108,6 +108,8 @@ func LoadSeclang(input string) types.ConfigurationList {
 
 // PrintSeclang writes seclang directives to files specified in directive list ids.
 func PrintSeclang(configList types.ConfigurationList, dir string) error {
+	configList.PhaseDefaultsToSeclang()
+
 	unfDirs := types.FromCRSLangToUnformattedDirectives(configList)
 
 	for _, dirList := range unfDirs.DirectiveList {
@@ -126,6 +128,13 @@ func ToCRSLang(configList types.ConfigurationList) *types.ConfigurationList {
 	configListWithConditions := types.ToDirectiveWithConditions(configList)
 
 	configListWithConditions.ExtractDefaultValues()
+
+	err := configListWithConditions.ExtractPhaseDefaults()
+
+	if err != nil {
+		panic(err)
+	}
+
 	return configListWithConditions
 }
 

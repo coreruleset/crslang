@@ -1,12 +1,20 @@
 package types
 
 import (
+	"fmt"
 	"slices"
 )
 
+type PhaseDefaults struct {
+	Comment         string          `yaml:"comment,omitempty"`
+	Transformations Transformations `yaml:",inline"`
+	Actions         *SeclangActions `yaml:"actions"`
+}
+
 type DefaultConfigs struct {
-	Version string   `yaml:"version,omitempty"`
-	Tags    []string `yaml:"tags,omitempty"`
+	Version string                   `yaml:"version,omitempty"`
+	Tags    []string                 `yaml:"tags,omitempty"`
+	Phases  map[string]PhaseDefaults `yaml:"phases,omitempty"`
 }
 
 type ConfigurationList struct {
@@ -92,4 +100,64 @@ func (c *ConfigurationList) ExtractDefaultValues() {
 
 	c.Global.Version = version
 	c.Global.Tags = tags
+}
+
+// ExtractPhaseDefaults extract default actions from the directive list and add it to the global config
+func (c *ConfigurationList) ExtractPhaseDefaults() error {
+	defaultActions := map[string]PhaseDefaults{}
+
+	for _, dirList := range c.DirectiveList {
+		for _, directive := range dirList.Directives {
+			if directive.GetKind() == DefaultActionKind {
+				da, ok := directive.(DefaultAction)
+				if !ok {
+					return fmt.Errorf("Error: casting directive to DefaultAction")
+				}
+				pd := PhaseDefaults{
+					Comment:         da.Metadata.Comment,
+					Transformations: da.Transformations,
+					Actions:         CopyActions(*da.Actions),
+				}
+				_, ok = defaultActions[da.Metadata.Phase]
+				if ok {
+					return fmt.Errorf("Error: duplicate default actions for phase %s", da.Metadata.Phase)
+				}
+				defaultActions[da.Metadata.Phase] = pd
+			}
+		}
+	}
+
+	for i := range c.DirectiveList {
+		c.DirectiveList[i].Directives = slices.DeleteFunc(c.DirectiveList[i].Directives, func(d SeclangDirective) bool {
+			return d.GetKind() == DefaultActionKind
+		})
+	}
+
+	c.Global.Phases = defaultActions
+	return nil
+}
+
+// ExtractPhaseDefaults extract default actions from the directive list and add it to the global config
+func (c *ConfigurationList) PhaseDefaultsToSeclang() error {
+	if len(c.Global.Phases) > 0 {
+		seclangDirs := []SeclangDirective{}
+		for p, v := range c.Global.Phases {
+			da := NewDefaultAction()
+			da.Metadata.SetComment(v.Comment)
+			da.Metadata.SetPhase(p)
+			da.Actions = CopyActions(*v.Actions)
+			seclangDirs = append(seclangDirs, *da)
+		}
+
+		if len(c.DirectiveList) != 0 {
+			c.DirectiveList[0].Directives = append(seclangDirs, c.DirectiveList[0].Directives...)
+		} else {
+			dirList := DirectiveList{}
+			dirList.Id = "crs-setup"
+			dirList.Directives = seclangDirs
+			c.DirectiveList = append(c.DirectiveList, dirList)
+		}
+	}
+
+	return nil
 }
