@@ -47,15 +47,20 @@ func LoadSeclang(input string) (types.ConfigurationList, error) {
 
 // PrintSeclang writes seclang directives to files specified in directive list ids.
 func PrintSeclang(configList types.ConfigurationList, dir string) error {
+	dir = filepath.Clean(dir)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
 	unfDirs := types.FromCRSLangToUnformattedDirectives(configList)
 
-	for _, dirList := range unfDirs.DirectiveList {
-		seclangDirectives := dirList.ToSeclang()
-		dirId := dirList.Id + ".conf"
-		if strings.HasSuffix(dirList.Id, ".conf") {
-			dirId = dirList.Id + ".conf.example"
+	for _, group := range unfDirs.DirectiveList {
+		seclangDirectives := group.ToSeclang()
+		groupId := group.Id + ".conf"
+		if strings.HasSuffix(group.Id, ".conf") {
+			groupId = group.Id + ".conf.example"
 		}
-		err := writeToFile([]byte(seclangDirectives), dir+dirId)
+		err := writeToFile([]byte(seclangDirectives), filepath.Join(dir, groupId))
 		if err != nil {
 			return err
 		}
