@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/coreruleset/crslang/converters"
+	"github.com/coreruleset/crslang/translator"
 	"github.com/coreruleset/crslang/types"
 )
 
@@ -41,15 +41,18 @@ Flags:
 	}
 
 	if !*toSeclang {
-		configList := converters.LoadSeclang(pathArg)
+		configList, err := translator.LoadSeclang(pathArg)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 
-		configList = *converters.ToCRSLang(configList)
+		configList = *translator.ToCRSLang(configList)
 
 		if *output == "" {
 			*output = "crslang"
 		}
 
-		err := converters.PrintYAML(configList, *output+".yaml")
+		err = translator.PrintYAML(configList, *output+".yaml")
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -60,7 +63,7 @@ Flags:
 
 		configList := types.LoadDirectivesWithConditionsFromFile(pathArg)
 
-		err := converters.PrintSeclang(configList, *output)
+		err := translator.PrintSeclang(configList, *output)
 		if err != nil {
 			log.Fatal(err.Error())
 		}

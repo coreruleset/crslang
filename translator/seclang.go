@@ -14,7 +14,7 @@ import (
 
 // LoadSeclang loads seclang directives from an input file or folder and returns a ConfigurationList
 // if a folder is specified it loads all .conf files in the folder
-func LoadSeclang(input string) types.ConfigurationList {
+func LoadSeclang(input string) (types.ConfigurationList, error) {
 	resultConfigs := []types.DirectiveList{}
 	filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -23,7 +23,7 @@ func LoadSeclang(input string) types.ConfigurationList {
 		if ext := filepath.Ext(info.Name()); !info.IsDir() && (ext == ".conf" || (ext == ".example" && filepath.Ext(strings.TrimSuffix(info.Name(), ext)) == ".conf")) {
 			input, err := antlr.NewFileStream(path)
 			if err != nil {
-				panic("Error reading file" + path)
+				return err
 			}
 			lexer := parser.NewSecLangLexer(input)
 			stream := antlr.NewCommonTokenStream(lexer, 0)
@@ -42,7 +42,7 @@ func LoadSeclang(input string) types.ConfigurationList {
 		return nil
 	})
 	configList := types.ConfigurationList{DirectiveList: resultConfigs}
-	return configList
+	return configList, nil
 }
 
 // PrintSeclang writes seclang directives to files specified in directive list ids.
