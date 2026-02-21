@@ -152,7 +152,7 @@ if (result.error) {
 </html>
 ```
 
-A ready-to-use demo is available at [`wasm/demo.html`](wasm/demo.html).
+A ready-to-use playground is available at [`wasm/index.html`](wasm/index.html).
 
 ## 📚 Documentation
 

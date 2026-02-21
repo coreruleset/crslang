@@ -18,11 +18,9 @@ wasm:
 	GOOS=js GOARCH=wasm go build -o wasm/crslang.wasm ./wasm/
 	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" wasm/
 
-playground:
-	mkdir playground
+playground: wasm
 	cp wasm/wasm_exec.js playground/
 	cp wasm/crslang.wasm playground/
-	cp wasm/index.html playground/
 
 # Remove build artefacts.
 clean:
