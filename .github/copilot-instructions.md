@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**CRSLang** is a Go library and CLI tool that translates [OWASP Core Rule Set (CRS)](https://coreruleset.org/) rules between their native [SecLang/ModSecurity](https://github.com/coreruleset/seclang_parser) configuration format (`.conf` files) and a new, language-independent YAML representation called **CRSLang**.
+**CRSLang** is a Go library and CLI tool that translates [OWASP CRS](https://coreruleset.org/) rules between their native [SecLang/ModSecurity](https://github.com/coreruleset/seclang_parser) configuration format (`.conf` files) and a new, language-independent YAML representation called **CRSLang**.
 
 The project also compiles to WebAssembly (WASM) so the translation logic can run in a browser without any server-side component.
 
@@ -213,7 +213,7 @@ Triggers on push/PR to `main`. Runs `go test -v ./...`.
 - The WASM entry point (`wasm/main.go`) is gated with the `//go:build js && wasm` build tag and should never be imported by non-WASM code.
 - Test files in the root package (`package main`) can use helpers defined in `listener_test.go` (e.g., `mustNewActionOnly`, `mustNewActionWithParam`, `mustNewSetvarAction`).
 - Copyright header style: `// Copyright <year> <author>\n// SPDX-License-Identifier: Apache-2.0`
-
+- Always use conventional commits for describing changes
 ---
 
 ## Common Errors & Workarounds
