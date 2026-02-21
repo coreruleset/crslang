@@ -1,4 +1,4 @@
-package main
+package translator
 
 import (
 	"os"
@@ -8,11 +8,14 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-var testFilepath = "testdata/crs/"
+var testFilepath = "../testdata/crs/"
 
 func TestLoadCRS(t *testing.T) {
 
-	configList := LoadSeclang(testFilepath)
+	configList, err := LoadSeclang(testFilepath)
+	if err != nil {
+		t.Errorf("Error loading seclang directives: %v", err)
+	}
 
 	configList = *ToCRSLang(configList)
 
@@ -37,7 +40,10 @@ func TestLoadCRS(t *testing.T) {
 }
 
 func TestFromCRSLangToSeclang(t *testing.T) {
-	configList := LoadSeclang(testFilepath)
+	configList, err := LoadSeclang(testFilepath)
+	if err != nil {
+		t.Errorf("Error loading seclang directives: %v", err)
+	}
 
 	seclangDirectives := types.ToSeclang(configList)
 
