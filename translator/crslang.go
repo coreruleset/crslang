@@ -1,4 +1,4 @@
-package converters
+package translator
 
 import "github.com/coreruleset/crslang/types"
 
