@@ -1,6 +1,6 @@
 .PHONY: all build test wasm clean
 
-all: build
+all: build wasm
 
 # Build the native CLI binary.
 build:
