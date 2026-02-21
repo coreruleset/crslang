@@ -12,6 +12,31 @@ import (
 	"github.com/coreruleset/seclang_parser/parser"
 )
 
+// assignDirectiveIDs assigns a base id (and an indexed suffix when there are
+// multiple directive lists) to each entry produced by a single parse run.
+func assignDirectiveIDs(directives []types.DirectiveList, id string) {
+	for i := range directives {
+		directives[i].Id = id
+		if len(directives) > 1 {
+			directives[i].Id += "_" + strconv.Itoa(i+1)
+		}
+	}
+}
+
+// LoadSeclangFromString loads seclang directives from a string and returns a ConfigurationList.
+// The id parameter is used to name the resulting directive list.
+func LoadSeclangFromString(content string, id string) (types.ConfigurationList, error) {
+	input := antlr.NewInputStream(content)
+	lexer := parser.NewSecLangLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, 0)
+	p := parser.NewSecLangParser(stream)
+	start := p.Configuration()
+	var seclangListener listener.ExtendedSeclangParserListener
+	antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
+	assignDirectiveIDs(seclangListener.ConfigurationList.DirectiveList, id)
+	return seclangListener.ConfigurationList, nil
+}
+
 // LoadSeclang loads seclang directives from an input file or folder and returns a ConfigurationList
 // if a folder is specified it loads all .conf files in the folder
 func LoadSeclang(input string) (types.ConfigurationList, error) {
@@ -31,12 +56,8 @@ func LoadSeclang(input string) (types.ConfigurationList, error) {
 			start := p.Configuration()
 			var seclangListener listener.ExtendedSeclangParserListener
 			antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
-			for i := range seclangListener.ConfigurationList.DirectiveList {
-				seclangListener.ConfigurationList.DirectiveList[i].Id = strings.TrimSuffix(filepath.Base(info.Name()), filepath.Ext(info.Name()))
-				if len(seclangListener.ConfigurationList.DirectiveList) > 1 {
-					seclangListener.ConfigurationList.DirectiveList[i].Id += "_" + strconv.Itoa(i+1)
-				}
-			}
+			id := strings.TrimSuffix(filepath.Base(info.Name()), filepath.Ext(info.Name()))
+			assignDirectiveIDs(seclangListener.ConfigurationList.DirectiveList, id)
 			resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.DirectiveList...)
 		}
 		return nil
