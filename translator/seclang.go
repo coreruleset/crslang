@@ -52,7 +52,7 @@ func PrintSeclang(configList types.ConfigurationList, dir string) error {
 	for _, dirList := range unfDirs.DirectiveList {
 		seclangDirectives := dirList.ToSeclang()
 		dirId := dirList.Id + ".conf"
-		if strings.HasSuffix(dirId, ".conf") {
+		if strings.HasSuffix(dirList.Id, ".conf") {
 			dirId = dirList.Id + ".conf.example"
 		}
 		err := writeToFile([]byte(seclangDirectives), dir+dirId)
