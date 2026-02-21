@@ -1,7 +1,6 @@
 package translator
 
 import (
-	"io"
 	"os"
 
 	"go.yaml.in/yaml/v4"
@@ -14,7 +13,7 @@ func writeToFile(payload []byte, filename string) error {
 	}
 	defer f.Close()
 
-	_, err = io.WriteString(f, string(payload))
+	_, err = f.Write(payload)
 	if err != nil {
 		return err
 	}
