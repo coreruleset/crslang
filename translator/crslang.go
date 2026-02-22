@@ -15,6 +15,11 @@ func ToCRSLang(configList types.Ruleset) *types.Ruleset {
 	configListWithConditions := types.ToDirectiveWithConditions(configList)
 
 	configListWithConditions.ExtractDefaultValues()
+
+	for i := range configListWithConditions.Groups {
+		configListWithConditions.Groups[i].ExtractDefaultValues()
+	}
+
 	return configListWithConditions
 }
 
@@ -46,16 +51,14 @@ func WriteRuleSeparately(rulset types.Ruleset, output string) error {
 				if !ok {
 					return fmt.Errorf("Error casting to RuleWithCondition")
 				}
-				// Ignore paranoia level check rules
-				lastDigits := rule.Metadata.Id % 1000
-				if lastDigits/100 != 0 {
-					fileName := filepath.Join(ruleFolder, strconv.Itoa(rule.Metadata.Id)+".yaml")
-					err := PrintYAML(directive, fileName)
-					if err != nil {
-						return err
-					}
-					ruleIds = append(ruleIds, strconv.Itoa(rule.Metadata.Id))
+
+				fileName := filepath.Join(ruleFolder, strconv.Itoa(rule.Metadata.Id)+".yaml")
+				err := PrintYAML(directive, fileName)
+				if err != nil {
+					return err
 				}
+				ruleIds = append(ruleIds, strconv.Itoa(rule.Metadata.Id))
+
 			} else if directive.GetKind() == types.CommentKind {
 				comment, ok := directive.(types.CommentDirective)
 				if !ok {
@@ -127,6 +130,16 @@ func LoadRulesFromDirectory(dir string) (types.Ruleset, error) {
 		err = yaml.Unmarshal([]byte(groupFile), &group)
 		if err != nil {
 			return types.Ruleset{}, err
+		}
+		for _, comment := range group.Comments {
+			group.Directives = append(group.Directives, types.CommentDirective{
+				Metadata: types.CommentMetadata{
+					Comment: comment,
+				},
+			})
+		}
+		for _, config := range group.Configurations {
+			group.Directives = append(group.Directives, config)
 		}
 		for _, ruleId := range group.Rules {
 			ruleFile, err := os.ReadFile(filepath.Join(dir, groupId, "rules", ruleId+".yaml"))

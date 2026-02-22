@@ -77,11 +77,12 @@ Flags:
 				log.Fatal(err.Error())
 			}
 		} else {
-			/* Expiremental load rule from dir */
-			_, err := translator.LoadRulesFromDirectory(pathArg)
+			/* Load rule from dir */
+			configList, err := translator.LoadRulesFromDirectory(pathArg)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
+			err = translator.PrintSeclang(configList, *output)
 			if err != nil {
 				log.Fatal(err.Error())
 			}

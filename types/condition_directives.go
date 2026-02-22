@@ -415,6 +415,13 @@ func FromCRSLangToUnformattedDirectives(configListWrapped Ruleset) *Ruleset {
 				for _, tag := range configListWrapped.Global.Tags {
 					chainableDir.GetMetadata().AddTag(tag)
 				}
+				// Ignore paranoia level check rules when adding group tags
+				lastDigits := *&directiveWrapped.(*RuleWithCondition).Metadata.Id % 1000
+				if lastDigits/100 != 0 {
+					for _, tag := range config.Tags {
+						chainableDir.GetMetadata().AddTag(tag)
+					}
+				}
 				directive = chainableDir
 			case ConfigurationDirective:
 				directive = ConfigurationDirective{

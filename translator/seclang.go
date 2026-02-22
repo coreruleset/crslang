@@ -33,8 +33,8 @@ func LoadSeclangFromString(content string, id string) (types.Ruleset, error) {
 	start := p.Configuration()
 	var seclangListener listener.ExtendedSeclangParserListener
 	antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
-	assignDirectiveIDs(seclangListener.ConfigurationList.Groups, id)
-	return seclangListener.ConfigurationList, nil
+	assignDirectiveIDs(seclangListener.Ruleset.Groups, id)
+	return seclangListener.Ruleset, nil
 }
 
 // LoadSeclang loads seclang directives from an input file or folder and returns a Ruleset
@@ -57,8 +57,8 @@ func LoadSeclang(input string) (types.Ruleset, error) {
 			var seclangListener listener.ExtendedSeclangParserListener
 			antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
 			id := strings.TrimSuffix(filepath.Base(info.Name()), filepath.Ext(info.Name()))
-			assignDirectiveIDs(seclangListener.ConfigurationList.Groups, id)
-			resultConfigs = append(resultConfigs, seclangListener.ConfigurationList.Groups...)
+			assignDirectiveIDs(seclangListener.Ruleset.Groups, id)
+			resultConfigs = append(resultConfigs, seclangListener.Ruleset.Groups...)
 		}
 		return nil
 	})
