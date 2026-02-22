@@ -1,4 +1,4 @@
-package main
+package translator
 
 import (
 	"os"
@@ -8,11 +8,14 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-var testFilepath = "testdata/crs/"
+var testFilepath = "../testdata/crs/"
 
 func TestLoadCRS(t *testing.T) {
 
-	configList := LoadSeclang(testFilepath)
+	configList, err := LoadSeclang(testFilepath)
+	if err != nil {
+		t.Errorf("Error loading seclang directives: %v", err)
+	}
 
 	configList = *ToCRSLang(configList)
 
@@ -36,8 +39,35 @@ func TestLoadCRS(t *testing.T) {
 	}
 }
 
+func TestLoadSeclangFromString(t *testing.T) {
+	const seclangInput = `SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 1" "id:911011,phase:1,pass,nolog,tag:'OWASP_CRS',ver:'OWASP_CRS/4.0.1-dev',skipAfter:END-REQUEST-911-METHOD-ENFORCEMENT"`
+
+	configList, err := LoadSeclangFromString(seclangInput, "test")
+	if err != nil {
+		t.Fatalf("Error loading seclang from string: %v", err)
+	}
+
+	if len(configList.Groups) == 0 {
+		t.Fatal("Expected at least one directive list, got none")
+	}
+
+	configList = *ToCRSLang(configList)
+
+	yamlFile, err := yaml.Marshal(configList)
+	if err != nil {
+		t.Fatalf("Error marshalling yaml: %v", err)
+	}
+
+	if len(yamlFile) == 0 {
+		t.Error("Expected non-empty YAML output")
+	}
+}
+
 func TestFromCRSLangToSeclang(t *testing.T) {
-	configList := LoadSeclang(testFilepath)
+	configList, err := LoadSeclang(testFilepath)
+	if err != nil {
+		t.Errorf("Error loading seclang directives: %v", err)
+	}
 
 	seclangDirectives := types.ToSeclang(configList)
 

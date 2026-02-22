@@ -65,6 +65,95 @@ Run the tests to ensure everything works correctly:
 go test -v
 ```
 
+## 🌐 WebAssembly (WASM)
+
+CRSLang can be compiled to WebAssembly so the translation logic runs directly in
+the browser without any server-side component.
+
+### 🔨 Build the WASM module
+
+Running `make wasm` produces two files inside the `wasm/` directory:
+
+| File | Description |
+|---|---|
+| `wasm/crslang.wasm` | Compiled WebAssembly module |
+| `wasm/wasm_exec.js` | Go-provided JS glue required to load the module |
+
+```bash
+make wasm
+```
+
+### 🖥️ Serve the demo
+
+The generated files must be served over HTTP (browsers block `file://` WASM
+loads). Any static file server works, for example:
+
+```bash
+cd wasm
+python3 -m http.server 8080
+# Open http://localhost:8080/demo.html
+```
+
+### 📦 JavaScript API
+
+After loading `wasm_exec.js` and instantiating `crslang.wasm`, two functions
+are available on the global `window` object:
+
+#### `seclangToCRSLang(seclangContent)`
+
+Translates a SecLang configuration string into a CRSLang YAML string.
+
+```js
+const result = seclangToCRSLang(
+  'SecRule REQUEST_HEADERS:Host "@rx ^$" "id:920280,phase:1,block,msg:\'Request Missing a Host Header\'"'
+);
+if (result.error) {
+  console.error("Translation failed:", result.error);
+} else {
+  console.log(result.yaml); // CRSLang YAML string
+}
+```
+
+#### `crslangToSeclang(crslangYaml)`
+
+Translates a CRSLang YAML string back into SecLang format.
+
+```js
+const result = crslangToSeclang(crslangYaml);
+if (result.error) {
+  console.error("Translation failed:", result.error);
+} else {
+  console.log(result.seclang); // SecLang string
+}
+```
+
+### 📄 Minimal HTML integration example
+
+```html
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body>
+  <script src="wasm_exec.js"></script>
+  <script>
+    const go = new Go();
+    WebAssembly.instantiateStreaming(fetch("crslang.wasm"), go.importObject)
+      .then(result => {
+        go.run(result.instance);
+
+        const out = seclangToCRSLang(
+          'SecRule REQUEST_HEADERS:Host "@rx ^$" ' +
+          '"id:920280,phase:1,block,msg:\'Request Missing a Host Header\'"'
+        );
+        console.log(out.yaml);
+      });
+  </script>
+</body>
+</html>
+```
+
+A ready-to-use playground is available at [`wasm/index.html`](wasm/index.html).
+
 ## 📚 Documentation
 
 For detailed information about the project structure and API, check out the source code and test files.

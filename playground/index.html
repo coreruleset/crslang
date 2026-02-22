@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRSLang Playground</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- CodeMirror 5 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/ayu-dark.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/ayu-mirage.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/keymap/sublime.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/yaml/yaml.min.js"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-primary: #0f1117;
+      --bg-secondary: #161822;
+      --bg-card: #1a1d2b;
+      --bg-glass: rgba(26, 29, 43, 0.85);
+      --border-color: #2a2e3e;
+      --text-primary: #e1e4ed;
+      --text-secondary: #a0a4b8;
+      --text-muted: #6b7084;
+      --accent-primary: #6c8cff;
+      --accent-secondary: #a78bfa;
+      --accent-success: #4ade80;
+      --accent-danger: #f87171;
+      --accent-warning: #fbbf24;
+      --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-bs-theme="light"] {
+      --bg-primary: #f4f5f9;
+      --bg-secondary: #ebedf3;
+      --bg-card: #ffffff;
+      --bg-glass: rgba(255, 255, 255, 0.9);
+      --border-color: #d4d7e0;
+      --text-primary: #1a1d2b;
+      --text-secondary: #4a4e64;
+      --text-muted: #8b90a0;
+      --accent-primary: #4a6cf7;
+      --accent-secondary: #8b6cf7;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* --- Navbar --- */
+    .navbar {
+      background: var(--bg-glass) !important;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.5rem 0;
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.01em;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .navbar-brand .badge {
+      font-size: 0.6rem;
+      font-weight: 500;
+      vertical-align: middle;
+      background: var(--accent-primary) !important;
+      -webkit-text-fill-color: #fff;
+    }
+
+    .btn-navbar {
+      font-size: 0.8rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      background: transparent;
+      transition: var(--transition);
+    }
+
+    .btn-navbar:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+      background: rgba(108, 140, 255, 0.08);
+    }
+
+    /* --- Status badge --- */
+    #status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-radius: 100px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    #status .spinner-border {
+      width: 0.7rem;
+      height: 0.7rem;
+      border-width: 0.12em;
+    }
+
+    #status.ready {
+      border-color: rgba(74, 222, 128, 0.3);
+      background: rgba(74, 222, 128, 0.08);
+      color: var(--accent-success);
+    }
+
+    #status.error {
+      border-color: rgba(248, 113, 113, 0.3);
+      background: rgba(248, 113, 113, 0.08);
+      color: var(--accent-danger);
+    }
+
+    /* --- Panels --- */
+    .editor-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition);
+    }
+
+    .editor-panel:focus-within {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(108, 140, 255, 0.1);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 0.9rem;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    [data-bs-theme="light"] .panel-header {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .panel-header .panel-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .panel-header .panel-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      opacity: 0.6;
+    }
+
+    .panel-seclang .panel-dot { background: var(--accent-primary); }
+    .panel-crslang .panel-dot { background: var(--accent-secondary); }
+
+    /* --- CodeMirror overrides --- */
+    .CodeMirror {
+      height: 460px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+      background: transparent !important;
+      color: var(--text-primary);
+    }
+
+    .CodeMirror-gutters {
+      background: rgba(255, 255, 255, 0.02) !important;
+      border-right: 1px solid var(--border-color) !important;
+    }
+
+    [data-bs-theme="light"] .CodeMirror-gutters {
+      background: rgba(0, 0, 0, 0.02) !important;
+    }
+
+    .CodeMirror-cursor {
+      border-left: 2px solid var(--accent-primary) !important;
+    }
+
+    .CodeMirror-selected {
+      background: rgba(108, 140, 255, 0.15) !important;
+    }
+
+    .CodeMirror-placeholder {
+      color: var(--text-muted) !important;
+      opacity: 0.5;
+    }
+
+    /* --- Conversion buttons --- */
+    .convert-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0 0.25rem;
+    }
+
+    .btn-convert {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      background: var(--bg-card);
+      transition: var(--transition);
+      padding: 0;
+    }
+
+    .btn-convert:hover:not(:disabled) {
+      border-color: var(--accent-primary);
+      color: #fff;
+      background: var(--accent-primary);
+      box-shadow: 0 4px 16px rgba(108, 140, 255, 0.25);
+      transform: scale(1.08);
+    }
+
+    .btn-convert:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    .btn-convert:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* --- Footer --- */
+    footer {
+      text-align: center;
+      padding: 1.25rem 0;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    footer a {
+      color: var(--accent-primary);
+      text-decoration: none;
+    }
+    footer a:hover { text-decoration: underline; }
+    footer code {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+
+    /* --- Toast overrides --- */
+    .toast {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 991px) {
+      .convert-actions {
+        flex-direction: row;
+        padding: 0.5rem 0;
+      }
+      .CodeMirror { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid px-3">
+      <a class="navbar-brand" href="#">
+        <i class="fa-solid fa-shield-halved me-1"></i>
+        CRSLang Playground
+        <span class="badge ms-1">WASM</span>
+      </a>
+
+      <div class="d-flex align-items-center gap-2">
+        <div id="status">
+          <span class="spinner-border" role="status"></span>
+          Loading WASM&hellip;
+        </div>
+        <button class="btn btn-navbar" id="btn-theme" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Toggle theme">
+          <i class="fa-solid fa-circle-half-stroke"></i>
+        </button>
+        <a class="btn btn-navbar" href="https://github.com/coreruleset/crslang" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom" title="GitHub">
+          <i class="fa-brands fa-github"></i>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="container-fluid px-3 px-lg-4 py-3">
+    <div class="row g-2 align-items-start">
+      <!-- SecLang panel -->
+      <div class="col-lg-5">
+        <div class="editor-panel panel-seclang">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="panel-dot"></span>
+              SecLang
+            </div>
+            <button class="btn btn-sm btn-navbar" id="btn-clear-seclang" data-bs-toggle="tooltip" title="Clear">
+              <i class="fa-solid fa-eraser fa-xs"></i>
+            </button>
+          </div>
+          <textarea id="seclang"></textarea>
+        </div>
+      </div>
+
+      <!-- Arrows -->
+      <div class="col-lg-2 d-flex justify-content-center align-items-center" style="min-height: 460px;">
+        <div class="convert-actions">
+          <button class="btn btn-convert" id="btn-to-crslang" disabled data-bs-toggle="tooltip" data-bs-placement="right" title="Convert SecLang to CRSLang">
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <button class="btn btn-convert" id="btn-to-seclang" disabled data-bs-toggle="tooltip" data-bs-placement="right" title="Convert CRSLang to SecLang">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- CRSLang panel -->
+      <div class="col-lg-5">
+        <div class="editor-panel panel-crslang">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="panel-dot"></span>
+              CRSLang YAML
+            </div>
+            <button class="btn btn-sm btn-navbar" id="btn-clear-crslang" data-bs-toggle="tooltip" title="Clear">
+              <i class="fa-solid fa-eraser fa-xs"></i>
+            </button>
+          </div>
+          <textarea id="crslang"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast-error" class="toast align-items-center border-danger" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">
+          <i class="fa-solid fa-circle-exclamation text-danger me-1"></i>
+          <span id="toast-error-msg"></span>
+        </div>
+        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Powered by <a href="https://github.com/coreruleset/crslang">CRSLang</a> compiled to WebAssembly &mdash;
+    run <code>make playground</code> to build locally.
+  </footer>
+
+  <!--
+    wasm_exec.js is the standard Go-provided JavaScript glue that must be loaded
+    before the WASM module.  Run `make wasm` to generate both files.
+  -->
+  <script src="wasm_exec.js"></script>
+  <script src="seclang-mode.js"></script>
+  <script>
+    // ── Theme management ──────────────────────────────────────────────
+    function getSystemTheme() {
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+
+    function getEffectiveTheme() {
+      const saved = localStorage.getItem('crslang-theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      return getSystemTheme();
+    }
+
+    function getCodeMirrorTheme(theme) {
+      return theme === 'light' ? 'default' : 'ayu-dark';
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-bs-theme', theme);
+      localStorage.setItem('crslang-theme', theme);
+      const cmTheme = getCodeMirrorTheme(theme);
+      if (editorSeclang) editorSeclang.setOption('theme', cmTheme);
+      if (editorCrslang) editorCrslang.setOption('theme', cmTheme);
+    }
+
+    // ── CodeMirror editors ────────────────────────────────────────────
+    const initialTheme = getEffectiveTheme();
+    // Set the Bootstrap theme attribute before editors exist (applyTheme
+    // references the editor variables, so it can only be called after they
+    // are initialised).
+    document.documentElement.setAttribute('data-bs-theme', initialTheme);
+
+    const editorSeclang = CodeMirror.fromTextArea(document.getElementById('seclang'), {
+      mode: 'seclang',
+      theme: getCodeMirrorTheme(initialTheme),
+      lineNumbers: true,
+      lineWrapping: true,
+      indentUnit: 2,
+      tabSize: 2,
+      keyMap: 'sublime',
+    });
+
+    const editorCrslang = CodeMirror.fromTextArea(document.getElementById('crslang'), {
+      mode: 'yaml',
+      theme: getCodeMirrorTheme(initialTheme),
+      lineNumbers: true,
+      lineWrapping: true,
+      indentUnit: 2,
+      tabSize: 2,
+      keyMap: 'sublime',
+    });
+
+    // ── Toast helper ──────────────────────────────────────────────────
+    function showError(msg) {
+      document.getElementById('toast-error-msg').textContent = msg;
+      const toast = new bootstrap.Toast(document.getElementById('toast-error'));
+      toast.show();
+    }
+
+    // ── WASM loading ──────────────────────────────────────────────────
+    const go = new Go();
+
+    WebAssembly.instantiateStreaming(fetch('crslang.wasm'), go.importObject).then(result => {
+      go.run(result.instance);
+      const el = document.getElementById('status');
+      el.innerHTML = '<i class="fa-solid fa-circle-check"></i> Ready';
+      el.classList.add('ready');
+      document.getElementById('btn-to-crslang').disabled = false;
+      document.getElementById('btn-to-seclang').disabled = false;
+      // Refresh editors after WASM load in case of layout shift
+      setTimeout(() => { editorSeclang.refresh(); editorCrslang.refresh(); }, 100);
+    }).catch(err => {
+      const el = document.getElementById('status');
+      el.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> WASM load failed';
+      el.classList.add('error');
+      showError('Failed to load WASM: ' + err);
+    });
+
+    // ── Conversion handlers ───────────────────────────────────────────
+    document.getElementById('btn-to-crslang').addEventListener('click', () => {
+      const input = editorSeclang.getValue();
+      const result = seclangToCRSLang(input);
+      if (result.error) {
+        showError(result.error);
+      } else {
+        editorCrslang.setValue(result.yaml);
+      }
+    });
+
+    document.getElementById('btn-to-seclang').addEventListener('click', () => {
+      const input = editorCrslang.getValue();
+      const result = crslangToSeclang(input);
+      if (result.error) {
+        showError(result.error);
+      } else {
+        editorSeclang.setValue(result.seclang);
+      }
+    });
+
+    // ── Clear buttons ─────────────────────────────────────────────────
+    document.getElementById('btn-clear-seclang').addEventListener('click', () => {
+      editorSeclang.setValue('');
+      editorSeclang.focus();
+    });
+
+    document.getElementById('btn-clear-crslang').addEventListener('click', () => {
+      editorCrslang.setValue('');
+      editorCrslang.focus();
+    });
+
+    // ── Theme toggle ──────────────────────────────────────────────────
+    document.getElementById('btn-theme').addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-bs-theme');
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
+    // ── Bootstrap tooltips ────────────────────────────────────────────
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+      new bootstrap.Tooltip(el);
+    });
+  </script>
+</body>
+</html>

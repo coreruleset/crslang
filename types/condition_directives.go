@@ -132,7 +132,7 @@ func RuleToCondition(directive ChainableDirective) *RuleWithCondition {
 // configurationYamlLoader is a auxiliary struct to load the whole yaml file
 type configurationYamlLoader struct {
 	Global        DefaultConfigs             `yaml:"global,omitempty"`
-	DirectiveList []yamlLoaderConditionRules `yaml:"directivelist,omitempty"`
+	DirectiveList []yamlLoaderConditionRules `yaml:"groups,omitempty"`
 }
 
 // yamlLoaderConditionRules is a auxiliary struct to load and iterate over the yaml file
