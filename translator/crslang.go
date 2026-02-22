@@ -3,6 +3,7 @@ package translator
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/coreruleset/crslang/types"
@@ -18,17 +19,24 @@ func ToCRSLang(configList types.Ruleset) *types.Ruleset {
 }
 
 func WriteRuleSeparately(rulset types.Ruleset, output string) error {
+	output = filepath.Clean(output)
+	if err := os.MkdirAll(output, 0755); err != nil {
+		return err
+	}
+
 	groups := []string{}
 
 	// EXPERIMENTAL: output each group and rule in separate files
 	for _, group := range rulset.Groups {
 		groups = append(groups, group.Id)
-		groupFolder := output + "/" + group.Id + "/"
-		ruleFolder := groupFolder + "/rules/"
-		err := os.MkdirAll(ruleFolder, os.ModePerm)
+
+		groupFolder := filepath.Join(output, group.Id)
+		ruleFolder := filepath.Join(groupFolder, "rules")
+		err := os.MkdirAll(ruleFolder, 0755)
 		if err != nil {
 			return err
 		}
+
 		ruleIds := []string{}
 		comments := []string{}
 		configs := []types.ConfigurationDirective{}
@@ -41,7 +49,7 @@ func WriteRuleSeparately(rulset types.Ruleset, output string) error {
 				// Ignore paranoia level check rules
 				lastDigits := rule.Metadata.Id % 1000
 				if lastDigits/100 != 0 {
-					fileName := ruleFolder + strconv.Itoa(rule.Metadata.Id) + ".yaml"
+					fileName := filepath.Join(ruleFolder, strconv.Itoa(rule.Metadata.Id)+".yaml")
 					err := PrintYAML(directive, fileName)
 					if err != nil {
 						return err
@@ -70,7 +78,7 @@ func WriteRuleSeparately(rulset types.Ruleset, output string) error {
 			Configurations: configs,
 			Marker:         group.Marker,
 		}
-		err = PrintYAML(newGroup, groupFolder+"group.yaml")
+		err = PrintYAML(newGroup, filepath.Join(groupFolder, "group.yaml"))
 		if err != nil {
 			return err
 		}
@@ -80,7 +88,7 @@ func WriteRuleSeparately(rulset types.Ruleset, output string) error {
 		Global:    rulset.Global,
 		GroupsIds: groups,
 	}
-	err := PrintYAML(newRuleset, output+"/ruleset.yaml")
+	err := PrintYAML(newRuleset, filepath.Join(output, "ruleset.yaml"))
 	if err != nil {
 		return err
 	}
@@ -95,8 +103,9 @@ func LoadRulesFromDirectory(dir string) (types.Ruleset, error) {
 	} else if !info.IsDir() {
 		return types.Ruleset{}, fmt.Errorf("path is not a directory: %s", dir)
 	}
+	dir = filepath.Clean(dir)
 
-	rFile, err := os.ReadFile(dir + "/ruleset.yaml")
+	rFile, err := os.ReadFile(filepath.Join(dir, "ruleset.yaml"))
 
 	if err != nil {
 		return types.Ruleset{}, err
@@ -110,7 +119,7 @@ func LoadRulesFromDirectory(dir string) (types.Ruleset, error) {
 	}
 
 	for _, groupId := range ruleset.GroupsIds {
-		groupFile, err := os.ReadFile(dir + "/" + groupId + "/group.yaml")
+		groupFile, err := os.ReadFile(filepath.Join(dir, groupId, "group.yaml"))
 		if err != nil {
 			return types.Ruleset{}, err
 		}
@@ -120,7 +129,7 @@ func LoadRulesFromDirectory(dir string) (types.Ruleset, error) {
 			return types.Ruleset{}, err
 		}
 		for _, ruleId := range group.Rules {
-			ruleFile, err := os.ReadFile(dir + "/" + groupId + "/rules/" + ruleId + ".yaml")
+			ruleFile, err := os.ReadFile(filepath.Join(dir, groupId, "rules", ruleId+".yaml"))
 			if err != nil {
 				return types.Ruleset{}, err
 			}
