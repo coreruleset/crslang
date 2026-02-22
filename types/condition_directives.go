@@ -131,13 +131,14 @@ func RuleToCondition(directive ChainableDirective) *RuleWithCondition {
 
 // configurationYamlLoader is a auxiliary struct to load the whole yaml file
 type configurationYamlLoader struct {
-	Global        DefaultConfigs             `yaml:"global,omitempty"`
-	DirectiveList []yamlLoaderConditionRules `yaml:"groups,omitempty"`
+	Global DefaultConfigs             `yaml:"global,omitempty"`
+	Groups []yamlLoaderConditionRules `yaml:"groups,omitempty"`
 }
 
 // yamlLoaderConditionRules is a auxiliary struct to load and iterate over the yaml file
 type yamlLoaderConditionRules struct {
 	Id         string                 `yaml:"id"`
+	Tags       []string               `yaml:"tags,omitempty"`
 	Directives []yaml.Node            `yaml:"directives,omitempty"`
 	Marker     ConfigurationDirective `yaml:"marker,omitempty"`
 }
@@ -276,12 +277,12 @@ func LoadDirectivesWithConditionsFromFile(filename string) Ruleset {
 func LoadDirectivesWithConditions(yamlFile []byte) Ruleset {
 	var config configurationYamlLoader
 	err := yaml.Unmarshal(yamlFile, &config)
-	configs := config.DirectiveList
+	groups := config.Groups
 	if err != nil {
 		panic(err)
 	}
 	var resultConfigs []Group
-	for _, config := range configs {
+	for _, config := range groups {
 		var directives []SeclangDirective
 		for _, yamlDirective := range config.Directives {
 			directive := loadConditionDirective(yamlDirective)
@@ -291,7 +292,7 @@ func LoadDirectivesWithConditions(yamlFile []byte) Ruleset {
 				directives = append(directives, directive)
 			}
 		}
-		resultConfigs = append(resultConfigs, Group{Id: config.Id, Directives: directives, Marker: config.Marker})
+		resultConfigs = append(resultConfigs, Group{Id: config.Id, Tags: config.Tags, Directives: directives, Marker: config.Marker})
 	}
 	return Ruleset{Global: config.Global, Groups: resultConfigs}
 }
@@ -399,6 +400,7 @@ func FromCRSLangToUnformattedDirectives(configListWrapped Ruleset) *Ruleset {
 	for _, config := range configListWrapped.Groups {
 		configList := new(Group)
 		configList.Id = config.Id
+		configList.Tags = config.Tags
 		configList.Marker = config.Marker
 		for _, directiveWrapped := range config.Directives {
 			var directive SeclangDirective
@@ -417,7 +419,7 @@ func FromCRSLangToUnformattedDirectives(configListWrapped Ruleset) *Ruleset {
 				}
 				// Ignore paranoia level check rules when adding group tags
 				lastDigits := *&directiveWrapped.(*RuleWithCondition).Metadata.Id % 1000
-				if lastDigits/100 != 0 {
+				if !(lastDigits < 20) {
 					for _, tag := range config.Tags {
 						chainableDir.GetMetadata().AddTag(tag)
 					}
