@@ -682,7 +682,7 @@ func TestLoadSecLang(t *testing.T) {
 			start := p.Configuration()
 			var seclangListener listener.ExtendedSeclangParserListener
 			antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
-			got = seclangListener.ConfigurationList
+			got = seclangListener.Ruleset
 
 			require.Equalf(t, test.expected, got, test.name)
 		})

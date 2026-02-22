@@ -44,7 +44,7 @@ type ExtendedSeclangParserListener struct {
 	varCount               bool
 	parameter              string
 	DirectiveList          *types.Group
-	ConfigurationList      types.Ruleset
+	Ruleset      types.Ruleset
 }
 
 func doNothingFunc() {}
@@ -63,7 +63,7 @@ func (l *ExtendedSeclangParserListener) EnterConfiguration(ctx *parser.Configura
 
 func (l *ExtendedSeclangParserListener) ExitConfiguration(ctx *parser.ConfigurationContext) {
 	if l.DirectiveList != nil && (len(l.DirectiveList.Directives) > 0 || l.DirectiveList.Marker.Name != "") {
-		l.ConfigurationList.Groups = append(l.ConfigurationList.Groups, *l.DirectiveList)
+		l.Ruleset.Groups = append(l.Ruleset.Groups, *l.DirectiveList)
 	}
 }
 

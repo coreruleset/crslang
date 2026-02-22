@@ -62,7 +62,7 @@ func (l *ExtendedSeclangParserListener) EnterSec_marker_directive(ctx *parser.Se
 	}
 	l.appendDirective = func() {
 		l.DirectiveList.Marker = *l.configurationDirective
-		l.ConfigurationList.Groups = append(l.ConfigurationList.Groups, *l.DirectiveList)
+		l.Ruleset.Groups = append(l.Ruleset.Groups, *l.DirectiveList)
 		l.DirectiveList = new(types.Group)
 	}
 }
