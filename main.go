@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	toSeclang := flag.Bool("s", false, "Transalates the specified CRSLang file to Seclang files, instead of the default Seclang to CRSLang.")
+	toSeclang := flag.Bool("s", false, "Translates the specified CRSLang file to Seclang files, instead of the default Seclang to CRSLang.")
 	// Experimental flag
 	dirMode := flag.Bool("d", false, "If set, the script output will be divided into multiple files when translating from Seclang to CRSLang.")
 	output := flag.String("o", "", "Output file name used in translation from Seclang to CRSLang. Output folder used in translation from CRSLang to Seclang.")
@@ -59,6 +59,9 @@ Flags:
 				log.Fatal(err.Error())
 			}
 		} else {
+			if *output == "" {
+				*output = "crslang"
+			}
 			err := translator.WriteRuleSeparately(configList, *output)
 			if err != nil {
 				log.Fatal(err.Error())
