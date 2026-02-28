@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 
 	"github.com/coreruleset/crslang/types"
@@ -23,7 +24,16 @@ func ToCRSLang(configList types.Ruleset) *types.Ruleset {
 	return configListWithConditions
 }
 
-func WriteRuleSeparately(rulset types.Ruleset, output string) error {
+// WriteRuleSeparately writes each rule in a separate file, and creates a group.yaml file for each group and a ruleset.yaml file for the whole ruleset. The output is organized in the following structure:
+// output/
+// ├── ruleset.yaml
+// ├── group1/
+// │   ├── group.yaml
+// │   └── rules/
+// │       ├── 1.yaml
+// │       ├── 2.yaml
+// │       └── ...
+func WriteRuleSeparately(ruleset types.Ruleset, output string) error {
 	output = filepath.Clean(output)
 	if err := os.MkdirAll(output, 0755); err != nil {
 		return err
@@ -32,7 +42,7 @@ func WriteRuleSeparately(rulset types.Ruleset, output string) error {
 	groups := []string{}
 
 	// EXPERIMENTAL: output each group and rule in separate files
-	for _, group := range rulset.Groups {
+	for _, group := range ruleset.Groups {
 		groups = append(groups, group.Id)
 
 		groupFolder := filepath.Join(output, group.Id)
@@ -88,7 +98,7 @@ func WriteRuleSeparately(rulset types.Ruleset, output string) error {
 	}
 
 	newRuleset := types.Ruleset{
-		Global:    rulset.Global,
+		Global:    ruleset.Global,
 		GroupsIds: groups,
 	}
 	err := PrintYAML(newRuleset, filepath.Join(output, "ruleset.yaml"))
@@ -98,6 +108,15 @@ func WriteRuleSeparately(rulset types.Ruleset, output string) error {
 	return nil
 }
 
+// LoadRulesFromDirectory loads a ruleset from a directory containing a ruleset.yaml file and group subdirectories with group.yaml and rule yaml files. The structure of the directory should be as follows:
+// dir/
+// ├── ruleset.yaml
+// ├── group1/
+// │   ├── group.yaml
+// │   └── rules/
+// │       ├── 1.yaml
+// │       ├── 2.yaml
+// │       └── ...
 func LoadRulesFromDirectory(dir string) (types.Ruleset, error) {
 	info, err := os.Stat(dir)
 
@@ -122,6 +141,9 @@ func LoadRulesFromDirectory(dir string) (types.Ruleset, error) {
 	}
 
 	for _, groupId := range ruleset.GroupsIds {
+		if err := verifyId(groupId); err != nil {
+			return types.Ruleset{}, err
+		}
 		groupFile, err := os.ReadFile(filepath.Join(dir, groupId, "group.yaml"))
 		if err != nil {
 			return types.Ruleset{}, err
@@ -158,4 +180,13 @@ func LoadRulesFromDirectory(dir string) (types.Ruleset, error) {
 	}
 	ruleset.GroupsIds = nil
 	return ruleset, nil
+}
+
+var validID = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+func verifyId(id string) error {
+	if !validID.MatchString(id) {
+		return fmt.Errorf("invalid id: %s. Ids can only contain letters, numbers, underscores and hyphens", id)
+	}
+	return nil
 }
