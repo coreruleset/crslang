@@ -21,7 +21,7 @@ type Group struct {
 	Comments       []string                 `yaml:"comments,omitempty"`
 	Configurations []ConfigurationDirective `yaml:"configurations,omitempty"`
 	Directives     []SeclangDirective       `yaml:"directives,omitempty"`
-	Rules          []string                 `yaml:"rules,omitempty"`
+	Rules          []int                    `yaml:"rules,omitempty"`
 	Marker         ConfigurationDirective   `yaml:"marker,omitempty"`
 }
 

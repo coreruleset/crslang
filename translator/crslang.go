@@ -52,7 +52,7 @@ func WriteRuleSeparately(ruleset types.Ruleset, output string) error {
 			return err
 		}
 
-		ruleIds := []string{}
+		ruleIds := []int{}
 		comments := []string{}
 		configs := []types.ConfigurationDirective{}
 		for _, directive := range group.Directives {
@@ -67,7 +67,7 @@ func WriteRuleSeparately(ruleset types.Ruleset, output string) error {
 				if err != nil {
 					return err
 				}
-				ruleIds = append(ruleIds, strconv.Itoa(rule.Metadata.Id))
+				ruleIds = append(ruleIds, rule.Metadata.Id)
 
 			} else if directive.GetKind() == types.CommentKind {
 				comment, ok := directive.(types.CommentDirective)
@@ -164,7 +164,7 @@ func LoadRulesFromDirectory(dir string) (types.Ruleset, error) {
 			group.Directives = append(group.Directives, config)
 		}
 		for _, ruleId := range group.Rules {
-			ruleFile, err := os.ReadFile(filepath.Join(dir, groupId, "rules", ruleId+".yaml"))
+			ruleFile, err := os.ReadFile(filepath.Join(dir, groupId, "rules", strconv.Itoa(ruleId)+".yaml"))
 			if err != nil {
 				return types.Ruleset{}, err
 			}
