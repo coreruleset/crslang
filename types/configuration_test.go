@@ -231,7 +231,7 @@ func TestExtractDefaultValues(t *testing.T) {
 	for _, tt := range extractDefValues {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.input.ExtractDefaultValues()
-			require.Equalf(t, tt.expected, tt.input, tt.name)
+			require.Equal(t, tt.expected, tt.input, tt.name)
 		})
 	}
 }
