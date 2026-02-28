@@ -18,7 +18,7 @@ var (
 func main() {
 	toSeclang := flag.Bool("s", false, "Translates the specified CRSLang file to Seclang files, instead of the default Seclang to CRSLang.")
 	// Experimental flag
-	dirMode := flag.Bool("d", false, "If set, the script output will be divided into multiple files when translating from Seclang to CRSLang.")
+	dirMode := flag.Bool("d", false, "Directory mode. In Seclang -> CRSLang (default), split the output into multiple YAML files. In CRSLang -> Seclang (-s), treat the input path as a directory containing ruleset.yaml/group.yaml instead of a single YAML file.")
 	output := flag.String("o", "", "Output file name used in translation from Seclang to CRSLang. Output folder used in translation from CRSLang to Seclang.")
 
 	flag.Usage = func() {
