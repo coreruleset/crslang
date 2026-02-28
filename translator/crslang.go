@@ -49,7 +49,7 @@ func WriteRuleSeparately(rulset types.Ruleset, output string) error {
 			if directive.GetKind() == types.RuleKind {
 				rule, ok := directive.(*types.RuleWithCondition)
 				if !ok {
-					return fmt.Errorf("Error casting to RuleWithCondition")
+					return fmt.Errorf("error casting directive of type %T in group %s to *types.RuleWithCondition", directive, group.Id)
 				}
 
 				fileName := filepath.Join(ruleFolder, strconv.Itoa(rule.Metadata.Id)+".yaml")
@@ -62,13 +62,13 @@ func WriteRuleSeparately(rulset types.Ruleset, output string) error {
 			} else if directive.GetKind() == types.CommentKind {
 				comment, ok := directive.(types.CommentDirective)
 				if !ok {
-					return fmt.Errorf("Error casting to Comment %T", directive)
+					return fmt.Errorf("error casting directive of type %T in group %s to types.CommentDirective", directive, group.Id)
 				}
 				comments = append(comments, comment.Metadata.Comment)
 			} else if directive.GetKind() == types.ConfigurationKind {
 				config, ok := directive.(types.ConfigurationDirective)
 				if !ok {
-					return fmt.Errorf("Error casting to Configuration %T", directive)
+					return fmt.Errorf("error casting directive of type %T in group %s to types.ConfigurationDirective", directive, group.Id)
 				}
 				configs = append(configs, config)
 			}
