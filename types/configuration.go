@@ -57,22 +57,22 @@ func (c *ConfigurationList) ExtractDefaultValues() {
 			if c.DirectiveList[i].Directives[j].GetKind() == RuleKind {
 				rule := c.DirectiveList[i].Directives[j].(*RuleWithCondition)
 				rules = append(rules, rule)
+				auxTags := []string{}
 				if !directiveFound {
 					directiveFound = true
 					version = rule.Metadata.Ver
-					tags = rule.Metadata.Tags
+					auxTags = append(auxTags, rule.Metadata.Tags...)
 				} else {
 					if version != rule.Metadata.Ver {
 						version = ""
 					}
-					auxTags := []string{}
 					for _, tag := range tags {
 						if slices.Contains(rule.Metadata.Tags, tag) {
 							auxTags = append(auxTags, tag)
 						}
 					}
-					tags = auxTags
 				}
+				tags = auxTags
 				// If both version and tags are empty after found a rule it means there is no common value
 				// so we can stop the search
 				if version == "" && len(tags) == 0 {
@@ -84,7 +84,9 @@ func (c *ConfigurationList) ExtractDefaultValues() {
 
 	// Clear version and tags in rules since they are now in the global section
 	for _, rule := range rules {
-		rule.Metadata.Ver = ""
+		if version != "" {
+			rule.Metadata.Ver = ""
+		}
 		rule.Metadata.Tags = slices.DeleteFunc(rule.Metadata.Tags, func(s string) bool {
 			return slices.Contains(tags, s)
 		})
