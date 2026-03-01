@@ -16,7 +16,9 @@ var (
 )
 
 func main() {
-	toSeclang := flag.Bool("s", false, "Transalates the specified CRSLang file to Seclang files, instead of the default Seclang to CRSLang.")
+	toSeclang := flag.Bool("s", false, "Translates the specified CRSLang file to Seclang files, instead of the default Seclang to CRSLang.")
+	// Experimental flag
+	dirMode := flag.Bool("d", false, "Directory mode. In Seclang -> CRSLang (default), split the output into multiple YAML files. In CRSLang -> Seclang (-s), treat the input path as a directory containing ruleset.yaml/group.yaml instead of a single YAML file.")
 	output := flag.String("o", "", "Output file name used in translation from Seclang to CRSLang. Output folder used in translation from CRSLang to Seclang.")
 
 	flag.Usage = func() {
@@ -47,25 +49,46 @@ Flags:
 		}
 
 		configList = *translator.ToCRSLang(configList)
+		if !*dirMode {
+			if *output == "" {
+				*output = "crslang"
+			}
 
-		if *output == "" {
-			*output = "crslang"
+			err = translator.PrintYAML(configList, *output+".yaml")
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+		} else {
+			if *output == "" {
+				*output = "crslang"
+			}
+			err := translator.WriteRuleSeparately(configList, *output)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
 		}
 
-		err = translator.PrintYAML(configList, *output+".yaml")
-		if err != nil {
-			log.Fatal(err.Error())
-		}
 	} else {
-		if filepath.Ext(pathArg) != ".yaml" {
-			log.Fatal("Only .yaml files are allowed")
-		}
+		if !*dirMode {
+			if filepath.Ext(pathArg) != ".yaml" {
+				log.Fatal("Only .yaml files are allowed")
+			}
 
-		configList := types.LoadDirectivesWithConditionsFromFile(pathArg)
-
-		err := translator.PrintSeclang(configList, *output)
-		if err != nil {
-			log.Fatal(err.Error())
+			configList := types.LoadDirectivesWithConditionsFromFile(pathArg)
+			err := translator.PrintSeclang(configList, *output)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+		} else {
+			/* Load rule from dir */
+			configList, err := translator.LoadRulesFromDirectory(pathArg)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			err = translator.PrintSeclang(configList, *output)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
 		}
 	}
 }

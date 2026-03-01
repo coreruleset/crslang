@@ -47,7 +47,7 @@ func TestLoadSeclangFromString(t *testing.T) {
 		t.Fatalf("Error loading seclang from string: %v", err)
 	}
 
-	if len(configList.DirectiveList) == 0 {
+	if len(configList.Groups) == 0 {
 		t.Fatal("Expected at least one directive list, got none")
 	}
 
