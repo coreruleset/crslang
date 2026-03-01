@@ -111,7 +111,7 @@ func (g *Group) ExtractDefaultValues() {
 		if g.Directives[j].GetKind() == RuleKind {
 			// Ignore paranoia level check rules
 			lastDigits := g.Directives[j].(*RuleWithCondition).Metadata.Id % 1000
-			if lastDigits < 20 {
+			if lastDigits > 20 {
 				rule := g.Directives[j].(*RuleWithCondition)
 				rules = append(rules, rule)
 				auxTags := []string{}
