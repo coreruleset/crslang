@@ -419,7 +419,7 @@ func FromCRSLangToUnformattedDirectives(configListWrapped Ruleset) *Ruleset {
 				}
 				// Ignore paranoia level check rules when adding group tags
 				lastDigits := *&directiveWrapped.(*RuleWithCondition).Metadata.Id % 1000
-				if !(lastDigits > 20) {
+				if !(lastDigits < 20) {
 					for _, tag := range config.Tags {
 						chainableDir.GetMetadata().AddTag(tag)
 					}
