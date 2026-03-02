@@ -155,14 +155,17 @@ func LoadRulesFromDirectory(dir string) (types.Ruleset, error) {
 		}
 		for _, comment := range group.Comments {
 			group.Directives = append(group.Directives, types.CommentDirective{
+				Kind: types.CommentKind,
 				Metadata: types.CommentMetadata{
 					Comment: comment,
 				},
 			})
 		}
+		group.Comments = nil
 		for _, config := range group.Configurations {
 			group.Directives = append(group.Directives, config)
 		}
+		group.Configurations = nil
 		for _, ruleId := range group.Rules {
 			ruleFile, err := os.ReadFile(filepath.Join(dir, groupId, "rules", strconv.Itoa(ruleId)+".yaml"))
 			if err != nil {

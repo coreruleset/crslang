@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/coreruleset/crslang/types"
+	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -79,4 +80,334 @@ func TestFromCRSLangToSeclang(t *testing.T) {
 		t.Errorf("Error in CRSLang to Seclang directives conversion. Expected length: %v, got: %v", len(seclangDirectives), len(seclangDirectivesFromConditions))
 	}
 
+}
+
+func TestWriteAndLoadRuleSeparately(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    types.Ruleset
+		expected types.Ruleset
+	}{
+		{
+			name: "Simple ruleset with comment, config and rule",
+			input: types.Ruleset{
+				Global: types.DefaultConfigs{
+					Version: "4.0.0",
+					Tags:    []string{"OWASP_CRS"},
+				},
+				Groups: []types.Group{
+					{
+						Id:   "test-group-1",
+						Tags: []string{"tag1", "tag2"},
+						Directives: []types.SeclangDirective{
+							types.CommentDirective{
+								Kind: types.CommentKind,
+								Metadata: types.CommentMetadata{
+									Comment: "Test comment",
+								},
+							},
+							types.ConfigurationDirective{
+								Kind:      types.ConfigurationKind,
+								Name:      types.SecRuleEngine,
+								Parameter: "On",
+							},
+							&types.RuleWithCondition{
+								Kind: types.RuleKind,
+								Metadata: types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										Phase: "1",
+									},
+									Id:  12345,
+									Msg: "Test rule",
+								},
+								Conditions: []types.Condition{
+									{
+										Variables: []types.Variable{
+											{
+												Name: types.REQUEST_URI,
+											},
+										},
+										Operator: types.Operator{
+											Name:  types.Rx,
+											Value: "/test",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: types.Ruleset{
+				Global: types.DefaultConfigs{
+					Version: "4.0.0",
+					Tags:    []string{"OWASP_CRS"},
+				},
+				Groups: []types.Group{
+					{
+						Id:   "test-group-1",
+						Tags: []string{"tag1", "tag2"},
+						Directives: []types.SeclangDirective{
+							types.CommentDirective{
+								Kind: types.CommentKind,
+								Metadata: types.CommentMetadata{
+									Comment: "Test comment",
+								},
+							},
+							types.ConfigurationDirective{
+								Kind:      types.ConfigurationKind,
+								Name:      types.SecRuleEngine,
+								Parameter: "On",
+							},
+							&types.RuleWithCondition{
+								Kind: types.RuleKind,
+								Metadata: types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										Phase: "1",
+									},
+									Id:  12345,
+									Msg: "Test rule",
+								},
+								Conditions: []types.Condition{
+									{
+										Variables: []types.Variable{
+											{
+												Name: types.REQUEST_URI,
+											},
+										},
+										Operator: types.Operator{
+											Name:  types.Rx,
+											Value: "/test",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Multiple groups with different directive types",
+			input: types.Ruleset{
+				Global: types.DefaultConfigs{
+					Version: "4.0.0",
+					Tags:    []string{"OWASP_CRS"},
+				},
+				Groups: []types.Group{
+					{
+						Id:   "group-a",
+						Tags: []string{"security", "testing"},
+						Directives: []types.SeclangDirective{
+							types.CommentDirective{
+								Kind: types.CommentKind,
+								Metadata: types.CommentMetadata{
+									Comment: "This is a test group",
+								},
+							},
+							&types.RuleWithCondition{
+								Kind: types.RuleKind,
+								Metadata: types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										Phase: "1",
+									},
+									Id:  100,
+									Msg: "First rule",
+								},
+								Conditions: []types.Condition{
+									{
+										Variables: []types.Variable{
+											{
+												Name: types.REQUEST_URI,
+											},
+										},
+										Operator: types.Operator{
+											Name:  types.Rx,
+											Value: "/admin",
+										},
+									},
+								},
+							},
+							&types.RuleWithCondition{
+								Kind: types.RuleKind,
+								Metadata: types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										Phase: "2",
+									},
+									Id:  200,
+									Msg: "Second rule",
+								},
+								Conditions: []types.Condition{
+									{
+										Collections: []types.Collection{
+											{
+												Name: types.REQUEST_HEADERS,
+											},
+										},
+										Operator: types.Operator{
+											Name:  types.Contains,
+											Value: "test",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Id: "group-b",
+						Directives: []types.SeclangDirective{
+							types.ConfigurationDirective{
+								Kind:      types.ConfigurationKind,
+								Name:      types.SecRuleEngine,
+								Parameter: "DetectionOnly",
+							},
+							&types.RuleWithCondition{
+								Kind: types.RuleKind,
+								Metadata: types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										Phase: "3",
+									},
+									Id:  300,
+									Msg: "Third rule",
+								},
+								Conditions: []types.Condition{
+									{
+										Variables: []types.Variable{
+											{
+												Name: types.RESPONSE_BODY,
+											},
+										},
+										Operator: types.Operator{
+											Name:  types.Rx,
+											Value: "sensitive",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: types.Ruleset{
+				Global: types.DefaultConfigs{
+					Version: "4.0.0",
+					Tags:    []string{"OWASP_CRS"},
+				},
+				Groups: []types.Group{
+					{
+						Id:   "group-a",
+						Tags: []string{"security", "testing"},
+						Directives: []types.SeclangDirective{
+							types.CommentDirective{
+								Kind: types.CommentKind,
+								Metadata: types.CommentMetadata{
+									Comment: "This is a test group",
+								},
+							},
+							&types.RuleWithCondition{
+								Kind: types.RuleKind,
+								Metadata: types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										Phase: "1",
+									},
+									Id:  100,
+									Msg: "First rule",
+								},
+								Conditions: []types.Condition{
+									{
+										Variables: []types.Variable{
+											{
+												Name: types.REQUEST_URI,
+											},
+										},
+										Operator: types.Operator{
+											Name:  types.Rx,
+											Value: "/admin",
+										},
+									},
+								},
+							},
+							&types.RuleWithCondition{
+								Kind: types.RuleKind,
+								Metadata: types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										Phase: "2",
+									},
+									Id:  200,
+									Msg: "Second rule",
+								},
+								Conditions: []types.Condition{
+									{
+										Collections: []types.Collection{
+											{
+												Name: types.REQUEST_HEADERS,
+											},
+										},
+										Operator: types.Operator{
+											Name:  types.Contains,
+											Value: "test",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Id: "group-b",
+						Directives: []types.SeclangDirective{
+							types.ConfigurationDirective{
+								Kind:      types.ConfigurationKind,
+								Name:      types.SecRuleEngine,
+								Parameter: "DetectionOnly",
+							},
+							&types.RuleWithCondition{
+								Kind: types.RuleKind,
+								Metadata: types.SecRuleMetadata{
+									OnlyPhaseMetadata: types.OnlyPhaseMetadata{
+										Phase: "3",
+									},
+									Id:  300,
+									Msg: "Third rule",
+								},
+								Conditions: []types.Condition{
+									{
+										Variables: []types.Variable{
+											{
+												Name: types.RESPONSE_BODY,
+											},
+										},
+										Operator: types.Operator{
+											Name:  types.Rx,
+											Value: "sensitive",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create temporary directory for output
+			tmpDir := t.TempDir()
+
+			// Write ruleset separately
+			err := WriteRuleSeparately(tc.input, tmpDir)
+			if err != nil {
+				t.Fatalf("WriteRuleSeparately failed: %v", err)
+			}
+
+			// Load from directory
+			loadedRuleset, err := LoadRulesFromDirectory(tmpDir)
+			if err != nil {
+				t.Fatalf("LoadRulesFromDirectory failed: %v", err)
+			}
+
+			require.Equal(t, tc.expected, loadedRuleset, tc.name)
+		})
+	}
 }
