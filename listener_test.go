@@ -38,7 +38,7 @@ func mustNewSetvarAction(collection types.CollectionName, operation types.VarOpe
 type testCase struct {
 	name     string
 	payload  string
-	expected types.ConfigurationList
+	expected types.Ruleset
 }
 
 var (
@@ -59,8 +59,8 @@ var (
 # https://owasp.org/www-project-modsecurity-core-rule-set/
 #
 `,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							types.CommentMetadata{
@@ -88,8 +88,8 @@ https://owasp.org/www-project-modsecurity-core-rule-set/
 			payload: `
 SecRuleEngine On
 `,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							types.ConfigurationDirective{
@@ -139,8 +139,8 @@ SecAction \
     setvar:'tx.outbound_anomaly_score_pl3=0',\
     setvar:'tx.outbound_anomaly_score_pl4=0',\
     setvar:'tx.anomaly_score=0'"`,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							&types.SecAction{
@@ -239,8 +239,8 @@ SecRule REQUEST_LINE "@rx (?i)^(?:get /[^#\?]*(?:\?[^\s\v#]*)?(?:#[^\s\v]*)?|(?:
     ver:'OWASP_CRS/4.0.1-dev',\
     severity:'WARNING',\
     setvar:'tx.inbound_anomaly_score_pl1=+%{tx.warning_anomaly_score}'"`,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							&types.SecRule{
@@ -319,8 +319,8 @@ SecRule ARGS_GET:fbclid "@rx [a-zA-Z0-9_-]{61,61}" \
     tag:'OWASP_CRS',\
     ctl:ruleRemoveTargetById=942440;ARGS:fbclid,\
     ver:'OWASP_CRS/4.0.1-dev'"`,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							&types.SecRule{
@@ -376,8 +376,8 @@ SecRule ARGS_GET:fbclid|!ARGS_GET|ARGS_GET:fbclid|!ARGS_GET:fbclid|ARGS_GET:test
     "id:942441,\
     phase:2,\
     pass"`,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							&types.SecRule{
@@ -415,8 +415,8 @@ SecRule ARGS:/^id_/|!ARGS:id_1 "@rx test" \
     "id:942441,\
     phase:2,\
     pass"`,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							&types.SecRule{
@@ -472,8 +472,8 @@ SecRule REQUEST_LINE "@streq GET /" \
         "t:none,\
         ctl:ruleRemoveByTag=OWASP_CRS,\
         ctl:auditEngine=Off"`,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							&types.SecRule{
@@ -550,8 +550,8 @@ SecRuleRemoveByTag "attack-sqli"
 
 SecRuleRemoveByMsg FAIL 
 `,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							types.RemoveRuleDirective{
@@ -590,8 +590,8 @@ SecRule REQBODY_PROCESSOR "!@rx (?:URLENCODED|MULTIPART|XML|JSON)" \
     msg:'Enabling body inspection',\
     ctl:forceRequestBodyVariable=On,\
     ver:'OWASP_CRS/4.0.0-rc1'"`,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							&types.SecRule{
@@ -637,8 +637,8 @@ SecCollectionTimeout 600
 SecMarker "END-TEST"
 
 SecComponentSignature "OWASP_CRS/4.0.1-dev"`,
-			expected: types.ConfigurationList{
-				DirectiveList: []types.DirectiveList{
+			expected: types.Ruleset{
+				Groups: []types.Group{
 					{
 						Directives: []types.SeclangDirective{
 							types.ConfigurationDirective{
@@ -674,7 +674,7 @@ SecComponentSignature "OWASP_CRS/4.0.1-dev"`,
 func TestLoadSecLang(t *testing.T) {
 	for _, test := range listenerTestCases {
 		t.Run(test.name, func(t *testing.T) {
-			got := types.ConfigurationList{}
+			got := types.Ruleset{}
 			input := antlr.NewInputStream(test.payload)
 			lexer := parser.NewSecLangLexer(input)
 			stream := antlr.NewCommonTokenStream(lexer, 0)
@@ -682,7 +682,7 @@ func TestLoadSecLang(t *testing.T) {
 			start := p.Configuration()
 			var seclangListener listener.ExtendedSeclangParserListener
 			antlr.ParseTreeWalkerDefault.Walk(&seclangListener, start)
-			got = seclangListener.ConfigurationList
+			got = seclangListener.Ruleset
 
 			require.Equalf(t, test.expected, got, test.name)
 		})
