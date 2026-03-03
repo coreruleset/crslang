@@ -905,7 +905,7 @@
         {
           "type": "object",
           "properties": {
-            "sanitisearg": {
+            "sanitiseArg": {
               "type": "string"
             }
           },
@@ -914,7 +914,7 @@
         {
           "type": "object",
           "properties": {
-            "sanitisematched": {
+            "sanitiseMatched": {
               "type": "string"
             }
           },
@@ -923,7 +923,7 @@
         {
           "type": "object",
           "properties": {
-            "sanitisematchedbytes": {
+            "sanitiseMatchedBytes": {
               "type": "string"
             }
           },
@@ -932,7 +932,7 @@
         {
           "type": "object",
           "properties": {
-            "sanitiserequestheader": {
+            "sanitiseRequestHeader": {
               "type": "string"
             }
           },
@@ -941,7 +941,7 @@
         {
           "type": "object",
           "properties": {
-            "sanitiseresponseheader": {
+            "sanitiseResponseHeader": {
               "type": "string"
             }
           },
