@@ -4,17 +4,17 @@ go 1.22.2
 
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.1
+	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/coreruleset/seclang_parser v0.3.2
 	github.com/magefile/mage v1.15.0
+	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.11.1
 	go.yaml.in/yaml/v4 v4.0.0-rc.3
 )
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

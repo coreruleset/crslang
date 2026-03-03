@@ -1,6 +1,7 @@
 package main
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -19,7 +20,7 @@ func TestConfFilesAgainstSchema(t *testing.T) {
 		t.Fatalf("Failed to compile schema: %v", err)
 	}
 
-	confFiles, err := doublestar.FilepathGlob(testDataDir + "/**/*.conf")
+	confFiles, err := doublestar.FilepathGlob(filepath.Join(testDataDir, "**", "*.conf"))
 	if err != nil {
 		t.Fatalf("Failed to glob conf files: %v", err)
 	}
