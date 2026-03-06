@@ -7,7 +7,7 @@ require (
 	github.com/coreruleset/seclang_parser v0.3.2
 	github.com/magefile/mage v1.15.0
 	github.com/stretchr/testify v1.11.1
-	go.yaml.in/yaml/v4 v4.0.0-rc.3
+	go.yaml.in/yaml/v4 v4.0.0-rc.4
 )
 
 require (
