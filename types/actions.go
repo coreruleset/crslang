@@ -171,9 +171,9 @@ func (a SetvarAction) ToString() string {
 	var result []string
 	// Reconstruct the setvar actions
 	for _, asg := range a.Assignments {
-		result = append(result, SetVar.String()+":"+a.Collection.String()+"."+asg.Variable+a.Operation.String()+asg.Value)
+		result = append(result, SetVar.String()+":'"+a.Collection.String()+"."+asg.Variable+a.Operation.String()+asg.Value+"'")
 	}
-	return strings.Join(result, ", ")
+	return strings.Join(result, ",")
 }
 
 func (a *SetvarAction) AppendAssignment(variable, value string) error {
@@ -189,7 +189,7 @@ func (a SetvarAction) GetAllParams() []string {
 	var result []string
 	// Get all the variables
 	for _, asg := range a.Assignments {
-		res := SetVar.String() + ":" + a.Collection.String() + "." + asg.Variable + a.Operation.String() + asg.Value
+		res := SetVar.String() + ":'" + a.Collection.String() + "." + asg.Variable + a.Operation.String() + asg.Value + "'"
 		result = append(result, res)
 	}
 	return result
