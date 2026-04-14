@@ -178,8 +178,8 @@ type FunctionCall struct {
 ### YAML v2 Representation (intermediate)
 
 ```yaml
-conditions:
-  - pipeline:
+when:
+  pipeline:
       field: request.headers["User-Agent"]
       steps:
         - fn: url_decode

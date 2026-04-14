@@ -70,7 +70,7 @@ exclude rules where tag == "OWASP_CRS/SQL_INJECTION"
 exclude rules where tag |> matches("^OWASP_CRS/SQL.*")
 
 # By severity
-exclude rules where severity == "CRITICAL"
+exclude rules where severity == critical
 
 # Combined
 exclude rules where tag == "OWASP_CRS/SQL_INJECTION" and phase == request
@@ -107,7 +107,7 @@ update rule 920170 {
 
 # Change severity
 update rule 920170 {
-  set severity WARNING
+  set severity warning
 }
 
 # Add an effect

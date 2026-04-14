@@ -170,7 +170,8 @@ etc.) for free.
 - `effects` block uses string values for operations (`"+=5"`) because HCL attributes
   are assignments, not arbitrary statements
 - No `let` bindings in expressions for data-flow dependencies (ADR-0003 Category 3)
-- HCL variable references use `var.name` prefix which would need custom handling
+- HCL itself does not require a `var.` prefix, but Terraform-style variable namespaces
+  would need custom handling or a CRSLang-specific naming model
 
 **Pipeline workaround with Go templates:**
 

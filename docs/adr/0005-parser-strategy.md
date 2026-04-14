@@ -11,10 +11,9 @@ CRSLang currently has two parsers:
 1. **SecLang parser** — ANTLR4-based, external dependency
    (`github.com/coreruleset/seclang_parser`). Parses `.conf` files into a parse tree,
    which a listener converts to the Go AST.
-2. **YAML parser** — Go's standard `encoding/yaml` package. Loads YAML directly into
-   typed structs.
+2. **YAML parser** — `go.yaml.in/yaml/v4`. Loads YAML directly into typed structs.
 
-Phase 5 introduces a third format: the native CRSLang text syntax. This ADR decides
+Phase 4 introduces a third format: the native CRSLang text syntax. This ADR decides
 how to build its parser.
 
 ## Decision
@@ -39,7 +38,7 @@ A hand-written parser provides:
 
 ```ebnf
 (* Top-level *)
-file           = { rule | config | comment } ;
+file           = { rule | globals | defaults | comment } ;
 
 (* Rules *)
 rule           = "rule" INTEGER metadata? "{" when_clause then_clause "}" ;
@@ -55,10 +54,12 @@ unary_expr     = "not" unary_expr
                | pipeline ;
 
 (* Pipelines *)
-pipeline       = field_ref { "|>" func_call } ;
+pipeline       = pipeline_source { "|>" func_call } ;
+pipeline_source= field_ref | func_call | literal | "(" expr ")" ;
 field_ref      = IDENT { "." IDENT } [ "[" selector "]" ] ;
 selector       = STRING | "!" STRING ;
 func_call      = IDENT "(" [ arg { "," arg } ] ")" ;
+literal        = STRING | INTEGER | "true" | "false" ;
 
 (* Actions *)
 then_clause    = "then" disruptive [ "(" named_args ")" ] [ effect_block ] ;
@@ -69,8 +70,9 @@ assignment     = field_ref assign_op value ;
 assign_op      = "=" | "+=" | "-=" ;
 configure_block= "configure" "{" { IDENT "=" value } "}" ;
 
-(* Configuration directives *)
-config         = "configure" IDENT value ;
+(* Globals and defaults *)
+globals        = "globals" "{" { key_value } "}" ;
+defaults       = "defaults" "{" { key_value } "}" ;
 
 (* Rule management *)
 exclude_rule   = "exclude" "rule" INTEGER ;
@@ -109,7 +111,7 @@ Source Text
 **Components:**
 
 1. **Lexer** (`parser/lexer.go`) — hand-written scanner producing tokens:
-   - Keywords: `rule`, `when`, `then`, `and`, `or`, `not`, `configure`, etc.
+   - Keywords: `rule`, `when`, `then`, `and`, `or`, `not`, `globals`, `defaults`, etc.
    - Operators: `|>`, `=`, `+=`, `-=`
    - Delimiters: `(`, `)`, `{`, `}`, `[`, `]`, `,`, `.`
    - Literals: strings, integers, identifiers
@@ -140,7 +142,7 @@ parser/
 
 ### Three-Importer Architecture
 
-After Phase 5, the system has three importers and two exporters sharing a single IR:
+After Phase 4, the system has three importers and two exporters sharing a single IR:
 
 ```
 SecLang (.conf) ──► ANTLR parser ──► SecLang AST ──► Normalize ──┐

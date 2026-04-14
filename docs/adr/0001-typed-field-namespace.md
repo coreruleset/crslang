@@ -146,11 +146,12 @@ count(tx.crs_setup_version)    # returns Int
 4. **YAML v2 syntax** (intermediate, before Phase 5 text syntax):
 
    ```yaml
-   conditions:
-     - target: request.headers["Content-Type"]
-       operator:
-         name: rx
-         value: "^application/json"
+   when:
+     pipeline:
+       field: request.headers["Content-Type"]
+       steps:
+         - fn: matches
+           args: ["^application/json"]
    ```
 
 ## Alternatives Considered

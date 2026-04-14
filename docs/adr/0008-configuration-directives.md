@@ -87,7 +87,7 @@ The ~60 configuration directives in CRSLang v1 break down as follows:
 | `SecDebugLog`, `SecDebugLogLevel` |
 | `SecGuardianLog` |
 
-**Uploads (4 directives):**
+**Uploads (5 directives):**
 
 | Directives |
 |-----------|
@@ -109,7 +109,7 @@ The ~60 configuration directives in CRSLang v1 break down as follows:
 | `SecMarker` | Label for `skipAfter` control flow |
 | `SecServerSignature` | Overrides the server header |
 
-**Operational (3 directives):**
+**Operational (5 directives):**
 
 | Directives |
 |-----------|
