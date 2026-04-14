@@ -1,0 +1,197 @@
+# ADR-0001: Typed Field Namespace
+
+- **Status:** Proposed
+- **Date:** 2026-04-13
+- **Phase:** 1
+
+## Context
+
+CRSLang currently models SecLang's target system directly, splitting targets into two
+separate concepts:
+
+- **Variables** — standalone values like `REQUEST_METHOD`, `REMOTE_ADDR`,
+  `RESPONSE_STATUS`. Represented as a flat enum with 120+ entries.
+- **Collections** — map-like structures like `REQUEST_HEADERS`, `ARGS`, `TX` that
+  require argument selectors (e.g., `REQUEST_HEADERS:Content-Type`). Represented with a
+  `name`, `arguments[]`, `excluded[]`, and a `count` boolean flag.
+
+This dual model creates several problems:
+
+1. **Cognitive overhead** — rule authors must know which targets are variables vs
+   collections. The distinction is a SecLang implementation detail, not a conceptual one.
+2. **Verbose YAML** — accessing `REQUEST_HEADERS:Content-Type` requires 4 lines of YAML
+   nesting.
+3. **Weak typing** — all values are strings. There is no way to express that
+   `REMOTE_ADDR` is an IP address or that `RESPONSE_STATUS` is an integer.
+4. **Count as a flag** — `&COLLECTION` (count) is a boolean on the collection struct
+   rather than a function applied to it.
+5. **No validation** — nothing prevents combining invalid variable/collection names with
+   incompatible operators.
+
+## Decision
+
+Replace variables and collections with a **unified typed field namespace** using
+dot-notation for hierarchy and bracket notation for map access.
+
+### Field Naming Convention
+
+Fields use a hierarchical dot-separated namespace:
+
+```
+request.method          # was: REQUEST_METHOD
+request.uri             # was: REQUEST_URI
+request.uri.path        # was: REQUEST_URI (path component)
+request.protocol        # was: REQUEST_PROTOCOL
+request.body            # was: REQUEST_BODY
+request.headers         # was: REQUEST_HEADERS (entire map)
+request.headers["Host"] # was: REQUEST_HEADERS:Host
+request.cookies         # was: REQUEST_COOKIES (entire map)
+request.cookies["sid"]  # was: REQUEST_COOKIES:sid
+request.args            # was: ARGS (all arguments)
+request.args.get        # was: ARGS_GET
+request.args.post       # was: ARGS_POST
+request.args["id"]      # was: ARGS:id
+
+response.status         # was: RESPONSE_STATUS
+response.body           # was: RESPONSE_BODY
+response.headers        # was: RESPONSE_HEADERS
+
+client.ip               # was: REMOTE_ADDR
+client.port             # was: REMOTE_PORT
+server.ip               # was: SERVER_ADDR
+server.port             # was: SERVER_PORT
+
+tx.anomaly_score        # was: TX:anomaly_score
+tx.inbound_score        # was: TX:inbound_anomaly_score_threshold
+
+matched.var             # was: MATCHED_VAR
+matched.var_name        # was: MATCHED_VAR_NAME
+matched.vars            # was: MATCHED_VARS (map)
+
+multipart.filename      # was: MULTIPART_FILENAME
+multipart.name          # was: MULTIPART_NAME
+
+time.epoch              # was: TIME_EPOCH
+time.year               # was: TIME_YEAR
+
+rule.id                 # was: RULE:id (inside RULE collection)
+```
+
+### Type System
+
+Each field has a declared type:
+
+| Type | Description | Example fields |
+|------|-------------|----------------|
+| `String` | UTF-8 text | `request.method`, `request.uri` |
+| `Int` | Integer | `response.status`, `server.port` |
+| `IP` | IP address (v4/v6) | `client.ip`, `server.ip` |
+| `Bytes` | Raw byte sequence | `request.body`, `response.body` |
+| `Map[String]` | String-keyed map of strings | `request.headers`, `request.args` |
+| `List[String]` | Ordered list of strings | `request.headers.names`, `request.args.names` |
+| `Bool` | Boolean | (future: computed fields) |
+
+### Map Access
+
+Map-typed fields support:
+- **Full map** — `request.headers` (iterates all values)
+- **Key access** — `request.headers["Content-Type"]` (single value, type `String`)
+- **Key exclusion** — `request.headers[!"Cookie"]` (all values except Cookie)
+- **Names** — `request.headers.names` (list of key names)
+
+### Count as a Function
+
+Instead of a boolean flag on the collection, `count()` is a function:
+
+```
+# Current YAML:
+collections:
+  - name: TX
+    arguments: [crs_setup_version]
+    count: true
+
+# New:
+count(tx.crs_setup_version)    # returns Int
+```
+
+### Implementation
+
+1. **Field Registry** — a Go struct/map defining all known fields with their names,
+   types, and SecLang equivalents:
+
+   ```go
+   type FieldDef struct {
+       Name       string     // "request.headers"
+       Type       FieldType  // MapString
+       SecLangVar string     // "REQUEST_HEADERS" (for import/export)
+       IsCollection bool     // true (for backward compat mapping)
+   }
+   ```
+
+2. **IR change** — conditions use `Field` instead of `[]Variable` + `[]Collection`:
+
+   ```go
+   type Target struct {
+       Field     FieldRef   // parsed field reference
+       KeyAccess *string    // bracket key, if any
+       Excluded  []string   // excluded keys
+   }
+   ```
+
+3. **Bidirectional mapping** — for SecLang import and YAML v1 compat:
+   - `REQUEST_HEADERS:Content-Type` -> `request.headers["Content-Type"]`
+   - `&TX:score` -> `count(tx.score)`
+   - `!ARGS:foo` -> `request.args[!"foo"]`
+
+4. **YAML v2 syntax** (intermediate, before Phase 5 text syntax):
+
+   ```yaml
+   conditions:
+     - target: request.headers["Content-Type"]
+       operator:
+         name: rx
+         value: "^application/json"
+   ```
+
+## Alternatives Considered
+
+### A: Keep variables and collections separate, just rename them
+
+Simpler migration but preserves the dual-model complexity and does not enable type
+checking.
+
+### B: Object traversal (CEL-style)
+
+`request.headers.get("Content-Type")` — method calls on typed objects. More powerful
+but requires a more complex runtime model. Could be revisited if CRSLang ever needs
+computed fields or custom methods.
+
+### C: Flat identifiers (Wirefilter-style)
+
+`http.request.headers` with no real hierarchy — dots are part of the name, not
+traversal. Simpler parser but loses the structural grouping that aids readability and
+completion.
+
+## Consequences
+
+### Positive
+
+- Unified mental model: everything is a field
+- Type checking becomes possible
+- Shorter, more readable conditions
+- Natural path to function composition (Phase 2)
+- Bracket notation handles map access, exclusions, and regex selectors uniformly
+
+### Negative
+
+- Large mapping table to maintain (120+ SecLang variables -> field names)
+- Community must learn new field names (mitigated by documentation and autocomplete)
+- Potential naming conflicts with future WAF engines
+- Serialization format must handle both old and new field references during transition
+
+### Risks
+
+- **Naming bikeshed** — field names will be debated. Propose a naming convention early
+  and get community buy-in before implementation.
+- **Incomplete coverage** — some obscure SecLang variables may not map cleanly.
+  Maintain an `engine.*` escape hatch namespace for engine-specific fields.
