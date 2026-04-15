@@ -107,8 +107,25 @@ Each field has a declared type:
 Map-typed fields support:
 - **Full map** — `request.headers` (iterates all values)
 - **Key access** — `request.headers["Content-Type"]` (single value, type `String`)
-- **Key exclusion** — `request.headers[!"Cookie"]` (all values except Cookie)
 - **Names** — `request.headers.names` (list of key names)
+
+**Key exclusions** (SecLang's `!ARGS:foo` — "iterate all keys except foo") are not part
+of the field syntax. Instead, target exclusions are handled by the rule management system
+(ADR-0006):
+
+```
+# The rule targets all args
+rule 942100 (severity: critical) {
+  when request.args |> detect_sqli()
+  then block
+}
+
+# User excludes a specific key in their customization file
+exclude rule 942100 target request.args["passwd"]
+```
+
+This separates the rule definition (what to detect) from deployment customization (which
+fields to skip), matching how CRS already works in practice.
 
 ### Count as a Function
 
@@ -152,7 +169,7 @@ count(tx.crs_setup_version)    # returns Int
 3. **Bidirectional mapping** — for SecLang import and YAML v1 compat:
    - `REQUEST_HEADERS:Content-Type` -> `request.headers["Content-Type"]`
    - `&TX:score` -> `count(tx.score)`
-   - `!ARGS:foo` -> `request.args[!"foo"]`
+   - `!ARGS:foo` -> target exclusion via ADR-0006: `exclude rule ... target request.args["foo"]`
 
 4. **YAML v2 syntax** (intermediate, before Phase 5 text syntax):
 
@@ -192,7 +209,8 @@ completion.
 - Type checking becomes possible
 - Shorter, more readable conditions
 - Natural path to function composition (Phase 2)
-- Bracket notation handles map access, exclusions, and regex selectors uniformly
+- Bracket notation handles map key access cleanly
+- Target exclusions separated from rule definitions (ADR-0006)
 
 ### Negative
 
