@@ -156,14 +156,17 @@ defaults {
 
 Default actions apply to all subsequent rules in the file that do not override them.
 
-**3. Markers → labels or groups (ADR-0006)**
+**3. Markers → guarded groups (ADR-0006)**
 
 ```
-# SecLang: SecMarker END_SQL_CHECKS
-label END_SQL_CHECKS
+# SecLang: SecRule ... "skipAfter:END_SQL_CHECKS"
+#          ... rules ...
+#          SecMarker END_SQL_CHECKS
 
-# Or, preferably:
-group sql_checks { ... }
+# CRSLang: express the intent, not the mechanism
+group "sql_checks" (requires: paranoia >= 1) {
+  rule 942100 { ... }
+}
 ```
 
 **4. Web app ID → file-level metadata**

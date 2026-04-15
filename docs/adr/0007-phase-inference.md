@@ -116,15 +116,11 @@ rule 901001 (phase: request_headers) {
   then deny(status: 500)
 }
 
-# Paranoia skip rules duplicate across phases
-rule 911011 (phase: request_headers) {
-  when tx.detection_paranoia_level |> lt(1)
-  then pass { skip_to(END_METHOD_ENFORCEMENT) }
-}
-
-rule 911012 (phase: request_body) {
-  when tx.detection_paranoia_level |> lt(1)
-  then pass { skip_to(END_METHOD_ENFORCEMENT) }
+# Paranoia gating — replaced by guarded groups (ADR-0006)
+# Instead of skip rules duplicated across phases:
+group "method_enforcement_pl1" (requires: paranoia >= 1) {
+  rule 911100 (phase: request_headers) { ... }
+  rule 911101 (phase: request_body) { ... }
 }
 ```
 
@@ -258,7 +254,7 @@ rule 901001 { ... }
 - **Future phases** — if a WAF engine adds new phases (e.g., a WebSocket phase),
   the field-to-phase mapping must be extended. The registry design from ADR-0001
   accommodates this.
-- **Paranoia skip pattern** — the CRS pattern of duplicating TX-only rules across
-  phases (911011 in phase 1, 911012 in phase 2) becomes explicit phase declaration
-  for each copy. This is arguably better — it makes the duplication visible rather
-  than hiding it in metadata.
+- **Paranoia skip pattern** — the CRS pattern of duplicating TX-only skip rules across
+  phases is eliminated entirely by guarded groups (ADR-0006). Instead of per-phase skip
+  rules, a guarded group with `requires: paranoia >= N` handles conditional activation.
+  The compiler generates the appropriate per-phase skip/marker pairs for SecLang output.

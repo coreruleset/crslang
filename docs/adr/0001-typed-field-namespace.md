@@ -41,8 +41,12 @@ Fields use a hierarchical dot-separated namespace:
 request.method          # was: REQUEST_METHOD
 request.uri             # was: REQUEST_URI
 request.uri.path        # was: REQUEST_URI (path component)
+request.filename        # was: REQUEST_FILENAME
+request.basename        # was: REQUEST_BASENAME
+request.line            # was: REQUEST_LINE
 request.protocol        # was: REQUEST_PROTOCOL
 request.body            # was: REQUEST_BODY
+request.body.length     # was: REQUEST_BODY_LENGTH
 request.headers         # was: REQUEST_HEADERS (entire map)
 request.headers["Host"] # was: REQUEST_HEADERS:Host
 request.cookies         # was: REQUEST_COOKIES (entire map)
@@ -53,8 +57,10 @@ request.args.post       # was: ARGS_POST
 request.args["id"]      # was: ARGS:id
 
 response.status         # was: RESPONSE_STATUS
+response.protocol       # was: RESPONSE_PROTOCOL
 response.body           # was: RESPONSE_BODY
 response.headers        # was: RESPONSE_HEADERS
+response.content_type   # was: RESPONSE_CONTENT_TYPE
 
 client.ip               # was: REMOTE_ADDR
 client.port             # was: REMOTE_PORT
@@ -68,8 +74,13 @@ matched.var             # was: MATCHED_VAR
 matched.var_name        # was: MATCHED_VAR_NAME
 matched.vars            # was: MATCHED_VARS (map)
 
+files.names             # was: FILES_NAMES
+files.sizes             # was: FILES_SIZES
+files.tmpnames          # was: FILES_TMPNAMES
+
 multipart.filename      # was: MULTIPART_FILENAME
 multipart.name          # was: MULTIPART_NAME
+multipart.part_headers  # was: MULTIPART_PART_HEADERS
 
 time.epoch              # was: TIME_EPOCH
 time.year               # was: TIME_YEAR

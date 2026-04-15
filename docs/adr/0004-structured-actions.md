@@ -221,17 +221,29 @@ then:
 ### Flow Actions
 
 - **`chain`** — eliminated entirely (ADR-0003)
-- **`skip`/`skipAfter`** — replaced by rule ordering and labels:
+- **`skip`/`skipAfter`/`SecMarker`** — eliminated entirely. These were an
+  implementation detail of ModSecurity's sequential evaluation model. The actual intent
+  is **conditional rule activation** — "only run these rules if condition X holds."
+
+  This is now expressed as **guarded groups** (ADR-0006):
 
   ```
-  # was: skipAfter:END_RULE_GROUP
-  goto END_RULE_GROUP     # or: skip to END_RULE_GROUP
+  # was: SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 2" "skipAfter:END-941"
+  #      ... rules ...
+  #      SecMarker "END-941"
 
-  label END_RULE_GROUP    # was: SecMarker:END_RULE_GROUP
+  group "xss_pl2" (requires: paranoia >= 2) {
+    rule 941120 (severity: critical) { ... }
+    rule 941130 (severity: critical) { ... }
+  }
   ```
 
-  Note: `skip`/`skipAfter` are rare in CRS and primarily used for backwards
-  compatibility. Consider deprecating in favor of explicit rule grouping (Phase 6).
+  The compiler generates the appropriate `skipAfter`/`SecMarker` pairs when compiling
+  to SecLang. For paranoia-level gating specifically, the `paranoia` attribute on rules
+  (ADR-0011) allows the compiler to group and gate rules automatically.
+
+  No `skip_to()`, `goto`, or `label` exists in CRSLang. The language expresses intent
+  (conditional activation), not mechanism (skip/marker).
 
 ## Alternatives Considered
 

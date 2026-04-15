@@ -76,10 +76,39 @@ exclude rules where severity == critical
 exclude rules where tag == "OWASP_CRS/SQL_INJECTION" and phase == request
 ```
 
+### Target-Level Exclusions (Shorthand)
+
+The most common CRS user customization is "disable rule X for argument Y" — a
+target-level exclusion. This is the equivalent of SecLang's
+`ctl:ruleTargetRemoveById=942100;ARGS:passwd`. A shorthand syntax avoids the verbosity
+of a full `update` block for this common case:
+
+```
+# Shorthand: most common exclusion pattern
+exclude rule 942100 target request.args["passwd"]
+exclude rule 942100 target request.args["username"]
+
+# Multiple targets from one rule
+exclude rule 942100 target request.args["passwd"], request.args["token"]
+
+# By tag with target
+exclude rules where tag == "OWASP_CRS/SQL_INJECTION" target request.args["search_query"]
+```
+
+This compiles to SecLang as:
+```
+SecRule ... "ctl:ruleRemoveTargetById=942100;ARGS:passwd"
+# Or in a REQUEST-900 exclusion file:
+SecRuleUpdateTargetById 942100 "!ARGS:passwd"
+```
+
+The shorthand covers the vast majority of CRS user customization. For more complex
+modifications, the full `update` block syntax is available.
+
 ### Update Targets
 
 ```
-# Remove a specific target from a rule
+# Remove a specific target from a rule (full syntax)
 update rule 920170 {
   remove target request.args["username"]
 }
@@ -123,7 +152,10 @@ update rule 920170 {
 
 ### Rule Groups
 
-Named groups replace `SecMarker` and provide a scope for batch operations:
+Named groups replace `SecMarker` and provide both a scope for batch operations and
+**conditional activation** via guard clauses.
+
+**Basic groups** — organize rules and enable batch operations:
 
 ```
 group sql_injection_checks {
@@ -139,6 +171,49 @@ exclude group sql_injection_checks
 update group sql_injection_checks {
   remove target request.args["allowed_field"]
 }
+```
+
+**Guarded groups** — replace `skip`/`skipAfter`/`SecMarker` with conditional activation.
+The `requires` clause is a boolean expression over rule metadata or TX fields. Rules in
+the group only evaluate when the guard is true:
+
+```
+# Paranoia level gating (the primary use case for skip/marker in CRS)
+group "xss_pl1" (requires: paranoia >= 1) {
+  rule 941100 (severity: critical) { ... }
+  rule 941110 (severity: critical) { ... }
+}
+
+group "xss_pl2" (requires: paranoia >= 2) {
+  rule 941120 (severity: critical) { ... }
+  rule 941130 (severity: critical) { ... }
+}
+
+# Custom guard (rare, replaces ad-hoc skip patterns)
+group "custom_checks" (requires: tx.enable_custom_checks |> eq(1)) {
+  rule 100001 { ... }
+  rule 100002 { ... }
+}
+```
+
+Guarded groups compile to SecLang as `skipAfter`/`SecMarker` pairs:
+
+```
+# CRSLang
+group "xss_pl2" (requires: paranoia >= 2) {
+  rule 941120 ...
+}
+
+# Compiled SecLang
+SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 2" \
+    "id:941012,phase:2,pass,nolog,skipAfter:END-xss-pl2"
+SecRule ... "id:941120,..."
+SecMarker "END-xss-pl2"
+```
+
+This replaces `skip_to()`, `goto`, and `label` entirely. CRSLang expresses the intent
+(conditional activation), not the mechanism (skip/marker). See also ADR-0004 and
+ADR-0011 where paranoia levels as rule attributes enable automatic guard generation.
 ```
 
 ### Unified Selector System

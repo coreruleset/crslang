@@ -280,14 +280,14 @@ rule 901320 (phase: request) {
 
 Use a **layered approach**:
 
-1. **Phase 3a** — implement Option A (side-effects in `then` only). This handles the
+1. **Phase 2a** — implement Option A (side-effects in `then` only). This handles the
    vast majority of CRS rules. Chain links without intermediate side-effects are already
    flattened by the existing normalizer, so this is the natural starting point.
 
-2. **Phase 3b** — add `let` bindings (Option C) for data-flow dependencies. This
+2. **Phase 2b** — add `let` bindings (Option C) for data-flow dependencies. This
    cleanly handles Category 3 without complicating the boolean expression model.
 
-3. **Phase 3c** — if Category 2 (`ctl` on intermediate links) proves common enough to
+3. **Phase 2c** — if Category 2 (`ctl` on intermediate links) proves common enough to
    warrant language support, add conditional side-effects (Option B) as an extension.
    Before doing so, audit whether these `ctl` patterns can be restructured as separate
    rules instead.
@@ -358,6 +358,56 @@ let ua_hash = request.headers["User-Agent"] |> sha1() |> hex_encode()
 when count(tx.enable) |> eq(1) ...
 then pass { init_collection(ip: client.ip + "_" + ua_hash) }
 ```
+
+### Collection Quantifier: `each()`
+
+SecLang's `multiMatch` action changes how a collection-targeting condition evaluates —
+instead of stopping at the first match, it iterates all values and fires side-effects
+per match. This is currently modeled as a non-disruptive action, but it is semantically
+a condition quantifier.
+
+**Recommendation: `each()` as a condition-level quantifier (Option A).**
+
+```
+# Without each(): first match wins, effects fire once
+when request.args |> detect_sqli()
+
+# With each(): all values tested, effects fire per match
+when each(request.args) |> detect_sqli()
+then block {
+  tx.sqli_score += 5     # incremented per matching argument
+  log(data: matched.var)  # logged per matching argument
+}
+```
+
+`each()` wraps a map-typed field and signals "iterate all values." Without it, the
+default is first-match semantics.
+
+**Alternatives documented:**
+
+- **Option B: Effect-level modifier** — `then block (per_match: true) { ... }`. Simpler
+  to parse but misleading: the reader assumes first-match from the condition until
+  they notice the modifier.
+- **Option C: Separate iteration block** — `for each match { per-match effects } then
+  block { once-only effects }`. Most expressive (supports both per-match and once-only
+  effects) but adds a new block type.
+- **Option D: Drop it** — if scoring becomes first-class (ADR-0011), per-match scoring
+  may be handled at the scoring level rather than as a language construct.
+
+`multiMatch` is rarely used in CRS, so Option A is sufficient for the foreseeable
+future. Options B/C can be revisited if use cases emerge.
+
+### String Interpolation
+
+SecLang uses `%{TX:score}` and `%{MATCHED_VAR}` for string interpolation in actions
+(`logdata`, `msg`, `setvar`). Most of these cases become direct field references or
+expressions in CRSLang (e.g., `log(data: matched.var)`).
+
+For cases that require composed strings (log messages, dynamic values), CRSLang needs
+a string construction mechanism. The exact form — string interpolation
+(`"Score: ${tx.anomaly_score}"`), concatenation (`"Score: " + string(tx.score)`), or
+a format function (`format("Score: %d", tx.score)`) — is deferred to the effects model
+design in Phase 3. The IR must support composed string values in effect arguments.
 
 ### New Capabilities
 
@@ -464,10 +514,10 @@ match request {
 
 ### Negative
 
-- Three categories of intermediate side-effects require a layered migration (Phase 3a/b/c)
+- Three categories of intermediate side-effects require a layered migration (Phase 2a/b/c)
   rather than a single clean cutover
-- `let` bindings (Phase 3b) add a new language concept not present in SecLang
-- Conditional side-effects (Phase 3c, if adopted) complicate the expression model and
+- `let` bindings (Phase 2b) add a new language concept not present in SecLang
+- Conditional side-effects (Phase 2c, if adopted) complicate the expression model and
   require precise execution semantics
 - Some deeply chained rules may become long single expressions (mitigated by
   line breaks and formatting conventions)
@@ -485,7 +535,7 @@ match request {
   (found primarily in initialization and internal-traffic rules like 905111). If they
   prove confined to a small set of rules, they can be handled by restructuring those
   rules rather than adding Option B to the language. A full CRS audit should quantify
-  this before committing to Phase 3c.
+  this before committing to Phase 2c.
 - **Category 3 data flow** — `let` bindings change CRSLang from a purely declarative
   rule language to one with local variable scoping. This is a significant conceptual
   shift. The alternative is to require these patterns to be split into multiple rules

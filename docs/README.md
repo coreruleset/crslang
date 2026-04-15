@@ -149,8 +149,15 @@ SecLang configuration directives (body limits, PCRE tuning, log paths, etc.) are
 explicitly out of scope. Only rule-adjacent metadata (component signature, default
 actions, markers, app ID) stays in the language.
 
-See [ADR-0009: Language Base Evaluation](adr/0009-language-base-evaluation.md) and
-[ADR-0008: Separation of Configuration](adr/0008-configuration-directives.md).
+**Multi-target compilation:** CRSLang is not constrained by any single compilation
+target. Today it compiles to SecLang (ModSecurity/Coraza), but the architecture supports
+future backends for Google Cloud Armor (CEL), AWS WAF, Cloudflare (Wirefilter), and
+others. SecLang generation must be lossless for the CRS ruleset. Features that a target
+cannot express are handled by compiler workarounds or clear error messages.
+
+See [ADR-0009: Language Base Evaluation](adr/0009-language-base-evaluation.md),
+[ADR-0008: Separation of Configuration](adr/0008-configuration-directives.md), and
+[ADR-0010: Multi-Target Compilation](adr/0010-multi-target-compilation.md).
 
 ### Phase 1: Typed Field System
 
@@ -214,13 +221,20 @@ reusable transform chains are defined once and invoked by name.
 |---|---|---|
 | `transformations: [lowercase, urlDecode]` + `operator: {name: rx, ...}` | `field \|> url_decode() \|> lowercase() \|> matches("...")` | `matches(normalize(field), "...")` |
 
-**Structured actions** — the action bag is replaced with a structured model. If the
-custom parser is chosen, `then block { tx.score += 5 }` uses native assignment operators.
-If HCL is chosen, effects use structured sub-blocks or string-encoded operations.
+**Structured actions and scoring** — the action bag is replaced with a structured model.
+If the custom parser is chosen, `then block { tx.score += 5 }` uses native assignment
+operators. If HCL is chosen, effects use structured sub-blocks or string-encoded
+operations.
 
-| Current | New (custom) | New (HCL) |
-|---|---|---|
-| `disruptive: block` + `setvar: "tx.score=+10"` | `then block { tx.score += 10 }` | `action = "block"` + `effects { tx_score = "+=10" }` |
+Additionally, **anomaly scoring becomes first-class**: severity-derived scoring
+eliminates the `setvar` boilerplate from every attack detection rule. A rule just declares
+its severity, and the scoring model (defined in globals) handles the rest.
+
+| Current | New |
+|---|---|
+| `disruptive: block` + `setvar: "tx.score=+10"` | `severity: critical` (score auto-derived) |
+| Manual `setvar` per category | Category derived from group membership |
+| Complex phase-5 evaluation rules | `scoring_threshold { inbound = 5 }` |
 
 Work:
 - Define a `Function` type with signature: name, args, return type
@@ -230,7 +244,8 @@ Work:
 - `ctl:` directives become `configure {}` blocks
 
 See [ADR-0002: Pipeline Operator](adr/0002-pipeline-operator.md) (custom parser path),
-[ADR-0004: Structured Action Model](adr/0004-structured-actions.md), and
+[ADR-0004: Structured Action Model](adr/0004-structured-actions.md),
+[ADR-0011: First-Class Scoring](adr/0011-first-class-scoring.md), and
 [ADR-0009: Language Base Evaluation](adr/0009-language-base-evaluation.md).
 
 ### Phase 4: Text Syntax and Parser
@@ -309,11 +324,13 @@ At every phase:
 |-----|-------|-------|--------|
 | [0009](adr/0009-language-base-evaluation.md) | 0 | Language Base — HCL, CEL, Expr, or Custom | Proposed |
 | [0008](adr/0008-configuration-directives.md) | 0 | Separation of Configuration from Rule Language | Proposed |
+| [0010](adr/0010-multi-target-compilation.md) | 0 | Multi-Target Compilation Model | Proposed |
 | [0001](adr/0001-typed-field-namespace.md) | 1 | Typed Field Namespace | Proposed |
 | [0007](adr/0007-phase-inference.md) | 1 | Phase Inference from Field Types | Proposed |
 | [0003](adr/0003-boolean-algebra.md) | 2 | Boolean Algebra Replacing Chains | Proposed |
 | [0002](adr/0002-pipeline-operator.md) | 3 | Pipeline Operator for Composition (conditional on 0009) | Proposed |
 | [0004](adr/0004-structured-actions.md) | 3 | Structured Action Model | Proposed |
+| [0011](adr/0011-first-class-scoring.md) | 3 | First-Class Scoring Model | Proposed |
 | [0005](adr/0005-parser-strategy.md) | 4 | Parser Strategy (see 0009 for decision) | Proposed |
 | [0006](adr/0006-rule-management.md) | 5 | Rule Management Directives | Proposed |
 

@@ -124,12 +124,12 @@ client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 | `le(value)` | Int -> Bool | `@le` |
 | `contains(value)` | String -> Bool | `@contains` |
 | `contains_word(values...)` | String -> Bool | `@pm` |
-| `contains_word_from_file(path)` | String -> Bool | `@pmFromFile` |
+| `contains_word_from_file(path)` | String -> Bool | `@pmFromFile` (external word lists) |
 | `begins_with(value)` | String -> Bool | `@beginsWith` |
 | `ends_with(value)` | String -> Bool | `@endsWith` |
 | `within(value)` | String -> Bool | `@within` |
 | `ip_in_range(ranges...)` | IP -> Bool | `@ipMatch` |
-| `ip_in_range_from_file(path)` | IP -> Bool | `@ipMatchFromFile` |
+| `ip_in_range_from_file(path)` | IP -> Bool | `@ipMatchFromFile` (external IP lists) |
 | `detect_sqli()` | String -> Bool | `@detectSQLi` |
 | `detect_xss()` | String -> Bool | `@detectXSS` |
 | `validate_byte_range(range)` | Bytes -> Bool | `@validateByteRange` |
@@ -249,3 +249,22 @@ request.uri | lowercase | matches("pattern")
   Start with the functions needed by CRS rules and grow from there.
 - **Performance implications** — pipeline representation must compile efficiently to
   target engines. Ensure the IR preserves enough information for backends to optimize.
+
+### Notes on File-Based Functions and Regex Assembly
+
+**Regex patterns** from `crs-toolchain` regex assembly (`.ra` files) are **inlined** at
+build time. The toolchain compiles them into optimized patterns before CRSLang sees them.
+There is no `matches_from_file()` — the final regex is embedded in the rule.
+
+**Pattern match word lists** (`@pmFromFile`) and **IP range lists** (`@ipMatchFromFile`)
+remain as external file references via `contains_word_from_file(path)` and
+`ip_in_range_from_file(path)`. These lists can be thousands of entries and are data, not
+logic — inlining them would make rules unreadable.
+
+### The `t:none` Convention
+
+SecLang's `t:none` transformation (which resets default transformations from
+`SecDefaultAction`) has no equivalent in CRSLang and is not needed. Each rule explicitly
+states its transforms via the pipeline or named macros, and the `defaults {}` block
+(ADR-0008) does not inject hidden transformation chains. The problem `t:none` solved
+does not exist in the new model.
