@@ -196,12 +196,27 @@ when:
 matches(lowercase(url_decode(request.headers["User-Agent"])), "pattern")
 ```
 
-**Rejected because:**
-- Reads inside-out, opposite to CRS authors' mental model (they think in transform
-  chains applied left-to-right)
-- Deeply nested calls are hard to scan
-- SecLang's `t:` pipeline is already left-to-right; changing direction would confuse
-  existing users
+**Viable with macros (see ADR-0009).** The original concern about deep nesting dissolves
+when named composition functions keep calls at 1-2 levels:
+
+```
+# Without macros: 4 levels deep, hard to read
+matches(lowercase(url_decode(js_decode(request.args))), "pattern")
+
+# With macros: readable
+detect_sqli(normalize(request.args))
+```
+
+If HCL is chosen as the language base (ADR-0009 Option A), nested function calls are the
+only available syntax — HCL's grammar cannot be extended with `|>`. In that path, macros
+are essential to keep conditions readable.
+
+**Trade-offs vs pipeline:**
+- Reads inside-out for ad-hoc chains (without macros), which is opposite to CRS authors'
+  mental model from SecLang's left-to-right `t:` chains
+- With macros as the steady state, the reading direction difference is minimal
+- `&&`/`||` boolean operators (HCL) are more familiar to developers than `and`/`or`
+  keywords, but less readable for security engineers
 
 ### B: Method Chaining (CEL-style)
 
