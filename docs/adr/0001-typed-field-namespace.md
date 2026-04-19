@@ -39,11 +39,11 @@ Fields use a hierarchical dot-separated namespace:
 
 ```
 request.method          # was: REQUEST_METHOD
-request.uri             # was: REQUEST_URI
-request.uri.path        # was: REQUEST_URI (path component)
-request.filename        # was: REQUEST_FILENAME
-request.basename        # was: REQUEST_BASENAME
-request.line            # was: REQUEST_LINE
+request.uri             # was: REQUEST_URI (full URI including query string)
+request.uri_raw         # was: REQUEST_URI_RAW (uri before normalization)
+request.filename        # was: REQUEST_FILENAME (path without query string)
+request.basename        # was: REQUEST_BASENAME (last path component)
+request.line            # was: REQUEST_LINE (raw request line)
 request.protocol        # was: REQUEST_PROTOCOL
 request.body            # was: REQUEST_BODY
 request.body.length     # was: REQUEST_BODY_LENGTH
@@ -67,8 +67,13 @@ client.port             # was: REMOTE_PORT
 server.ip               # was: SERVER_ADDR
 server.port             # was: SERVER_PORT
 
-tx.anomaly_score        # was: TX:anomaly_score
-tx.inbound_score        # was: TX:inbound_anomaly_score_threshold
+tx.anomaly_score                 # was: TX:anomaly_score
+tx.inbound_anomaly_score_pl1     # was: TX:inbound_anomaly_score_pl1
+tx.inbound_anomaly_score_pl2     # was: TX:inbound_anomaly_score_pl2
+tx.inbound_anomaly_score_pl3     # was: TX:inbound_anomaly_score_pl3
+tx.inbound_anomaly_score_pl4     # was: TX:inbound_anomaly_score_pl4
+# Note: CRS stores scores as TX variables. ADR-0011 proposes replacing
+# direct TX access with a first-class scoring model.
 
 matched.var             # was: MATCHED_VAR
 matched.var_name        # was: MATCHED_VAR_NAME

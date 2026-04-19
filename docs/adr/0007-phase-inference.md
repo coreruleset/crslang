@@ -190,6 +190,12 @@ CRSLang resolves this:
 This matches CRS best practice: rules that inspect `ARGS` should run in phase 2 to
 ensure POST parameters are available.
 
+**Trade-off:** This choice prevents inspecting `request.args` at phase 1 for GET-only
+requests (where no POST body exists). Authors who need phase-1 inspection of query
+string arguments should use `request.args.get` explicitly. The alternative — inferring
+phase 1 and silently missing POST parameters — is a worse failure mode because it
+would produce false negatives on POST-based attacks.
+
 ## Alternatives Considered
 
 ### A: Always require explicit phase

@@ -139,7 +139,7 @@ This identifies the ruleset, not the engine. It belongs in the rule file as a he
 ```
 # SecLang: SecDefaultAction "phase:1,log,auditlog,pass"
 defaults (phase: request_headers) {
-  action: pass
+  action = pass
   log(audit: true)
 }
 ```
@@ -149,12 +149,20 @@ may simplify to just the action and effects:
 
 ```
 defaults {
-  action: pass
+  action = pass
   log(audit: true)
 }
 ```
 
 Default actions apply to all subsequent rules in the file that do not override them.
+
+**Unlike SecLang's `SecDefaultAction`, CRSLang's `defaults {}` does not inject default
+transformations.** Each rule explicitly states its own transforms via pipelines or named
+macros. This eliminates the need for SecLang's `t:none` workaround (see ADR-0002).
+
+**Syntax convention** — `=` is used for assignments inside block bodies (`action =
+pass`, `version = "..."`) and `:` is used for metadata arguments in parentheses (`(phase:
+request_headers, severity: critical)`).
 
 **3. Markers → guarded groups (ADR-0006)**
 

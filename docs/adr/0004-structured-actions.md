@@ -88,18 +88,18 @@ Assignment operators:
 - `+=` — increment (was: `setvar:'collection.var=+value'`)
 - `-=` — decrement (was: `setvar:'collection.var=-value'`)
 
-Variable expiry:
+Variable expiry (the variable is removed after the TTL, not the value):
 
 ```
-tx.block_duration = 3600 (expires: 3600)   # was: expirevar:'tx.block_duration=3600'
+expire(tx.block_duration, 3600)   # was: expirevar:'tx.block_duration=3600'
 ```
 
 #### Logging
 
 ```
-log()                    # was: action: log
-audit_log()              # was: action: auditlog
-log(data: "%{MATCHED_VAR}")  # was: logdata:'%{MATCHED_VAR}'
+log()                       # was: action: log
+audit_log()                 # was: action: auditlog
+log(data: matched.var)      # was: logdata:'%{MATCHED_VAR}'
 ```
 
 Or combined (since most rules use both):
@@ -134,22 +134,40 @@ configure(request_body_processor: XML)
 
 ### Complete Examples
 
-**Simple block with scoring:**
+**Simple block with scoring** (severity-derived, per ADR-0011):
 ```
-rule 941100 (phase: request, severity: critical) {
-  when request.args |> js_decode() |> detect_xss()
+group "xss_detection" {
+  category = "xss"
+
+  rule 941100 (severity: critical) {
+    when request.args |> js_decode() |> capture("xss-pattern")
+    then block {
+      log(audit: true, data: matched.var)
+    }
+  }
+}
+```
+
+Scoring is automatic: `severity: critical` + `category: xss` contribute to
+`anomaly_score` and `xss_score` based on the globals scoring table. `capture()` replaces
+the separate `@rx` + `capture` action. For rules that need manual score manipulation,
+use the `score()` override or direct TX assignment:
+
+```
+rule 941100 (severity: critical) {
+  when request.args |> detect_xss()
   then block {
-    tx.xss_score += 5
-    tx.anomaly_score += 5
-    capture()
+    score(anomaly: 5, xss: 5)   # explicit override
     log(audit: true, data: matched.var)
   }
 }
 ```
 
-**Pass with configuration:**
+**Pass with configuration** (setup-style rule, kept for illustrating direct TX
+assignment; note that ADR-0011 lifts `scoring_threshold` and global paranoia settings
+out of rules into a `globals` block):
 ```
-rule 900100 (phase: request) {
+rule 900100 (phase: request_headers) {
   when true
   then pass {
     tx.paranoia_level = 1
@@ -160,7 +178,7 @@ rule 900100 (phase: request) {
 
 **Deny with status:**
 ```
-rule 901001 (phase: request, severity: critical) {
+rule 901001 (phase: request_headers, severity: critical) {
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500) {
     log(audit: true)

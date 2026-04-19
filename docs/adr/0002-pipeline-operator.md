@@ -116,8 +116,9 @@ client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 | Function | Input Type | SecLang equivalent |
 |----------|------------|-------------------|
 | `matches(pattern)` | String -> Bool | `@rx` |
-| `matches_global(pattern)` | String -> Bool | `@rxGlobal` |
+| `capture(pattern)` | String -> Bool | `@rx` + `capture` action (matches and stores groups) |
 | `eq(value)` | String/Int -> Bool | `@eq` / `@streq` |
+| `unconditional()` | any -> Bool | `@unconditionalMatch` (always true) |
 | `gt(value)` | Int -> Bool | `@gt` |
 | `ge(value)` | Int -> Bool | `@ge` |
 | `lt(value)` | Int -> Bool | `@lt` |

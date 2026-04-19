@@ -42,8 +42,9 @@ file           = { rule | globals | defaults | comment } ;
 
 (* Rules *)
 rule           = "rule" INTEGER metadata? "{" when_clause then_clause "}" ;
-metadata       = "(" key_value { "," key_value } ")" ;
-key_value      = IDENT ":" value ;
+metadata       = "(" metadata_kv { "," metadata_kv } ")" ;
+metadata_kv    = IDENT ":" value ;
+block_assign   = IDENT "=" value ;
 
 (* Conditions *)
 when_clause    = "when" expr ;
@@ -71,8 +72,9 @@ assign_op      = "=" | "+=" | "-=" ;
 configure_block= "configure" "{" { IDENT "=" value } "}" ;
 
 (* Globals and defaults *)
-globals        = "globals" "{" { key_value } "}" ;
-defaults       = "defaults" "{" { key_value } "}" ;
+globals        = "globals" "{" { block_assign | nested_block } "}" ;
+defaults       = "defaults" metadata? "{" { block_assign | func_call } "}" ;
+nested_block   = IDENT "{" { block_assign } "}" ;   (* e.g., scoring { ... } *)
 
 (* Rule management *)
 exclude_rule   = "exclude" "rule" INTEGER ;

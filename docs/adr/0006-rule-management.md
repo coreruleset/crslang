@@ -206,15 +206,20 @@ group "xss_pl2" (requires: paranoia >= 2) {
 
 # Compiled SecLang
 SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 2" \
-    "id:941012,phase:2,pass,nolog,skipAfter:END-xss-pl2"
+    "id:<generated>,phase:2,pass,nolog,skipAfter:END-xss-pl2"
 SecRule ... "id:941120,..."
 SecMarker "END-xss-pl2"
 ```
 
+**Compiler-generated rule IDs:** Guard rules need unique SecLang IDs. The compiler
+derives these deterministically from the group name and the lowest enclosed rule ID
+(e.g., `941120` → guard rule `941119` or a reserved offset range). The exact policy is
+an implementation concern; it must produce stable IDs across compilations so that CRS
+users can reference them in exclusions.
+
 This replaces `skip_to()`, `goto`, and `label` entirely. CRSLang expresses the intent
 (conditional activation), not the mechanism (skip/marker). See also ADR-0004 and
 ADR-0011 where paranoia levels as rule attributes enable automatic guard generation.
-```
 
 ### Unified Selector System
 
@@ -353,7 +358,7 @@ type RemoveEffect struct {
 | `SecRuleRemoveByTag "SQL_INJECTION"` | `exclude rules where tag == "SQL_INJECTION"` |
 | `SecRuleUpdateTargetById 920170 "!ARGS:username"` | `update rule 920170 { remove target request.args["username"] }` |
 | `SecRuleUpdateActionById 920170 "pass"` | `update rule 920170 { set action pass }` |
-| `SecMarker END_SQL_CHECKS` | `group sql_checks { ... }` (or label if skip is needed) |
+| `SecMarker END_SQL_CHECKS` + `skipAfter:END_SQL_CHECKS` | `group sql_checks (requires: ...) { ... }` |
 
 ## Alternatives Considered
 

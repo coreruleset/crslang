@@ -14,7 +14,7 @@ accumulated score exceeds a threshold and takes action.
 Today, this is implemented as manual TX variable manipulation in every rule:
 
 ```
-SecRule REQUEST_ARGS "@detectSQLi" \
+SecRule ARGS "@detectSQLi" \
     "id:942100,\
     phase:2,\
     block,\
@@ -167,10 +167,11 @@ rule 942100 (severity: critical, paranoia: 1) {
 }
 
 # Compiled SecLang
-SecRule REQUEST_ARGS "@detectSQLi" \
+SecRule ARGS "@detectSQLi" \
     "id:942100,\
     phase:2,\
     block,\
+    capture,\
     t:none,\
     severity:'CRITICAL',\
     setvar:'tx.sql_injection_score=+%{tx.critical_anomaly_score}',\

@@ -104,8 +104,9 @@ rule 100001 {
 }
 
 # Compiled SecLang: two rules, same score target
-SecRule ... "id:100001a,...,setvar:'tx.anomaly_score=+5'"
-SecRule ... "id:100001b,...,setvar:'tx.anomaly_score=+5'"
+# Rule IDs must be integers; the compiler allocates adjacent IDs deterministically.
+SecRule ... "id:1000011,...,setvar:'tx.anomaly_score=+5'"
+SecRule ... "id:1000012,...,setvar:'tx.anomaly_score=+5'"
 ```
 
 **Macros / named compositions** — expanded inline during compilation. The compiled
