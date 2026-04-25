@@ -155,9 +155,17 @@ future backends for Google Cloud Armor (CEL), AWS WAF, Cloudflare (Wirefilter), 
 others. SecLang generation must be lossless for the CRS ruleset. Features that a target
 cannot express are handled by compiler workarounds or clear error messages.
 
+**Ruleset initialization:** The `crs-setup.conf` + 901 rules two-layer init chain is
+replaced by a `config {}` block that holds user-tunable deployment policy (paranoia
+level, allowed methods, score thresholds, argument limits, etc.). The compiler generates
+all SecLang initialization output — no hand-authored 901 rules, no two-file split. The
+deployer copies `setup.crs.example` and edits it, replacing the current
+`crs-setup.conf.example` workflow.
+
 See [ADR-0009: Language Base Evaluation](adr/0009-language-base-evaluation.md),
-[ADR-0008: Separation of Configuration](adr/0008-configuration-directives.md), and
-[ADR-0010: Multi-Target Compilation](adr/0010-multi-target-compilation.md).
+[ADR-0008: Separation of Configuration](adr/0008-configuration-directives.md),
+[ADR-0010: Multi-Target Compilation](adr/0010-multi-target-compilation.md), and
+[ADR-0012: Ruleset Initialization and Deployment Configuration](adr/0012-ruleset-initialization.md).
 
 ### Phase 1: Typed Field System
 
@@ -325,6 +333,7 @@ At every phase:
 | [0009](adr/0009-language-base-evaluation.md) | 0 | Language Base — HCL, CEL, Expr, or Custom | Proposed |
 | [0008](adr/0008-configuration-directives.md) | 0 | Separation of Configuration from Rule Language | Proposed |
 | [0010](adr/0010-multi-target-compilation.md) | 0 | Multi-Target Compilation Model | Proposed |
+| [0012](adr/0012-ruleset-initialization.md) | 0 | Ruleset Initialization and Deployment Configuration | Proposed |
 | [0001](adr/0001-typed-field-namespace.md) | 1 | Typed Field Namespace | Proposed |
 | [0007](adr/0007-phase-inference.md) | 1 | Phase Inference from Field Types | Proposed |
 | [0003](adr/0003-boolean-algebra.md) | 2 | Boolean Algebra Replacing Chains | Proposed |

@@ -141,16 +141,23 @@ The compiler uses the paranoia attribute to:
 ### Scoring Evaluation
 
 The scoring evaluation rule (currently rule 949110/959100 in CRS) becomes a built-in
-concept rather than a hand-written rule:
+concept rather than a hand-written rule. The thresholds are **deployment policy** and
+live in the `config {}` block defined by [ADR-0012](0012-ruleset-initialization.md):
 
 ```
-# Defined in globals or as a special directive
-scoring_threshold {
-  inbound  = 5    # was: tx.inbound_anomaly_score_threshold
-  outbound = 4    # was: tx.outbound_anomaly_score_threshold
-  action   = deny(status: 403)
+# Deployment policy — in config {} (ADR-0012)
+config {
+  scoring {
+    inbound_threshold  = 5    # was: tx.inbound_anomaly_score_threshold
+    outbound_threshold = 4    # was: tx.outbound_anomaly_score_threshold
+    action             = deny(status: 403)
+  }
 }
 ```
+
+The scoring severity table (`globals { scoring {} }`) remains a ruleset constant —
+it maps severity levels to point values and is not deployer-tunable. Only the
+thresholds and evaluation action belong in `config {}`.
 
 This replaces the complex phase-5 evaluation rules in CRS that manually compare
 accumulated scores against thresholds.
@@ -178,8 +185,9 @@ SecRule ARGS "@detectSQLi" \
     setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}'"
 ```
 
-The `scoring {}` globals compile to TX variable initialization in `crs-setup.conf`.
-The `scoring_threshold {}` compiles to the evaluation rules in phases 3-5.
+The `globals { scoring {} }` block compiles to TX variable initialization in the
+generated init block (see ADR-0012). The `config { scoring {} }` thresholds compile
+to the evaluation rules in phases 3-5, also via the generated init block.
 
 ### Compilation to Other Targets
 
@@ -193,11 +201,12 @@ For targets that don't have native anomaly scoring (Cloud Armor, AWS WAF, Cloudf
 ### IR Representation
 
 ```go
-type ScoringConfig struct {
-    Levels    map[Severity]int     // critical: 5, warning: 3, notice: 2
-    Threshold ScoringThreshold
+// Ruleset constant — from globals { scoring {} }
+type ScoringLevels struct {
+    Levels map[Severity]int     // critical: 5, warning: 3, notice: 2
 }
 
+// Deployment policy — from config { scoring {} } (ADR-0012)
 type ScoringThreshold struct {
     Inbound  int
     Outbound int

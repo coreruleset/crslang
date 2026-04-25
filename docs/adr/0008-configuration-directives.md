@@ -351,9 +351,10 @@ Import them, store them in the IR, export them unchanged.
 ### Risks
 
 - **CRS setup file** — `crs-setup.conf` is a mix of configuration directives and
-  `SecAction` rules that initialize TX variables. The TX-initializing rules stay in
-  CRSLang; the engine config lines are extracted. The migration tooling must handle
-  this file specially.
+  `SecAction` rules that initialize TX variables. The engine config lines are extracted
+  and moved to the engine-specific config file. The TX-initializing rules are replaced by
+  the `config {}` block defined in [ADR-0012](0012-ruleset-initialization.md), which the
+  compiler uses to generate initialization output. Migration tooling handles the split.
 - **`ctl:` completeness** — if an engine adds new `ctl:` actions, the CRSLang
   `configure {}` standardized set may lag behind. The `engine_configure {}` escape
   hatch handles this, but rules using it are not portable.
