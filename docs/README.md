@@ -99,9 +99,7 @@ rule 901001 {
     severity = critical
   }
   when count(tx.crs_setup_version) |> eq(0)
-  then deny {
-    status: 500
-  }
+  then deny(status: 500)
 }
 ```
 
