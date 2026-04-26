@@ -108,15 +108,19 @@ Macros live at three scope levels:
 # package.crs (CRS distribution)
 package "owasp_crs" version "4.18.0"
 
-macro deep_normalize(input: string) = input
+# Exported — visible to importers as crs.deep_normalize
+export macro deep_normalize(input: string) = input
   |> utf8_to_unicode()
   |> url_decode_uni()
   ...
 
 # rules/sql_injection.crs
 group "sql_injection" {
-  # Group-scoped macro (visible only inside this group)
+  # Group-scoped macro (visible only inside this group, not to importers)
   macro args_are_sqli() = request.args |> detect_sqli()
+
+  # Exported group-scope macro — visible to importers as crs.sql_injection.detect
+  export macro detect() = request.args |> detect_sqli()
 
   rule 942100 (severity: critical) {
     when args_are_sqli()           # local macro
@@ -134,8 +138,88 @@ rule 9100100 {
 }
 ```
 
-Macros are not visible across imports unless explicitly exported. A package's
-`package.crs` lists which macros it exports.
+The `export` keyword controls cross-package visibility — see [Exports](#exports) below.
+
+### Exports
+
+Macros default to **private**: visible only within their declaring scope. To make a
+macro visible to importers, prefix the declaration with the `export` keyword:
+
+```
+# rules/_common.crs (inside the OWASP_CRS package)
+export macro deep_normalize(input: string) = input
+  |> utf8_to_unicode()
+  |> url_decode_uni()
+  |> remove_nulls()
+
+# Not exported — file-scope helper, invisible outside _common.crs
+macro _strip_quotes(input: string) = input |> replace("\"", "")
+```
+
+`export` is allowed at file scope and at group scope. The qualified path importers
+use is determined by ADR-0014's namespacing rules:
+
+| Declaration site | Importer-visible name (with alias `crs`) |
+|---|---|
+| File scope, anywhere in the package | `crs.<macro_name>` |
+| Group scope inside a group named `bar` | `crs.bar.<macro_name>` |
+| Group scope inside nested groups `outer.inner` | `crs.outer.inner.<macro_name>` |
+
+`export` does not affect visibility *within* the package — a non-exported macro is
+still usable by other files in the same package per the normal scoping rules. The
+keyword only controls visibility *across* the package boundary.
+
+#### Default visibility rationale
+
+CRSLang chooses **explicit opt-in for exports** rather than opt-out (e.g., "every
+top-level macro is automatically exported"). Adding a new macro inside a package does
+not accidentally widen the public API surface. The `export` keyword is grep-able,
+making the package's external API enumerable with `rg '^export macro'`. This matches
+the convention in Rust (`pub`), TypeScript (`export`), and Python (`__all__`).
+
+#### Re-export from package.crs
+
+A package author who wants to expose macros that live in other files declares
+re-exports in `package.crs`:
+
+```
+# package.crs
+package "owasp_crs" version "4.18.0"
+
+import "rules/_common.crs"
+import "rules/sql_injection.crs"
+
+# Re-export individual names from imported files
+export macro deep_normalize from "rules/_common.crs"
+export macro is_safe_method from "rules/_common.crs"
+```
+
+Re-exports do not redefine the macro; they make an already-defined macro from another
+file visible to importers under the package namespace. This is needed only when the
+file authoring style keeps macros private at the file level but the package wants to
+expose them; if the macro is declared with `export macro` directly in its file, no
+re-export is needed.
+
+#### Conflict with ADR-0014's name resolution
+
+Re-exports go through the same conflict-resolution rules as ordinary declarations
+(ADR-0014). Two `export` declarations producing the same fully-qualified name across
+files of the same package are a compile-time error.
+
+#### HCL surface
+
+In the HCL surface (per ADR-0009), the equivalent is a `visibility` attribute on the
+macro block:
+
+```hcl
+macro "deep_normalize" {
+  visibility = "public"
+  param "input" { type = string }
+  body  = "..."
+}
+```
+
+The IR is identical: both surfaces produce a `MacroDecl` with `Exported = true`.
 
 ### Pure Expression Constraint
 
@@ -241,6 +325,7 @@ type MacroDecl struct {
     Doc        *Documentation        // from ADR-0013
     Name       string                // local name within scope
     Namespace  string                // package/file/group, per ADR-0014
+    Exported   bool                  // visible to importers (set by `export` keyword)
     Params     []MacroParam
     ReturnType Type
     Body       Expr                  // the typed AST of the expression
