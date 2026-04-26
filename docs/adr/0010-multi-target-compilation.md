@@ -9,12 +9,12 @@
 CRSLang's primary compilation target today is SecLang (ModSecurity/Coraza `.conf` files).
 However, the long-term vision is to compile CRSLang rules to multiple WAF engines:
 
-| Target | Expression language | Organization |
-|--------|-------------------|--------------|
-| ModSecurity / Coraza | SecLang directives | OWASP |
-| Google Cloud Armor | CEL expressions | Google Cloud |
-| AWS WAF | JSON rule statements | AWS |
-| Cloudflare WAF | Wirefilter expressions | Cloudflare |
+| Target               | Expression language    | Organization |
+| -------------------- | ---------------------- | ------------ |
+| ModSecurity / Coraza | SecLang directives     | OWASP        |
+| Google Cloud Armor   | CEL expressions        | Google Cloud |
+| AWS WAF              | JSON rule statements   | AWS          |
+| Cloudflare WAF       | Wirefilter expressions | Cloudflare   |
 
 Each target has a different expression language, different capabilities, and different
 limitations. CRSLang must be expressive enough to author rules once and compile them to
@@ -46,6 +46,7 @@ and reports clear errors for unsupported features.
    ModSecurity/Coraza today), not a language constraint.
 
 3. **Graceful degradation** — when a CRSLang feature has no equivalent in a target:
+   - By default, the compiler tries to compile all rules for the target backend, however if a rule has the properties `backends` specified, the compiler will only attempt to compile it if the target is included in the list. This allows CRS consumers to know which rules are expected in their target and which are not.
    - If there's a workaround (e.g., OR → multiple rules with scoring for SecLang),
      the compiler applies it automatically.
    - If there's no workaround, the compiler emits a clear error: "Feature X is not
@@ -73,20 +74,20 @@ existing backends or the language itself.
 
 ### Feature Support Matrix (Expected)
 
-| Feature | SecLang | Cloud Armor | AWS WAF | Cloudflare |
-|---------|---------|-------------|---------|------------|
-| Boolean AND | chain (workaround) | native | native | native |
-| Boolean OR | separate rules (workaround) | native | native | native |
-| Regex matching | native | native | native | native |
-| String transforms | native (40+) | limited | very limited | limited |
-| IP matching | native | native | native | native |
-| Anomaly scoring | via TX variables | not native | not native | not native |
-| `detect_sqli()` | native (libinjection) | not available | managed rules | managed rules |
-| `detect_xss()` | native (libinjection) | not available | managed rules | managed rules |
-| Response body inspection | native | not available | not available | limited |
-| `ctl:` runtime overrides | native | not available | not available | not available |
-| File-based pattern lists | native (`@pmFromFile`) | not available | not available | not available |
-| Rule exclusions | native | custom | custom | custom |
+| Feature                  | SecLang                     | Cloud Armor   | AWS WAF       | Cloudflare    |
+| ------------------------ | --------------------------- | ------------- | ------------- | ------------- |
+| Boolean AND              | chain (workaround)          | native        | native        | native        |
+| Boolean OR               | separate rules (workaround) | native        | native        | native        |
+| Regex matching           | native                      | native        | native        | native        |
+| String transforms        | native (40+)                | limited       | very limited  | limited       |
+| IP matching              | native                      | native        | native        | native        |
+| Anomaly scoring          | via TX variables            | not native    | not native    | not native    |
+| `detect_sqli()`          | native (libinjection)       | not available | managed rules | managed rules |
+| `detect_xss()`           | native (libinjection)       | not available | managed rules | managed rules |
+| Response body inspection | native                      | not available | not available | limited       |
+| `ctl:` runtime overrides | native                      | not available | not available | not available |
+| File-based pattern lists | native (`@pmFromFile`)      | not available | not available | not available |
+| Rule exclusions          | native                      | custom        | custom        | custom        |
 
 ### SecLang-Specific Considerations
 
@@ -94,7 +95,7 @@ Because SecLang is the primary target and has the most constraints, the compiler
 handle several CRSLang features that SecLang cannot express directly:
 
 **Boolean OR** — CRSLang's `A or B` has no SecLang equivalent. The compiler decomposes
-it into separate rules with shared scoring:
+it into separate rules, each condition rule will set a variable if it matches, and a final rule checks the variable to apply the disruptive action. The final rule will use the CRSLang id:
 
 ```
 # CRSLang
@@ -105,8 +106,9 @@ rule 100001 {
 
 # Compiled SecLang: two rules, same score target
 # Rule IDs must be integers; the compiler allocates adjacent IDs deterministically.
-SecRule ... "id:1000011,...,setvar:'tx.anomaly_score=+5'"
-SecRule ... "id:1000012,...,setvar:'tx.anomaly_score=+5'"
+SecRule ... "id:1000011,...,setvar:'tx.internal_rule_1000011=1'"
+SecRule ... "id:1000012,...,setvar:'tx.internal_rule_1000012=1'"
+SecRule TX:internal_rule_1000011||TX:internal_rule_1000012 "@eq 1" "id:100001,...,deny"
 ```
 
 **Macros / named compositions** — expanded inline during compilation. The compiled
@@ -153,6 +155,7 @@ Limit CRSLang to what SecLang can express. No OR, no macros, no features beyond 
 compiles 1:1.
 
 **Rejected because:**
+
 - Defeats the purpose of a new language
 - Cloud WAF targets natively support OR, grouping, and richer expressions
 - CRS maintainers cannot express patterns they can think of
@@ -163,6 +166,7 @@ compiles 1:1.
 Limit CRSLang to features supported by every target.
 
 **Rejected because:**
+
 - The intersection is too small (string transforms, regex, IP matching, basic AND)
 - Cloud WAF targets have very different capabilities
 - Would prevent CRS from using features like `detect_sqli()` which only some engines
@@ -174,6 +178,7 @@ Limit CRSLang to features supported by every target.
 Define subsets of CRSLang for each target (e.g., "CRSLang-SecLang", "CRSLang-CEL").
 
 **Rejected because:**
+
 - Fragments the language and the community
 - Rule authors must know which profile they're writing for
 - Tooling must handle multiple profiles

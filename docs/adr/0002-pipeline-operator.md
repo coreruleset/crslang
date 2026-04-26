@@ -46,6 +46,7 @@ field |> transform1() |> transform2() |> predicate("pattern")
 ```
 
 The pipeline reads left-to-right:
+
 1. Start with a field reference (from ADR-0001)
 2. Each `|>` passes the output of the left side as the first argument to the right side
 3. Intermediate functions (transformations) return the transformed value
@@ -54,11 +55,13 @@ The pipeline reads left-to-right:
 ### Examples
 
 **Simple match:**
+
 ```
 request.uri |> matches("^/admin")
 ```
 
 **Transformation chain:**
+
 ```
 request.headers["User-Agent"]
   |> url_decode()
@@ -68,16 +71,19 @@ request.headers["User-Agent"]
 ```
 
 **Negation:**
+
 ```
-not(request.headers["Content-Length"] |> matches("^0?$"))
+request.headers["Content-Length"] |> matches("^0?$")
 ```
 
 **Count:**
+
 ```
 count(tx.crs_setup_version) |> eq(0)
 ```
 
 **IP matching:**
+
 ```
 client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 ```
@@ -86,59 +92,59 @@ client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 
 #### Transformation Functions (return transformed value)
 
-| Function | Input -> Output | SecLang equivalent |
-|----------|-----------------|-------------------|
-| `lowercase()` | String -> String | `t:lowercase` |
-| `uppercase()` | String -> String | `t:uppercase` |
-| `url_decode()` | String -> String | `t:urlDecode` |
-| `url_decode_uni()` | String -> String | `t:urlDecodeUni` |
-| `html_entity_decode()` | String -> String | `t:htmlEntityDecode` |
-| `js_decode()` | String -> String | `t:jsDecode` |
-| `css_decode()` | String -> String | `t:cssDecode` |
-| `base64_decode()` | String -> String | `t:base64Decode` |
-| `hex_decode()` | String -> String | `t:hexDecode` |
+| Function                | Input -> Output  | SecLang equivalent     |
+| ----------------------- | ---------------- | ---------------------- |
+| `lowercase()`           | String -> String | `t:lowercase`          |
+| `uppercase()`           | String -> String | `t:uppercase`          |
+| `url_decode()`          | String -> String | `t:urlDecode`          |
+| `url_decode_uni()`      | String -> String | `t:urlDecodeUni`       |
+| `html_entity_decode()`  | String -> String | `t:htmlEntityDecode`   |
+| `js_decode()`           | String -> String | `t:jsDecode`           |
+| `css_decode()`          | String -> String | `t:cssDecode`          |
+| `base64_decode()`       | String -> String | `t:base64Decode`       |
+| `hex_decode()`          | String -> String | `t:hexDecode`          |
 | `compress_whitespace()` | String -> String | `t:compressWhitespace` |
-| `remove_whitespace()` | String -> String | `t:removeWhitespace` |
-| `remove_nulls()` | String -> String | `t:removeNulls` |
-| `remove_comments()` | String -> String | `t:removeComments` |
-| `normalize_path()` | String -> String | `t:normalisePath` |
-| `normalize_path_win()` | String -> String | `t:normalisePathWin` |
-| `cmd_line()` | String -> String | `t:cmdLine` |
-| `sql_hex_decode()` | String -> String | `t:sqlHexDecode` |
-| `escape_seq_decode()` | String -> String | `t:escapeSeqDecode` |
-| `trim()` | String -> String | `t:trim` |
-| `length()` | String -> Int | `t:length` |
-| `md5()` | String -> String | `t:md5` |
-| `sha1()` | String -> String | `t:sha1` |
+| `remove_whitespace()`   | String -> String | `t:removeWhitespace`   |
+| `remove_nulls()`        | String -> String | `t:removeNulls`        |
+| `remove_comments()`     | String -> String | `t:removeComments`     |
+| `normalize_path()`      | String -> String | `t:normalisePath`      |
+| `normalize_path_win()`  | String -> String | `t:normalisePathWin`   |
+| `cmd_line()`            | String -> String | `t:cmdLine`            |
+| `sql_hex_decode()`      | String -> String | `t:sqlHexDecode`       |
+| `escape_seq_decode()`   | String -> String | `t:escapeSeqDecode`    |
+| `trim()`                | String -> String | `t:trim`               |
+| `length()`              | String -> Int    | `t:length`             |
+| `md5()`                 | String -> String | `t:md5`                |
+| `sha1()`                | String -> String | `t:sha1`               |
 
 #### Predicate Functions (return bool)
 
-| Function | Input Type | SecLang equivalent |
-|----------|------------|-------------------|
-| `matches(pattern)` | String -> Bool | `@rx` |
-| `capture(pattern)` | String -> Bool | `@rx` + `capture` action (matches and stores groups) |
-| `eq(value)` | String/Int -> Bool | `@eq` / `@streq` |
-| `unconditional()` | any -> Bool | `@unconditionalMatch` (always true) |
-| `gt(value)` | Int -> Bool | `@gt` |
-| `ge(value)` | Int -> Bool | `@ge` |
-| `lt(value)` | Int -> Bool | `@lt` |
-| `le(value)` | Int -> Bool | `@le` |
-| `contains(value)` | String -> Bool | `@contains` |
-| `contains_word(values...)` | String -> Bool | `@pm` |
-| `contains_word_from_file(path)` | String -> Bool | `@pmFromFile` (external word lists) |
-| `begins_with(value)` | String -> Bool | `@beginsWith` |
-| `ends_with(value)` | String -> Bool | `@endsWith` |
-| `within(value)` | String -> Bool | `@within` |
-| `ip_in_range(ranges...)` | IP -> Bool | `@ipMatch` |
-| `ip_in_range_from_file(path)` | IP -> Bool | `@ipMatchFromFile` (external IP lists) |
-| `detect_sqli()` | String -> Bool | `@detectSQLi` |
-| `detect_xss()` | String -> Bool | `@detectXSS` |
-| `validate_byte_range(range)` | Bytes -> Bool | `@validateByteRange` |
-| `validate_url_encoding()` | String -> Bool | `@validateUrlEncoding` |
-| `validate_utf8()` | String -> Bool | `@validateUtf8Encoding` |
-| `verify_cc(pattern)` | String -> Bool | `@verifyCC` |
-| `rbl(server)` | IP -> Bool | `@rbl` |
-| `geo_lookup()` | IP -> Bool | `@geoLookup` |
+| Function                        | Input Type         | SecLang equivalent                                   |
+| ------------------------------- | ------------------ | ---------------------------------------------------- |
+| `matches(pattern)`              | String -> Bool     | `@rx`                                                |
+| `capture(pattern)`              | String -> Bool     | `@rx` + `capture` action (matches and stores groups) |
+| `eq(value)`                     | String/Int -> Bool | `@eq` / `@streq`                                     |
+| `unconditional()`               | any -> Bool        | `@unconditionalMatch` (always true)                  |
+| `gt(value)`                     | Int -> Bool        | `@gt`                                                |
+| `ge(value)`                     | Int -> Bool        | `@ge`                                                |
+| `lt(value)`                     | Int -> Bool        | `@lt`                                                |
+| `le(value)`                     | Int -> Bool        | `@le`                                                |
+| `contains(value)`               | String -> Bool     | `@contains`                                          |
+| `contains_word(values...)`      | String -> Bool     | `@pm`                                                |
+| `contains_word_from_file(path)` | String -> Bool     | `@pmFromFile` (external word lists)                  |
+| `begins_with(value)`            | String -> Bool     | `@beginsWith`                                        |
+| `ends_with(value)`              | String -> Bool     | `@endsWith`                                          |
+| `within(value)`                 | String -> Bool     | `@within`                                            |
+| `ip_in_range(ranges...)`        | IP -> Bool         | `@ipMatch`                                           |
+| `ip_in_range_from_file(path)`   | IP -> Bool         | `@ipMatchFromFile` (external IP lists)               |
+| `detect_sqli()`                 | String -> Bool     | `@detectSQLi`                                        |
+| `detect_xss()`                  | String -> Bool     | `@detectXSS`                                         |
+| `validate_byte_range(range)`    | Bytes -> Bool      | `@validateByteRange`                                 |
+| `validate_url_encoding()`       | String -> Bool     | `@validateUrlEncoding`                               |
+| `validate_utf8()`               | String -> Bool     | `@validateUtf8Encoding`                              |
+| `verify_cc(pattern)`            | String -> Bool     | `@verifyCC`                                          |
+| `rbl(server)`                   | IP -> Bool         | `@rbl`                                               |
+| `geo_lookup()`                  | IP -> Bool         | `@geoLookup`                                         |
 
 ### Type Checking
 
@@ -156,6 +162,7 @@ request.headers["Content-Length"] |> length() |> gt(100)
 ```
 
 Type errors are caught at parse time with clear messages:
+
 ```
 Error: lowercase() expects String input, got Int from 'response.status'
 ```
@@ -181,12 +188,12 @@ type FunctionCall struct {
 ```yaml
 when:
   pipeline:
-      field: request.headers["User-Agent"]
-      steps:
-        - fn: url_decode
-        - fn: lowercase
-        - fn: matches
-          args: ["malicious-pattern"]
+    field: request.headers["User-Agent"]
+    steps:
+      - fn: url_decode
+      - fn: lowercase
+      - fn: matches
+        args: ["malicious-pattern"]
 ```
 
 ## Alternatives Considered
@@ -213,6 +220,7 @@ only available syntax — HCL's grammar cannot be extended with `|>`. In that pa
 are essential to keep conditions readable.
 
 **Trade-offs vs pipeline:**
+
 - Reads inside-out for ad-hoc chains (without macros), which is opposite to CRS authors'
   mental model from SecLang's left-to-right `t:` chains
 - With macros as the steady state, the reading direction difference is minimal
@@ -226,6 +234,7 @@ request.headers["User-Agent"].urlDecode().lowercase().matches("pattern")
 ```
 
 **Considered viable but:**
+
 - Requires fields to be objects with methods, complicating the type system
 - Dot already used for field hierarchy (ADR-0001), adding method calls on the same
   syntax creates ambiguity: is `request.headers.names` a field or a method?
@@ -238,6 +247,7 @@ request.uri | lowercase | matches("pattern")
 ```
 
 **Rejected because:**
+
 - `|` is commonly used for bitwise OR or alternatives in regex context
 - Could create parsing ambiguity with future boolean OR syntax
 - `|>` is established in Elixir, F#, OCaml, and Gleam for this exact purpose

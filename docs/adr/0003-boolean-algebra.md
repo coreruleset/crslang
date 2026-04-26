@@ -25,9 +25,9 @@ metadata:
   id: 920170
 conditions:
   - variables: [REQUEST_METHOD]
-    operator: {name: rx, value: "^(?:GET|HEAD)$"}
+    operator: { name: rx, value: "^(?:GET|HEAD)$" }
 actions:
-  disruptive: {action: block}
+  disruptive: { action: block }
   flow: [chain]
 chainedRule:
   kind: rule
@@ -35,7 +35,7 @@ chainedRule:
     - collections:
         - name: REQUEST_HEADERS
           arguments: [Content-Length]
-      operator: {negate: true, name: rx, value: "^0?$"}
+      operator: { negate: true, name: rx, value: "^0?$" }
   actions:
     non-disruptive:
       - action: setvar
@@ -64,9 +64,13 @@ grouping.
 ### Syntax
 
 ```
-rule 920170 (phase: request) {
-  when request.method |> matches("^(?:GET|HEAD)$")
-   and request.headers["Content-Length"] |> not(matches("^0?$"))
+rule 920170 (phase: request_headers) {
+  metadata {
+    phase: request_headers
+  }
+  let condition1 = request.method |> matches("^(?:GET|HEAD)$")
+  let condition2 = request.headers["Content-Length"] |> matches("^0?$")
+  when condition1 and condition2
   then block {
     tx.anomaly_score += 5
   }
@@ -76,6 +80,7 @@ rule 920170 (phase: request) {
 ### Operator Precedence
 
 From highest to lowest:
+
 1. `not` (unary)
 2. `and`
 3. `or`
@@ -156,7 +161,7 @@ SecRule REQUEST_HEADERS:Range "@rx (\d+)-(\d+)" \
 
 Here `capture` must execute when the first condition matches (not when the full chain
 matches), because captured groups are consumed downstream. However, the captured values
-are only *useful* if the full chain matches. In the boolean model, `capture()` becomes a
+are only _useful_ if the full chain matches. In the boolean model, `capture()` becomes a
 pipeline function that extracts groups as a side-effect of matching:
 
 ```
@@ -295,6 +300,7 @@ Use a **layered approach**:
 #### Execution Semantics (if Option B is adopted)
 
 If conditional side-effects are added:
+
 - Side-effects on a predicate execute **when that predicate evaluates to true** during
   expression evaluation.
 - Evaluation order is **left-to-right** with **short-circuit**: `A and B` does not
@@ -361,41 +367,33 @@ then pass { init_collection(ip: client.ip + "_" + ua_hash) }
 
 ### Collection Quantifier: `each()`
 
-SecLang's `multiMatch` action changes how a collection-targeting condition evaluates —
-instead of stopping at the first match, it iterates all values and fires side-effects
-per match. This is currently modeled as a non-disruptive action, but it is semantically
-a condition quantifier.
+SecLang's `multiMatch` action changes how an operator evaluates a target that has transformations —
+instead of evaluating after applying the transformations, are checked against the operator before and after every transformation function. This is currently modeled as a non-disruptive action, but it is semantically
+a flow control mechanism.
 
-**Recommendation: `each()` as a condition-level quantifier (Option A).**
+**Recommendation: `multi_match` as a metadata property.**
 
 ```
-# Without each(): first match wins, effects fire once
-when request.args |> detect_sqli()
+# Without multi_match: transformations pipeline is evaluated once, operator tests final output
+when request.args |> lowercase() |> remove_whitespace() |> detect_sqli()
 
-# With each(): all values tested, effects fire per match
-when each(request.args) |> detect_sqli()
+# With multiMatch(): operator tests original value and after each transformation
+metadata {
+  multi_match = true
+}
+when request.args |> lowercase() |> remove_whitespace() |> detect_sqli()
 then block {
   tx.sqli_score += 5     # incremented per matching argument
   log(data: matched.var)  # logged per matching argument
 }
 ```
 
-`each()` wraps a map-typed field and signals "iterate all values." Without it, the
-default is first-match semantics.
-
 **Alternatives documented:**
 
-- **Option B: Effect-level modifier** — `then block (per_match: true) { ... }`. Simpler
-  to parse but misleading: the reader assumes first-match from the condition until
-  they notice the modifier.
-- **Option C: Separate iteration block** — `for each match { per-match effects } then
-  block { once-only effects }`. Most expressive (supports both per-match and once-only
-  effects) but adds a new block type.
-- **Option D: Drop it** — if scoring becomes first-class (ADR-0011), per-match scoring
-  may be handled at the scoring level rather than as a language construct.
+- **Option B: pipeline function** — `multi_match(lowercase, remove_whitespace)`. Remove the need of a metadata property but it adds complexity to the pipeline syntax.
 
 `multiMatch` is rarely used in CRS, so Option A is sufficient for the foreseeable
-future. Options B/C can be revisited if use cases emerge.
+future. Option B can be revisited if use cases emerge.
 
 ### String Interpolation
 
@@ -416,9 +414,12 @@ Boolean algebra enables patterns that are impossible or awkward in SecLang:
 ```
 # OR conditions (currently requires separate rules + scoring)
 rule 100001 (phase: request) {
-  when request.uri |> matches("/admin")
-   and (client.ip |> ip_in_range("10.0.0.0/8")
-        or request.headers["X-Internal"] |> eq("true"))
+  let is_admin_path = request.uri |> matches("/admin")
+  let is_internal_client = client.ip |> ip_in_range("10.0.0.0/8")
+  let has_internal_header = request.headers["X-Internal"] |> eq("true")
+  when is_admin_path
+   and (is_internal_client
+        or has_internal_header)
   then pass
 }
 
@@ -466,6 +467,7 @@ then:
 Add `or_chain` alongside `chain` to keep the sequential model but add OR support.
 
 **Rejected because:**
+
 - Does not address nesting depth problem
 - Creates a hybrid model that is harder to reason about than either pure chains or
   pure boolean algebra
@@ -484,6 +486,7 @@ rule 920170 {
 ```
 
 **Rejected because:**
+
 - Implicit AND with no explicit OR creates the same asymmetry as SecLang
 - Harder to parse: where does one condition end and the next begin?
 - Less familiar to the target audience
@@ -498,6 +501,7 @@ match request {
 ```
 
 **Rejected because:**
+
 - Only works for AND conditions on the same request
 - Cannot express cross-category conditions (request + response + tx)
 - Novel syntax with no established precedent

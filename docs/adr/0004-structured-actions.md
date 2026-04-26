@@ -61,7 +61,7 @@ Each disruptive action can take named parameters:
 
 ```
 then deny(status: 403)
-then block(status: 403)
+then block
 then redirect(url: "https://example.com/blocked")
 then drop
 then pass
@@ -84,7 +84,8 @@ ip.reput_block_flag = 1        # was: setvar:'ip.reput_block_flag=1'
 ```
 
 Assignment operators:
-- `=`  — set (was: `setvar:'collection.var=value'`)
+
+- `=` — set (was: `setvar:'collection.var=value'`)
 - `+=` — increment (was: `setvar:'collection.var=+value'`)
 - `-=` — decrement (was: `setvar:'collection.var=-value'`)
 
@@ -135,6 +136,7 @@ configure(request_body_processor: XML)
 ### Complete Examples
 
 **Simple block with scoring** (severity-derived, per ADR-0011):
+
 ```
 group "xss_detection" {
   category = "xss"
@@ -166,6 +168,7 @@ rule 941100 (severity: critical) {
 **Pass with configuration** (setup-style rule, kept for illustrating direct TX
 assignment; note that ADR-0011 lifts `scoring_threshold` and global paranoia settings
 out of rules into a `globals` block):
+
 ```
 rule 900100 (phase: request_headers) {
   when true
@@ -177,6 +180,7 @@ rule 900100 (phase: request_headers) {
 ```
 
 **Deny with status:**
+
 ```
 rule 901001 (phase: request_headers, severity: critical) {
   when count(tx.crs_setup_version) |> eq(0)
@@ -277,6 +281,7 @@ actions:
 ```
 
 **Rejected because:**
+
 - Still carries the category model that confuses authors
 - Does not solve the fundamental problem of actions being a grab-bag
 
@@ -291,7 +296,8 @@ then {
 ```
 
 **Rejected because:**
-- The disruptive action is not a side-effect; it is the *outcome* of the rule.
+
+- The disruptive action is not a side-effect; it is the _outcome_ of the rule.
   It deserves syntactic prominence, not burial in a block.
 - `deny()` as a function call implies it could appear conditionally inside the block,
   which should not be possible.

@@ -97,25 +97,25 @@ rule.id                 # was: RULE:id (inside RULE collection)
 
 Each field has a declared type:
 
-| Type | Description | Example fields |
-|------|-------------|----------------|
-| `String` | UTF-8 text | `request.method`, `request.uri` |
-| `Int` | Integer | `response.status`, `server.port` |
-| `IP` | IP address (v4/v6) | `client.ip`, `server.ip` |
-| `Bytes` | Raw byte sequence | `request.body`, `response.body` |
-| `Map[String]` | String-keyed map of strings | `request.headers`, `request.args` |
-| `List[String]` | Ordered list of strings | `request.headers.names`, `request.args.names` |
-| `Bool` | Boolean | (future: computed fields) |
+| Type           | Description                 | Example fields                                |
+| -------------- | --------------------------- | --------------------------------------------- |
+| `String`       | UTF-8 text                  | `request.method`, `request.uri`               |
+| `Int`          | Integer                     | `response.status`, `server.port`              |
+| `IP`           | IP address (v4/v6)          | `client.ip`, `server.ip`                      |
+| `Bytes`        | Raw byte sequence           | `request.body`, `response.body`               |
+| `Map[String]`  | String-keyed map of strings | `request.headers`, `request.args`             |
+| `List[String]` | Ordered list of strings     | `request.headers.names`, `request.args.names` |
+| `Bool`         | Boolean                     | (future: computed fields)                     |
 
 ### Map Access
 
 Map-typed fields support:
+
 - **Full map** — `request.headers` (iterates all values)
 - **Key access** — `request.headers["Content-Type"]` (single value, type `String`)
-- **Names** — `request.headers.names` (list of key names)
+- **Names** — `request.headers.keys` (list of key names)
 
-**Key exclusions** (SecLang's `!ARGS:foo` — "iterate all keys except foo") are not part
-of the field syntax. Instead, target exclusions are handled by the rule management system
+**Key exclusions** (SecLang's `!ARGS:foo` — "remove foo from previously defined iterations over ARGS") are not part of the field syntax. Instead, target exclusions are handled by the rule management system
 (ADR-0006):
 
 ```

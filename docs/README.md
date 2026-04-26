@@ -74,11 +74,13 @@ actions:
 A rule in the new CRSLang should look like:
 
 ```
-rule 920170 (severity: warning) {
+rule 920170 {
+  metadata {
+    severity = warning
+  }
   when request.method |> matches("^(?:GET|HEAD)$")
    and request.headers["Content-Length"] |> not(matches("^0?$"))
   then block {
-    tx.anomaly_score += 5
     log()
   }
 }
@@ -91,13 +93,20 @@ the compiler emits `phase:1` automatically.
 Rules that use only cross-phase fields (e.g., `tx.*`) must declare the phase explicitly:
 
 ```
-rule 901001 (phase: request_headers, severity: critical) {
+rule 901001 {
+  metadata {
+    phase = request_headers
+    severity = critical
+  }
   when count(tx.crs_setup_version) |> eq(0)
-  then deny(status: 500)
+  then deny {
+    status: 500
+  }
 }
 ```
 
 Key properties:
+
 - **Typed fields** with dot-notation and bracket access for maps
 - **Phase inference** from field types — no redundant phase metadata
 - **Pipeline operator** (`|>`) for chaining transformations and terminal predicates
@@ -124,7 +133,7 @@ Key properties:
 5. **Incremental adoption** — each phase delivers standalone value. The project does not
    need to complete all phases to be useful.
 
-6. **Engine independence** — CRSLang describes *what* to match, not *how* a specific
+6. **Engine independence** — CRSLang describes _what_ to match, not _how_ a specific
    engine implements it. Compilation targets (Coraza, ModSecurity, cloud WAFs) are
    separate concerns. Engine configuration (body limits, PCRE tuning, log paths) is
    explicitly out of scope — it belongs in engine-specific config files, not in the rule
@@ -144,7 +153,7 @@ support globals, groups, named function compositions, and boolean conditions. Th
 trade-off is maintenance cost vs syntactic control — and the answer determines how
 Phases 2-4 are designed.
 
-**Scope:** CRSLang describes *what to detect*, not *how to run the engine*. The ~60
+**Scope:** CRSLang describes _what to detect_, not _how to run the engine_. The ~60
 SecLang configuration directives (body limits, PCRE tuning, log paths, etc.) are
 explicitly out of scope. Only rule-adjacent metadata (component signature, default
 actions, markers, app ID) stays in the language.
@@ -171,14 +180,15 @@ See [ADR-0009: Language Base Evaluation](adr/0009-language-base-evaluation.md),
 
 Replace the split `variables` + `collections` model with a unified typed field namespace.
 
-| Current | New |
-|---|---|
-| `variables: [REQUEST_METHOD]` | `request.method` |
+| Current                                                             | New                               |
+| ------------------------------------------------------------------- | --------------------------------- |
+| `variables: [REQUEST_METHOD]`                                       | `request.method`                  |
 | `collections: [{name: REQUEST_HEADERS, arguments: [Content-Type]}]` | `request.headers["Content-Type"]` |
-| `collections: [{name: TX, arguments: [score], count: true}]` | `count(tx.score)` |
-| `variables: [REMOTE_ADDR]` | `client.ip` |
+| `collections: [{name: TX, arguments: [score], count: true}]`        | `count(tx.score)`                 |
+| `variables: [REMOTE_ADDR]`                                          | `client.ip`                       |
 
 Work:
+
 - Define a typed field registry mapping dotted names to types (String, Int, IP, Bytes, Map)
 - Build bidirectional mappings: SecLang variables/collections <-> field names
 - Update the IR to use `Field` instead of separate `Variable`/`Collection`
@@ -197,13 +207,14 @@ See [ADR-0001: Typed Field Namespace](adr/0001-typed-field-namespace.md) and
 
 Replace `chain` actions and implicit logic with explicit boolean expressions.
 
-| Current | New |
-|---|---|
-| Rule + `chain` + chained rule | `condition1 and condition2` |
-| Multiple conditions (implicit OR) | `condition1 or condition2` |
-| Negated operator | `not(condition)` |
+| Current                           | New                         |
+| --------------------------------- | --------------------------- |
+| Rule + `chain` + chained rule     | `condition1 and condition2` |
+| Multiple conditions (implicit OR) | `condition1 or condition2`  |
+| Negated operator                  | `not(condition)`            |
 
 Work:
+
 - Define `Expression` as recursive: `And(Expr, Expr)`, `Or(Expr, Expr)`, `Not(Expr)`,
   `Predicate(Pipeline)`
 - Eliminate `chain` as a concept
@@ -225,8 +236,8 @@ If the custom parser is chosen, a pipeline operator (`|>`) chains them left-to-r
 If HCL is chosen, named composition functions (macros) keep nesting shallow. Either way,
 reusable transform chains are defined once and invoked by name.
 
-| Current | New (custom) | New (HCL) |
-|---|---|---|
+| Current                                                                 | New (custom)                                                | New (HCL)                          |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------- |
 | `transformations: [lowercase, urlDecode]` + `operator: {name: rx, ...}` | `field \|> url_decode() \|> lowercase() \|> matches("...")` | `matches(normalize(field), "...")` |
 
 **Structured actions and scoring** — the action bag is replaced with a structured model.
@@ -238,13 +249,14 @@ Additionally, **anomaly scoring becomes first-class**: severity-derived scoring
 eliminates the `setvar` boilerplate from every attack detection rule. A rule just declares
 its severity, and the scoring model (defined in globals) handles the rest.
 
-| Current | New |
-|---|---|
+| Current                                        | New                                       |
+| ---------------------------------------------- | ----------------------------------------- |
 | `disruptive: block` + `setvar: "tx.score=+10"` | `severity: critical` (score auto-derived) |
-| Manual `setvar` per category | Category derived from group membership |
-| Complex phase-5 evaluation rules | `scoring_threshold { inbound = 5 }` |
+| Manual `setvar` per category                   | Category derived from group membership    |
+| Complex phase-5 evaluation rules               | `scoring_threshold { inbound = 5 }`       |
 
 Work:
+
 - Define a `Function` type with signature: name, args, return type
 - If custom: implement pipeline operator, language-level macros
 - If HCL: register function library (including Sprig), define macro blocks
@@ -261,12 +273,14 @@ See [ADR-0002: Pipeline Operator](adr/0002-pipeline-operator.md) (custom parser 
 Implement the text syntax based on the Phase 0 decision.
 
 Both approaches support the core structural requirements:
+
 - **Globals block** for version, common tags — inherited by all rules
 - **Group blocks** for file-level metadata — tags shared within a logical grouping
 - **Named function compositions** (macros) — reusable transform chains
 - **Boolean conditions** with custom functions for matching
 
 Work:
+
 - If HCL: define schema, register function library, design effects model
 - If custom: write lexer + recursive-descent parser, build function library
 - YAML becomes one serialization of the IR, not the canonical form
@@ -289,6 +303,7 @@ update rule 920170 {
 ```
 
 Work:
+
 - First-class exclusion syntax
 - Rule override/extension mechanism
 - Replace `SecRuleRemoveById`, `SecRuleUpdateTargetById`, etc.
@@ -321,6 +336,7 @@ Phase 5      Full language with rule management.
 ```
 
 At every phase:
+
 - Existing SecLang `.conf` files remain importable
 - Existing v1 YAML remains loadable (with deprecation warnings from Phase 2+)
 - The playground supports all active formats
@@ -328,20 +344,20 @@ At every phase:
 
 ## Architecture Decision Records
 
-| ADR | Phase | Title | Status |
-|-----|-------|-------|--------|
-| [0009](adr/0009-language-base-evaluation.md) | 0 | Language Base — HCL, CEL, Expr, or Custom | Proposed |
-| [0008](adr/0008-configuration-directives.md) | 0 | Separation of Configuration from Rule Language | Proposed |
-| [0010](adr/0010-multi-target-compilation.md) | 0 | Multi-Target Compilation Model | Proposed |
-| [0012](adr/0012-ruleset-initialization.md) | 0 | Ruleset Initialization and Deployment Configuration | Proposed |
-| [0001](adr/0001-typed-field-namespace.md) | 1 | Typed Field Namespace | Proposed |
-| [0007](adr/0007-phase-inference.md) | 1 | Phase Inference from Field Types | Proposed |
-| [0003](adr/0003-boolean-algebra.md) | 2 | Boolean Algebra Replacing Chains | Proposed |
-| [0002](adr/0002-pipeline-operator.md) | 3 | Pipeline Operator for Composition (conditional on 0009) | Proposed |
-| [0004](adr/0004-structured-actions.md) | 3 | Structured Action Model | Proposed |
-| [0011](adr/0011-first-class-scoring.md) | 3 | First-Class Scoring Model | Proposed |
-| [0005](adr/0005-parser-strategy.md) | 4 | Parser Strategy (see 0009 for decision) | Proposed |
-| [0006](adr/0006-rule-management.md) | 5 | Rule Management Directives | Proposed |
+| ADR                                          | Phase | Title                                                   | Status   |
+| -------------------------------------------- | ----- | ------------------------------------------------------- | -------- |
+| [0009](adr/0009-language-base-evaluation.md) | 0     | Language Base — HCL, CEL, Expr, or Custom               | Proposed |
+| [0008](adr/0008-configuration-directives.md) | 0     | Separation of Configuration from Rule Language          | Proposed |
+| [0010](adr/0010-multi-target-compilation.md) | 0     | Multi-Target Compilation Model                          | Proposed |
+| [0012](adr/0012-ruleset-initialization.md)   | 0     | Ruleset Initialization and Deployment Configuration     | Proposed |
+| [0001](adr/0001-typed-field-namespace.md)    | 1     | Typed Field Namespace                                   | Proposed |
+| [0007](adr/0007-phase-inference.md)          | 1     | Phase Inference from Field Types                        | Proposed |
+| [0003](adr/0003-boolean-algebra.md)          | 2     | Boolean Algebra Replacing Chains                        | Proposed |
+| [0002](adr/0002-pipeline-operator.md)        | 3     | Pipeline Operator for Composition (conditional on 0009) | Proposed |
+| [0004](adr/0004-structured-actions.md)       | 3     | Structured Action Model                                 | Proposed |
+| [0011](adr/0011-first-class-scoring.md)      | 3     | First-Class Scoring Model                               | Proposed |
+| [0005](adr/0005-parser-strategy.md)          | 4     | Parser Strategy (see 0009 for decision)                 | Proposed |
+| [0006](adr/0006-rule-management.md)          | 5     | Rule Management Directives                              | Proposed |
 
 ## Reference Languages
 

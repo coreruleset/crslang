@@ -9,13 +9,13 @@
 SecLang requires every rule to declare a numeric phase (1-5) that controls when the rule
 evaluates during request processing:
 
-| Phase | Name | Available data |
-|-------|------|----------------|
-| 1 | Request Headers | Method, URI, headers, cookies, query string args |
-| 2 | Request Body | POST body, file uploads, multipart data |
-| 3 | Response Headers | Response status, response headers |
-| 4 | Response Body | Response body content |
-| 5 | Logging | Post-processing (rarely used in rules) |
+| Phase | Name             | Available data                                   |
+| ----- | ---------------- | ------------------------------------------------ |
+| 1     | Request Headers  | Method, URI, headers, cookies, query string args |
+| 2     | Request Body     | POST body, file uploads, multipart data          |
+| 3     | Response Headers | Response status, response headers                |
+| 4     | Response Body    | Response body content                            |
+| 5     | Logging          | Post-processing (rarely used in rules)           |
 
 In CRSLang v1 phase is a string in metadata:
 
@@ -32,20 +32,20 @@ must be phase 4. The phase is already implied by the fields the rule references.
 
 With the typed field namespace from ADR-0001:
 
-| Field prefix | Implied phase | SecLang phase |
-|---|---|---|
-| `request.method`, `request.uri`, `request.protocol`, `request.line` | request_headers | 1 |
-| `request.headers[*]`, `request.cookies[*]` | request_headers | 1 |
-| `request.args.get[*]`, `request.args.get.names` | request_headers | 1 |
-| `request.body`, `request.args.post[*]`, `request.args[*]` | request_body | 2 |
-| `multipart.*`, `files.*` | request_body | 2 |
-| `response.status`, `response.protocol` | response_headers | 3 |
-| `response.headers[*]` | response_headers | 3 |
-| `response.body` | response_body | 4 |
-| `tx.*`, `ip.*`, `global.*`, `session.*` | any (cross-phase) | context-dependent |
-| `matched.*`, `rule.*` | any (cross-phase) | context-dependent |
-| `client.ip`, `server.*` | any (cross-phase) | context-dependent |
-| `time.*`, `env.*` | any (cross-phase) | context-dependent |
+| Field prefix                                                        | Implied phase     | SecLang phase     |
+| ------------------------------------------------------------------- | ----------------- | ----------------- |
+| `request.method`, `request.uri`, `request.protocol`, `request.line` | request_headers   | 1                 |
+| `request.headers[*]`, `request.cookies[*]`                          | request_headers   | 1                 |
+| `request.args.get[*]`, `request.args.get.names`                     | request_headers   | 1                 |
+| `request.body`, `request.args.post[*]`, `request.args[*]`           | request_body      | 2                 |
+| `multipart.*`, `files.*`                                            | request_body      | 2                 |
+| `response.status`, `response.protocol`                              | response_headers  | 3                 |
+| `response.headers[*]`                                               | response_headers  | 3                 |
+| `response.body`                                                     | response_body     | 4                 |
+| `tx.*`, `ip.*`, `global.*`, `session.*`                             | any (cross-phase) | context-dependent |
+| `matched.*`, `rule.*`                                               | any (cross-phase) | context-dependent |
+| `client.ip`, `server.*`                                             | any (cross-phase) | context-dependent |
+| `time.*`, `env.*`                                                   | any (cross-phase) | context-dependent |
 
 ### Phase-Ambiguous Fields
 
@@ -54,6 +54,7 @@ Some fields are available in all phases. When a rule uses **only** cross-phase f
 explicitly.
 
 In CRS, this pattern appears in:
+
 - Initialization rules (phase 1, TX-only) — e.g., rule 901001 checking
   `count(tx.crs_setup_version)`
 - Paranoia level skip rules (phase 1-4, TX-only) — e.g., rules 911011/911012 checking
@@ -63,7 +64,7 @@ In CRS, this pattern appears in:
 ## Decision
 
 **Phase is inferred from field references when unambiguous, and explicitly declared only
-when needed.**
+when needed. It can be overridden in metadata.**
 
 ### Inference Rules
 
@@ -75,11 +76,16 @@ when needed.**
 
 ### Conflict Detection
 
-If a rule references fields from multiple phases, that is a **compile-time error**:
+If a rule references fields from multiple phases, the inferred phase is the latest phase needed to have all referenced fields available:
+
+If a rule explicitly define a phase and references targets that are not available in that phase, it is a compile error:
 
 ```
-# ERROR: request.method is phase 1, response.body is phase 4
+# ERROR: response.body is not available in phase request_headers
 rule 999999 {
+  metadata {
+    phase = request_headers
+  }
   when request.method |> eq("GET")
    and response.body |> contains("error")
   then block
@@ -111,7 +117,11 @@ clarity, phase is declared in metadata:
 
 ```
 # Must declare phase — only TX fields used
-rule 901001 (phase: request_headers) {
+rule 901001 {
+  metadata {
+    phase = request_headers
+  }
+
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500)
 }
@@ -128,20 +138,13 @@ group "method_enforcement_pl1" (requires: paranoia >= 1) {
 
 CRSLang uses descriptive phase names instead of numbers:
 
-| CRSLang name | SecLang number |
-|---|---|
-| `request_headers` | 1 |
-| `request_body` | 2 |
-| `response_headers` | 3 |
-| `response_body` | 4 |
-| `logging` | 5 |
-
-The text syntax also accepts short forms for ergonomics:
-
-| Short form | Full name |
-|---|---|
-| `request` | `request_headers` (most common request phase) |
-| `response` | `response_headers` (most common response phase) |
+| CRSLang name       | SecLang number |
+| ------------------ | -------------- |
+| `request_headers`  | 1              |
+| `request_body`     | 2              |
+| `response_headers` | 3              |
+| `response_body`    | 4              |
+| `logging`          | 5              |
 
 ### Compilation to SecLang
 
@@ -182,6 +185,7 @@ available in phase 1, but POST parameters are only populated after phase 2 proce
 body.
 
 CRSLang resolves this:
+
 - `request.args.get` → unambiguously phase 1 (query string only)
 - `request.args.post` → unambiguously phase 2 (POST body only)
 - `request.args` (combined) → inferred as phase 2 (the latest phase needed to have
@@ -203,6 +207,7 @@ would produce false negatives on POST-based attacks.
 Keep phase as a required metadata field, even when it can be inferred.
 
 **Rejected because:**
+
 - Redundant in 80%+ of rules
 - Creates a maintenance burden: if a rule's targets change, the author must remember
   to update the phase
@@ -214,6 +219,7 @@ Keep phase as a required metadata field, even when it can be inferred.
 Always infer, error on TX-only rules that cannot be inferred.
 
 **Rejected because:**
+
 - TX-only rules are common in CRS (initialization, scoring, paranoia skipping)
 - Some rules intentionally run in specific phases for ordering reasons
 - Removes author control where it is legitimately needed
@@ -226,6 +232,7 @@ rule 901001 { ... }
 ```
 
 **Rejected because:**
+
 - Adds syntax weight for something that is usually inferred
 - Attributes/annotations are better reserved for cross-cutting concerns that affect
   many rules (e.g., `@deprecated`, `@disabled`)
@@ -239,7 +246,7 @@ rule 901001 { ... }
   becomes a compile error in CRSLang
 - Descriptive phase names (`request_headers`) are clearer than numeric phases (`1`)
 - Lossless round-trip to SecLang: the compiler maps inferred phases to numbers
-- Reduces cognitive load: authors think about *what* data to inspect, not *when* the
+- Reduces cognitive load: authors think about _what_ data to inspect, not _when_ the
   engine should inspect it
 
 ### Negative
