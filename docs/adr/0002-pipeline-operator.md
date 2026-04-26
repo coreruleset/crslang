@@ -70,12 +70,6 @@ request.headers["User-Agent"]
   |> matches("malicious-pattern")
 ```
 
-**Negation:**
-
-```
-request.headers["Content-Length"] |> matches("^0?$")
-```
-
 **Count:**
 
 ```
