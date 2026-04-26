@@ -5,9 +5,22 @@
 CRSLang aims to become a modern, composable rule language for web application firewalls.
 Today it is a YAML serialization of ModSecurity's SecLang AST. The goal is to evolve it
 into a standalone expression language where conditions are composed from typed fields,
-piped through transformation functions, and combined with boolean algebra — similar in
+transformed through composable functions, and combined with boolean algebra — similar in
 spirit to Cloudflare's Wirefilter or Google's CEL, but purpose-built for the CRS
 ecosystem.
+
+## Status
+
+This document and all linked ADRs describe a **proposed** design. No decisions have been
+ratified yet. Every ADR is in `Status: Proposed`. The framing throughout is "the design
+proposes X" rather than "X is decided" — even where the proposed direction reads
+declaratively for clarity.
+
+The most contested open decision is the **language base** (custom parser vs HCL — see
+[ADR-0009](adr/0009-language-base-evaluation.md)), which shapes how Phases 2–4 are
+expressed syntactically. The other Phase 0 ADRs (scope separation, multi-target
+compilation, ruleset initialization) are proposals with reasonable consensus but are
+still subject to revision.
 
 ## Current State
 
@@ -71,7 +84,9 @@ actions:
 
 ## Target State
 
-A rule in the new CRSLang should look like:
+A rule in the new CRSLang should look like (syntax shown uses the custom parser approach;
+the HCL approach expresses the same semantics with named composition functions — see
+Phase 3 and [ADR-0009](adr/0009-language-base-evaluation.md)):
 
 ```
 rule 920170 (severity: warning) {
@@ -91,16 +106,17 @@ the compiler emits `phase:1` automatically.
 Rules that use only cross-phase fields (e.g., `tx.*`) must declare the phase explicitly:
 
 ```
-rule 901001 (phase: request_headers, severity: critical) {
-  when count(tx.crs_setup_version) |> eq(0)
-  then deny(status: 500)
+rule 949110 (phase: logging, severity: critical) {
+  when tx.inbound_anomaly_score |> gt(tx.inbound_anomaly_score_threshold)
+  then deny(status: 403)
 }
 ```
 
 Key properties:
 - **Typed fields** with dot-notation and bracket access for maps
 - **Phase inference** from field types — no redundant phase metadata
-- **Pipeline operator** (`|>`) for chaining transformations and terminal predicates
+- **Composable functions** for chaining transformations and terminal predicates (pipeline
+  operator `|>` if custom parser; named macros if HCL — decided in Phase 0)
 - **Boolean algebra** (`and`, `or`, `not`, parentheses) replacing chains
 - **Structured action blocks** replacing the action bag
 - **Compile-time validation** — phase/field mismatches caught before deployment
@@ -126,41 +142,43 @@ Key properties:
 
 6. **Engine independence** — CRSLang describes *what* to match, not *how* a specific
    engine implements it. Compilation targets (Coraza, ModSecurity, cloud WAFs) are
-   separate concerns. Engine configuration (body limits, PCRE tuning, log paths) is
-   explicitly out of scope — it belongs in engine-specific config files, not in the rule
-   language (see [ADR-0008](adr/0008-configuration-directives.md)).
+   separate concerns. The proposal in [ADR-0008](adr/0008-configuration-directives.md)
+   places engine configuration (body limits, PCRE tuning, log paths) outside the rule
+   language, in engine-specific config files.
 
 ## Evolution Phases
 
 ### Phase 0: Foundational Decisions
 
-Two decisions must be made before any IR or syntax work begins, because they shape
-everything downstream.
+Four foundational topics need to be settled before IR or syntax work begins, because
+they shape everything downstream. The first is genuinely open; the other three have
+proposed directions that are still subject to revision.
 
-**Language base:** Should CRSLang adopt an existing language (HCL, with its Terraform
-ecosystem, Sprig function library, and zero parser maintenance) or build a custom parser
-(with pipeline operator, language-level macros, and full control)? Both approaches
-support globals, groups, named function compositions, and boolean conditions. The key
-trade-off is maintenance cost vs syntactic control — and the answer determines how
-Phases 2-4 are designed.
+**Language base (open):** Should CRSLang adopt an existing language (HCL, with its
+Terraform ecosystem, Sprig function library, and zero parser maintenance) or build a
+custom parser (with pipeline operator, language-level macros, and full control)? Both
+approaches support globals, groups, named function compositions, and boolean conditions.
+The key trade-off is maintenance cost vs syntactic control — and the answer determines
+how Phases 2-4 are designed. ADR-0009 lays out the comparison without picking a winner.
 
-**Scope:** CRSLang describes *what to detect*, not *how to run the engine*. The ~60
-SecLang configuration directives (body limits, PCRE tuning, log paths, etc.) are
-explicitly out of scope. Only rule-adjacent metadata (component signature, default
-actions, markers, app ID) stays in the language.
+**Scope (proposed):** CRSLang would describe *what to detect*, not *how to run the
+engine*. The ~60 SecLang configuration directives (body limits, PCRE tuning, log paths,
+etc.) would move out of scope; only rule-adjacent metadata (component signature, default
+actions, markers, app ID) would stay in the language.
 
-**Multi-target compilation:** CRSLang is not constrained by any single compilation
-target. Today it compiles to SecLang (ModSecurity/Coraza), but the architecture supports
-future backends for Google Cloud Armor (CEL), AWS WAF, Cloudflare (Wirefilter), and
-others. SecLang generation must be lossless for the CRS ruleset. Features that a target
-cannot express are handled by compiler workarounds or clear error messages.
+**Multi-target compilation (proposed):** CRSLang would not be constrained by any single
+compilation target. Today it compiles to SecLang (ModSecurity/Coraza); the proposed
+architecture leaves room for future backends targeting Google Cloud Armor (CEL), AWS WAF,
+Cloudflare (Wirefilter), and others. SecLang generation must remain lossless for the CRS
+ruleset. Features that a target cannot express are handled by compiler workarounds or
+clear error messages.
 
-**Ruleset initialization:** The `crs-setup.conf` + 901 rules two-layer init chain is
-replaced by a `config {}` block that holds user-tunable deployment policy (paranoia
-level, allowed methods, score thresholds, argument limits, etc.). The compiler generates
-all SecLang initialization output — no hand-authored 901 rules, no two-file split. The
-deployer copies `setup.crs.example` and edits it, replacing the current
-`crs-setup.conf.example` workflow.
+**Ruleset initialization (proposed):** The `crs-setup.conf` + 901 rules two-layer init
+chain would be replaced by a `config {}` block that holds user-tunable deployment policy
+(paranoia level, allowed methods, score thresholds, argument limits, etc.). The compiler
+would generate all SecLang initialization output — no hand-authored 901 rules, no
+two-file split. The deployer would copy `setup.crs.example` and edit it, replacing the
+current `crs-setup.conf.example` workflow.
 
 See [ADR-0009: Language Base Evaluation](adr/0009-language-base-evaluation.md),
 [ADR-0008: Separation of Configuration](adr/0008-configuration-directives.md),
@@ -190,8 +208,15 @@ compiler can derive the phase automatically and catch phase/field mismatches at 
 time. Phase is only required as explicit metadata for rules that use exclusively
 cross-phase fields (e.g., `tx.*`).
 
-See [ADR-0001: Typed Field Namespace](adr/0001-typed-field-namespace.md) and
-[ADR-0007: Phase Inference](adr/0007-phase-inference.md).
+Phase 1 also introduces a structured **documentation model** spanning four tiers
+(ruleset, group, rule, rule-management directive), with doc-comments for narrative
+prose and typed metadata fields for machine-readable content (references, FP notes,
+CWE/OWASP tags). Groups nest for conceptual sub-grouping; cross-cutting concepts like
+paranoia and severity get their own documentation blocks.
+
+See [ADR-0001: Typed Field Namespace](adr/0001-typed-field-namespace.md),
+[ADR-0007: Phase Inference](adr/0007-phase-inference.md), and
+[ADR-0013: Documentation Model](adr/0013-documentation-model.md).
 
 ### Phase 2: Boolean Algebra
 
@@ -242,7 +267,7 @@ its severity, and the scoring model (defined in globals) handles the rest.
 |---|---|
 | `disruptive: block` + `setvar: "tx.score=+10"` | `severity: critical` (score auto-derived) |
 | Manual `setvar` per category | Category derived from group membership |
-| Complex phase-5 evaluation rules | `scoring_threshold { inbound = 5 }` |
+| Complex phase-5 evaluation rules | `config { scoring { inbound_threshold = 5 } }` |
 
 Work:
 - Define a `Function` type with signature: name, args, return type
@@ -251,9 +276,15 @@ Work:
 - Redesign actions as structured model (disruptive + effects)
 - `ctl:` directives become `configure {}` blocks
 
+Phase 3 also introduces **macros** for reusable expression compositions (eliminating
+copy-pasted normalization chains and predicate patterns) and **external data sources**
+as first-class typed declarations (IP lists, regex sets, geo databases, regex assemblies).
+
 See [ADR-0002: Pipeline Operator](adr/0002-pipeline-operator.md) (custom parser path),
 [ADR-0004: Structured Action Model](adr/0004-structured-actions.md),
-[ADR-0011: First-Class Scoring](adr/0011-first-class-scoring.md), and
+[ADR-0011: First-Class Scoring](adr/0011-first-class-scoring.md),
+[ADR-0015: Macros and Named Compositions](adr/0015-macros-and-compositions.md),
+[ADR-0016: External Data Sources](adr/0016-external-data-sources.md), and
 [ADR-0009: Language Base Evaluation](adr/0009-language-base-evaluation.md).
 
 ### Phase 4: Text Syntax and Parser
@@ -273,7 +304,13 @@ Work:
 - SecLang import stays via existing ANTLR parser (read-only)
 - Update WASM/playground for the new syntax
 
-See [ADR-0005: Parser Strategy](adr/0005-parser-strategy.md) and
+Phase 4 also formalizes the **import and modularity** model: explicit `import`
+statements, hierarchical namespaces for groups/macros/data, and a single flat namespace
+for rule IDs. Multi-file rulesets gain predictable composition semantics, and packages
+(CRS itself, third-party rule packs) become first-class distribution units.
+
+See [ADR-0005: Parser Strategy](adr/0005-parser-strategy.md),
+[ADR-0014: Imports and Modularity](adr/0014-imports-and-modularity.md), and
 [ADR-0009: Language Base Evaluation](adr/0009-language-base-evaluation.md).
 
 ### Phase 5: Rule Management Directives
@@ -298,8 +335,11 @@ See [ADR-0006: Rule Management Directives](adr/0006-rule-management.md).
 ## Migration Strategy
 
 ```
-Phase 0      Decide language base (HCL vs custom) and scope (no engine config).
-             These decisions gate all subsequent work.
+Phase 0      Settle the four foundational topics: language base (HCL vs custom),
+             scope separation (engine config out of language), multi-target
+             compilation model, and ruleset initialization (config {} block
+             replacing crs-setup.conf + 901 rules). These decisions gate all
+             subsequent work.
 
 Phase 1      Internal IR changes: typed fields, phase inference.
              YAML syntax updated but backward-compatible.
@@ -336,12 +376,20 @@ At every phase:
 | [0012](adr/0012-ruleset-initialization.md) | 0 | Ruleset Initialization and Deployment Configuration | Proposed |
 | [0001](adr/0001-typed-field-namespace.md) | 1 | Typed Field Namespace | Proposed |
 | [0007](adr/0007-phase-inference.md) | 1 | Phase Inference from Field Types | Proposed |
+| [0013](adr/0013-documentation-model.md) | 1 | Documentation Model for Rules, Groups, and Rulesets | Proposed |
 | [0003](adr/0003-boolean-algebra.md) | 2 | Boolean Algebra Replacing Chains | Proposed |
 | [0002](adr/0002-pipeline-operator.md) | 3 | Pipeline Operator for Composition (conditional on 0009) | Proposed |
 | [0004](adr/0004-structured-actions.md) | 3 | Structured Action Model | Proposed |
 | [0011](adr/0011-first-class-scoring.md) | 3 | First-Class Scoring Model | Proposed |
+| [0015](adr/0015-macros-and-compositions.md) | 3 | Macros and Named Compositions | Proposed |
+| [0016](adr/0016-external-data-sources.md) | 3 | External Data Sources | Proposed |
 | [0005](adr/0005-parser-strategy.md) | 4 | Parser Strategy (see 0009 for decision) | Proposed |
+| [0014](adr/0014-imports-and-modularity.md) | 4 | Imports and Modularity | Proposed |
 | [0006](adr/0006-rule-management.md) | 5 | Rule Management Directives | Proposed |
+
+For structural concepts identified but not yet covered by an ADR (time/duration types,
+versioning annotations, function signatures, test attachment, persistent collections,
+capture groups, and others), see [TODO.md](TODO.md).
 
 ## Reference Languages
 

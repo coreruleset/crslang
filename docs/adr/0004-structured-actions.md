@@ -163,20 +163,24 @@ rule 941100 (severity: critical) {
 }
 ```
 
-**Pass with configuration** (setup-style rule, kept for illustrating direct TX
-assignment; note that ADR-0011 lifts `scoring_threshold` and global paranoia settings
-out of rules into a `globals` block):
+**Pass with TX assignment** (illustrative — for setup-style rules, paranoia level and
+score thresholds are no longer authored as TX assignments. Per ADR-0011 the severity
+table is in `globals { scoring {} }`, and per ADR-0012 the deployment thresholds and
+paranoia level are in the `config {}` block. The example below is kept to show direct
+TX assignment syntax for genuine custom-state rules, not as a template for setup):
 ```
 rule 900100 (phase: request_headers) {
   when true
   then pass {
-    tx.paranoia_level = 1
-    tx.anomaly_score_threshold = 5
+    tx.custom_flag = 1
+    tx.request_seen_at = unix_timestamp()
   }
 }
 ```
 
-**Deny with status:**
+**Deny with status** (illustrative example of a TX-only rule; rule 901001 itself is
+compiler-generated per ADR-0012, but the pattern still applies to user-authored
+TX-only rules):
 ```
 rule 901001 (phase: request_headers, severity: critical) {
   when count(tx.crs_setup_version) |> eq(0)
