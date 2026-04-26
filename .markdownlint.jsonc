@@ -1,0 +1,11 @@
+{
+  // MD040 (fenced-code-language) is disabled because the design docs in docs/
+  // contain CRSLang examples that use bare fences. CRSLang does not exist yet
+  // as a recognized language tag, and labeling these blocks with `text` would
+  // satisfy the linter without adding meaningful value to readers.
+  //
+  // Once CRSLang has a stable spec and editor tooling registers a language
+  // identifier, this can be re-enabled and the fences updated.
+  "default": true,
+  "MD040": false
+}

@@ -53,12 +53,18 @@ Some fields are available in all phases. When a rule uses **only** cross-phase f
 (e.g., only `tx.*` variables), the phase cannot be inferred and must be declared
 explicitly.
 
-In CRS, this pattern appears in:
+In CRS today, this pattern appears in:
 - Initialization rules (phase 1, TX-only) — e.g., rule 901001 checking
   `count(tx.crs_setup_version)`
 - Paranoia level skip rules (phase 1-4, TX-only) — e.g., rules 911011/911012 checking
   `tx.detection_paranoia_level`
 - Scoring evaluation rules (phase 5, TX-only) — evaluating accumulated anomaly scores
+
+Most of these specific patterns are eliminated by other proposals: initialization rules
+become compiler-generated (ADR-0012), paranoia skip rules are replaced by guarded groups
+(ADR-0006), and scoring evaluation is driven by `config { scoring {} }` (ADR-0012). The
+inference rules below still matter for the remaining cases — custom rules that read
+or write TX state across rules, and any cross-phase logic the user authors directly.
 
 ## Decision
 
@@ -107,7 +113,9 @@ rule 920170 {
 ### Explicit Phase Declaration
 
 When inference is not possible (TX-only rules) or when the author wants to override for
-clarity, phase is declared in metadata:
+clarity, phase is declared in metadata. The example below uses rule 901001 as a familiar
+illustration of the inference behavior; in practice 901001 itself is compiler-generated
+per ADR-0012, and explicit phase declaration applies to user-authored TX-only rules:
 
 ```
 # Must declare phase — only TX fields used
