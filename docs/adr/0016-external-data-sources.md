@@ -51,8 +51,25 @@ typed values, with operations dispatched based on the data type.
 ### Declaration Syntax
 
 ```
-data <name> from <source> type <type> [format <format>] [reload <policy>]
+data <name>
+  (from <source> | values [...])
+  [checksum  <"sha256:hex">]
+  [signed_by <"key-file">]
+  type <type>
+  [format <format>]
+  [reload <policy>]
+  [managed_by_engine]
 ```
+
+URL sources require at least one of `checksum` or `signed_by` (both may be present).
+File and inline sources accept `checksum` as an optional integrity check; `signed_by`
+is meaningful only for URL sources.
+
+The `managed_by_engine` clause marks the data as provided and lifecycle-managed by
+the engine (see [Engine-Managed vs Compiled-In](#engine-managed-vs-compiled-in)).
+When present, the compiler validates the declaration but does not embed or fetch
+the data; the engine resolves it at runtime. `managed_by_engine` is mutually
+exclusive with `reload` (the engine owns the reload policy).
 
 Examples:
 
@@ -113,11 +130,50 @@ Three source forms:
    (per ADR-0014's path resolution rules).
 2. **`values [...]`** — inline literal values; no file involved. Useful for short
    allowlists.
-3. **`from <url>`** — load from a URL (HTTPS only). URL sources **must** declare a
-   checksum using a sibling `checksum` field whose value is `sha256:<hex>`.
-   Example:
+3. **`from <url>`** — load from a URL (HTTPS only). URL sources require integrity
+   verification via one of two mechanisms (or both):
 
-   
+   - **`checksum "sha256:<hex>"`** — pin the payload to a specific content hash.
+     Suitable for *content-pinned* URLs where the bytes at the URL never change
+     (e.g., versioned releases like `crs-rules/4.18.0/sqli.ra`). Compatible with
+     `reload static` and `reload on_startup`. **Not** compatible with `reload
+     interval` or `reload on_change`, because a live-updating feed will fail
+     verification on the first reload — the checksum pins specific bytes, and
+     updates necessarily change those bytes.
+
+   - **`signed_by "<key-file>"`** — verify each fetch against a detached signature
+     served alongside the payload (conventionally at `<url>.sig`). The key file is a
+     path within the package (vendored as part of the deployment). Suitable for
+     live feeds because the signer is pinned, not the content — each new payload
+     can carry a fresh signature.
+
+   At least one of `checksum` or `signed_by` is required for URL sources. Both may
+   be declared together (the compiler verifies both).
+
+   ```
+   # Pinned: a versioned release URL where bytes never change at this path
+   data sqli_assembly
+     from     "https://example.com/crs-rules/4.18.0/sqli.ra"
+     checksum "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+     type     regex_set
+     format   regex_assembly
+     reload   on_startup
+
+   # Live feed: signer is pinned, content updates between reloads
+   data threat_feed
+     from      "https://intel.example.com/feeds/blocklist.txt"
+     signed_by "data/threat_feed.pubkey.pem"
+     type      ip_list
+     format    line_separated
+     reload    interval: 1h
+   ```
+
+   For `checksum`-verified sources, the compiler verifies at compile time (and
+   again on each reload, where the policy allows) and fails the build or reload on
+   mismatch. For `signed_by` sources, the compiler verifies the detached signature
+   at every fetch; a failed verification keeps the previously loaded copy in place
+   and emits a runtime error log.
+
 ### Format Hints
 
 The `format` keyword tells the compiler how to parse the source. Defaults are inferred
@@ -336,9 +392,12 @@ Look for `*.txt`, `*.ra`, `*.mmdb` files in conventional directories and auto-im
 - **Hot-reload semantics across targets** — `reload on_change` works for Coraza
   (file watch) but not Cloud Armor (requires API push). Compiler reports unsupported
   policies per target; deployer handles target-specific provisioning.
-- **Source authenticity** — pulling data from URLs requires checksum verification
-  to prevent supply-chain attacks. The language enforces checksum declaration for
-  URL sources; without it, the compile fails.
+- **Source authenticity** — pulling data from URLs requires integrity verification
+  to prevent supply-chain attacks. The language enforces this by requiring at least
+  one of `checksum` (for content-pinned URLs) or `signed_by` (for live feeds) on
+  every URL source; without one, the compile fails. The choice between the two is
+  governed by the reload policy — pinned checksums are incompatible with live
+  reloads, since content updates necessarily change the hash.
 - **Large static data** — a 10MB IP list compiled into a SecLang `@ipMatchFromFile`
   is fine, but if the compiler tries to inline it as a regex literal, performance
   craters. Size thresholds for inline-vs-file decisions are needed.
