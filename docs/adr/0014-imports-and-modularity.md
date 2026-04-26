@@ -122,7 +122,10 @@ rule 999100 (severity: critical) {
 ```
 
 Within a file, names resolve in this order: local declarations → aliased imports →
-unaliased imports (last-import-wins on collision, with a compile-time warning).
+unaliased imports. If two unaliased imports define the same name, that is a
+compile-time error. Warnings apply only when a higher-precedence name (for example,
+a local declaration or aliased import) shadows a name that would otherwise be
+available from an unaliased import.
 
 ### Load Order
 

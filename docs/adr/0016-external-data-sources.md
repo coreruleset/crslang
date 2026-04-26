@@ -113,9 +113,11 @@ Three source forms:
    (per ADR-0014's path resolution rules).
 2. **`values [...]`** — inline literal values; no file involved. Useful for short
    allowlists.
-3. **`from <url>`** — load from a URL (HTTPS only, with checksum verification). Used
-   for shared threat-intel feeds. Engine-dependent: not all targets support this.
+3. **`from <url>`** — load from a URL (HTTPS only). URL sources **must** declare a
+   checksum using a sibling `checksum` field whose value is `sha256:<hex>`.
+   Example:
 
+   
 ### Format Hints
 
 The `format` keyword tells the compiler how to parse the source. Defaults are inferred
@@ -201,7 +203,7 @@ Parse errors fail the compilation with file:line context.
 |---|---|
 | `client.ip in <ip_list>` | `@ipMatchFromFile path` (file emitted alongside `.conf`) |
 | `field \|> matches_any(<regex_set>)` | `@rxFromFile path` |
-| `field \|> in_set(<string_set>)` | `@pmFromFile path` |
+| `field in <string_set>` | `@pmFromFile path` |
 | `geo_country(client.ip)` | `@geoLookup` + reference to `GEO:COUNTRY_CODE` |
 | Inline `values [...]` (small) | Expanded to a regex literal |
 | Inline `values [...]` (large) | Emitted as a generated file |
