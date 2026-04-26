@@ -64,7 +64,7 @@ grouping.
 ### Syntax
 
 ```
-rule 920170 (phase: request_headers) {
+rule 920170 {
   metadata {
     phase: request_headers
   }

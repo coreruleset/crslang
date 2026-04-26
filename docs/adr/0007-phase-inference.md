@@ -76,11 +76,20 @@ when needed. It can be overridden in metadata.**
 
 ### Conflict Detection
 
-If a rule references fields from multiple phases, the inferred phase is the latest phase needed to have all referenced fields available:
+If a rule references fields from multiple phases, the inferred phase is the latest phase needed to have all referenced fields available. For example, a rule referencing both `request.headers` (phase 1) and `request.body` (phase 2) is inferred as `request_body`:
 
-If a rule explicitly define a phase and references targets that are not available in that phase, it is a compile error:
-
+```text
+# Phase is inferred as request_body (latest of request_headers and request_body)
+rule 920180 {
+  when request.headers["Content-Type"] |> matches("^application/json")
+   and request.body |> contains("malicious")
+  then block
+}
 ```
+
+If a rule explicitly declares a phase and references targets that are not available in that phase, it is a compile error:
+
+```text
 # ERROR: response.body is not available in phase request_headers
 rule 999999 {
   metadata {
@@ -100,7 +109,7 @@ at compile time.
 
 When a rule mixes phase-specific and cross-phase fields, the phase-specific field wins:
 
-```
+```text
 # Phase is inferred as request_headers (from request.method)
 # tx.anomaly_score is cross-phase, so it does not affect inference
 rule 920170 {
@@ -115,7 +124,7 @@ rule 920170 {
 When inference is not possible (TX-only rules) or when the author wants to override for
 clarity, phase is declared in metadata:
 
-```
+```text
 # Must declare phase — only TX fields used
 rule 901001 {
   metadata {
@@ -151,7 +160,7 @@ CRSLang uses descriptive phase names instead of numbers:
 When exporting to SecLang, the compiler maps inferred or declared phases back to numeric
 values. This is lossless:
 
-```
+```text
 # CRSLang (phase inferred from request.headers)
 rule 920170 {
   when request.headers["Content-Type"] |> matches("^application/json")
@@ -165,9 +174,12 @@ SecRule REQUEST_HEADERS:Content-Type "@rx ^application/json" \
 
 For rules with explicit phase:
 
-```
+```text
 # CRSLang
-rule 901001 (phase: request_headers) {
+rule 901001 {
+  metadata {
+    phase = request_headers
+  }
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500)
 }
@@ -226,7 +238,7 @@ Always infer, error on TX-only rules that cannot be inferred.
 
 ### C: Phase as a rule attribute, not metadata
 
-```
+```text
 @phase(request_headers)
 rule 901001 { ... }
 ```

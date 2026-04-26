@@ -41,7 +41,7 @@ transformations and operators become functions connected by the pipeline.
 
 ### Syntax
 
-```
+```text
 field |> transform1() |> transform2() |> predicate("pattern")
 ```
 
@@ -56,13 +56,13 @@ The pipeline reads left-to-right:
 
 **Simple match:**
 
-```
+```text
 request.uri |> matches("^/admin")
 ```
 
 **Transformation chain:**
 
-```
+```text
 request.headers["User-Agent"]
   |> url_decode()
   |> lowercase()
@@ -72,13 +72,13 @@ request.headers["User-Agent"]
 
 **Count:**
 
-```
+```text
 count(tx.crs_setup_version) |> eq(0)
 ```
 
 **IP matching:**
 
-```
+```text
 client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 ```
 
@@ -144,7 +144,7 @@ client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 
 The pipeline enables static type checking:
 
-```
+```text
 # Valid: String -> String -> String -> Bool
 request.uri |> lowercase() |> url_decode() |> matches("pattern")
 
@@ -157,7 +157,7 @@ request.headers["Content-Length"] |> length() |> gt(100)
 
 Type errors are caught at parse time with clear messages:
 
-```
+```text
 Error: lowercase() expects String input, got Int from 'response.status'
 ```
 
@@ -194,14 +194,14 @@ when:
 
 ### A: Nested Function Calls (Wirefilter-style)
 
-```
+```text
 matches(lowercase(url_decode(request.headers["User-Agent"])), "pattern")
 ```
 
 **Viable with macros (see ADR-0009).** The original concern about deep nesting dissolves
 when named composition functions keep calls at 1-2 levels:
 
-```
+```text
 # Without macros: 4 levels deep, hard to read
 matches(lowercase(url_decode(js_decode(request.args))), "pattern")
 
@@ -223,7 +223,7 @@ are essential to keep conditions readable.
 
 ### B: Method Chaining (CEL-style)
 
-```
+```text
 request.headers["User-Agent"].urlDecode().lowercase().matches("pattern")
 ```
 
@@ -236,7 +236,7 @@ request.headers["User-Agent"].urlDecode().lowercase().matches("pattern")
 
 ### C: Unix Pipe (`|`)
 
-```
+```text
 request.uri | lowercase | matches("pattern")
 ```
 

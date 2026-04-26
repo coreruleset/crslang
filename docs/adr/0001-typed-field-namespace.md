@@ -104,7 +104,7 @@ Each field has a declared type:
 | `IP`           | IP address (v4/v6)          | `client.ip`, `server.ip`                      |
 | `Bytes`        | Raw byte sequence           | `request.body`, `response.body`               |
 | `Map[String]`  | String-keyed map of strings | `request.headers`, `request.args`             |
-| `List[String]` | Ordered list of strings     | `request.headers.names`, `request.args.names` |
+| `List[String]` | Ordered list of strings     | `request.headers.keys`, `request.args.keys`   |
 | `Bool`         | Boolean                     | (future: computed fields)                     |
 
 ### Map Access

@@ -46,7 +46,7 @@ and reports clear errors for unsupported features.
    ModSecurity/Coraza today), not a language constraint.
 
 3. **Graceful degradation** — when a CRSLang feature has no equivalent in a target:
-   - By default, the compiler tries to compile all rules for the target backend, however if a rule has the properties `backends` specified, the compiler will only attempt to compile it if the target is included in the list. This allows CRS consumers to know which rules are expected in their target and which are not.
+   - By default, the compiler tries to compile all rules for the target backend, however if a rule has the `backends` metadata property specified (planned — not yet implemented), the compiler will only attempt to compile it if the target is included in the list. This allows CRS consumers to know which rules are expected in their target and which are not.
    - If there's a workaround (e.g., OR → multiple rules with scoring for SecLang),
      the compiler applies it automatically.
    - If there's no workaround, the compiler emits a clear error: "Feature X is not

@@ -86,6 +86,8 @@ rule 920170 {
 }
 ```
 
+The `severity = warning` metadata automatically drives anomaly scoring — no manual `setvar`/`tx.anomaly_score` adjustments are needed. (See ADR-0011 for the first-class scoring model.)
+
 The phase is not declared — it is inferred as `request_headers` (SecLang phase 1) from
 the `request.method` and `request.headers` field references. When exported to SecLang,
 the compiler emits `phase:1` automatically.
