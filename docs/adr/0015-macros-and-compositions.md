@@ -98,11 +98,14 @@ compile error.
 
 Macros live at three scope levels:
 
-1. **File scope** — declared at the top of a file, visible only within that file.
+1. **File scope** — declared at the top of a file. Visible directly within the
+   declaring file, and visible to other files in the same package only when those
+   files explicitly `import` the declaring file (per ADR-0014).
 2. **Group scope** — declared inside a group, visible only within that group and any
    nested groups.
-3. **Package scope** — exported by a package's `package.crs`, visible to importers
-   under the package's namespace (per ADR-0014).
+3. **Package scope** — declared with `export` (see [Exports](#exports) below), making
+   the macro visible to consumers that import the package as a whole, under the
+   package's namespace (per ADR-0014).
 
 ```
 # package.crs (CRS distribution)
@@ -166,8 +169,10 @@ use is determined by ADR-0014's namespacing rules:
 | Group scope inside nested groups `outer.inner` | `crs.outer.inner.<macro_name>` |
 
 `export` does not affect visibility *within* the package — a non-exported macro is
-still usable by other files in the same package per the normal scoping rules. The
-keyword only controls visibility *across* the package boundary.
+still usable by other files in the same package via an explicit `import` of the
+declaring file (per ADR-0014). The keyword only controls visibility *across* the
+package boundary, i.e., whether consumers that `import package "<name>"` can
+reference the macro under the package namespace.
 
 #### Default visibility rationale
 
@@ -276,6 +281,7 @@ The macro concept is the same in both language bases (Phase 0 / ADR-0009), but t
 surface differs:
 
 **Custom parser:**
+
 ```
 macro deep_normalize(input: string) = input
   |> utf8_to_unicode()
@@ -286,24 +292,29 @@ macro deep_normalize(input: string) = input
 **HCL:**
 
 HCL doesn't have first-class parameterized macros. Two options:
+
 - Use `locals` with no parameters (function-call equivalents):
+
   ```hcl
   locals {
     safe_methods_pattern = "^(?:GET|HEAD|OPTIONS)$"
   }
   ```
+
 - Add a custom `macro` block via HCL extension (the project already extends HCL with
   custom block types):
+
   ```hcl
   macro "deep_normalize" {
     param "input" { type = string }
     body  = "url_decode(html_entity_decode(remove_nulls(input)))"
   }
   ```
+
   HCL's `templatefile()` and `function()` extension mechanisms make this feasible.
 
 The IR is identical regardless of surface — both forms produce the same
-`MacroDeclaration` and `MacroCall` AST nodes.
+`MacroDecl` and `MacroCall` AST nodes.
 
 ### Macro vs Function Distinction
 
