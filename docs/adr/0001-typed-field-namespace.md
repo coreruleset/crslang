@@ -107,6 +107,16 @@ Each field has a declared type:
 | `List[String]` | Ordered list of strings | `request.headers.names`, `request.args.names` |
 | `Bool` | Boolean | (future: computed fields) |
 
+@theseion: when matching IP addresses, it's helpful to know what kind they are. From a rule writers perspective, I'd like to write:
+```
+if isIpv6(ip) {
+  matchIpV6(ip)
+} else {
+  matchIpV4(ip)
+}
+```
+In this case, we would need two types for IP, or a helper function, or a boolean field on the "IP collection" (i.e., `ip.isV6`).
+
 ### Map Access
 
 Map-typed fields support:
@@ -131,6 +141,9 @@ exclude rule 942100 target request.args["passwd"]
 
 This separates the rule definition (what to detect) from deployment customization (which
 fields to skip), matching how CRS already works in practice.
+
+@theseion: I agree for user customizations. However, we sometimes need to do this as part of the rule definition, e.g., to test all headers except `Referer`, because 
+the `Referer` header needs special handling. I wouldn't want to separate that information from the rule definition.
 
 ### Count as a Function
 
@@ -230,3 +243,6 @@ completion.
   and get community buy-in before implementation.
 - **Incomplete coverage** — some obscure SecLang variables may not map cleanly.
   Maintain an `engine.*` escape hatch namespace for engine-specific fields.
+
+@theseion: we could allow aliases. SecLang users could continue to use the SecLang names (but with the new syntax), while we start changing the names for CRSLang.
+At some point, we could introduce a deprecation warning and offer an automatic update of the deprecated names to the new ones.

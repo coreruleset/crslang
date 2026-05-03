@@ -140,6 +140,10 @@ client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 | `rbl(server)` | IP -> Bool | `@rbl` |
 | `geo_lookup()` | IP -> Bool | `@geoLookup` |
 
+@theseion: I see a mismatch here between operators like `eq()` and boolean functions like `not()`. From the examples, `not()` must be given a pipeline as arugment,
+but conceptually, I think `not()` should work like `eq()` does in the example above, as a function that takes the output of a pipeline as input:
+`request.headers["Content-Length"] |> matches("^0?$")) |> not()`.
+
 ### Type Checking
 
 The pipeline enables static type checking:
@@ -176,6 +180,8 @@ type FunctionCall struct {
 }
 ```
 
+@theseion: see above: the flag for pipeline negation would not be necessary if `not()` could be part of the pipeline
+
 ### YAML v2 Representation (intermediate)
 
 ```yaml
@@ -211,6 +217,9 @@ detect_sqli(normalize(request.args))
 If HCL is chosen as the language base (ADR-0009 Option A), nested function calls are the
 only available syntax — HCL's grammar cannot be extended with `|>`. In that path, macros
 are essential to keep conditions readable.
+
+@theseion: as written above, I quite like the way pipelines work in Go's `text/template` library, where the first input argument to a function is either
+explicit or is the output of a pipline ('|').
 
 **Trade-offs vs pipeline:**
 - Reads inside-out for ad-hoc chains (without macros), which is opposite to CRS authors'
@@ -252,12 +261,29 @@ request.uri | lowercase | matches("pattern")
 - Easy to add new functions without syntax changes
 - Pipeline can be serialized to any format (YAML, text, JSON)
 
+@theseion: some transformation functions are only helpful in some contexts. It would be extremely helpful if, in the future, to have more generic transformation
+functions than `removeWhitespace` or `cmdline`. For example, `replaceTokens` could (potentially) replace both transformations but requires that rule writers can
+specify the tokens to replace and the replacement. This would also help with "function explosion", but, of course, depends on the engines.
+
 ### Negative
 
 - New syntax to learn (`|>` is not universally known)
 - Function naming must be carefully designed — once published, names are hard to change
 - Some SecLang operators don't fit the function model cleanly (e.g., `@inspectFile`
   which is really a side-effect)
+@theseion: we could "fix" functions with side-effects by allowing them only in a special context. For example:
+```
+request.uri |> lowercase() |> useSideEffect()
+value = sideEffectFunction("filename.sh")
+if eq(value, "error") {
+  ...
+} else if eq(value, false) {
+  block
+}
+```
+`useSideEffect()` would return `true` and tell the compiler to expect a "side-effect function" next, like `inspectFile()`. This would also (theoretically)
+enable us to move the decision logic from external programs to the rule. An external program would simply make an evaluation and return a value that
+the rule can use to make a decistion (probably far to complicated to actually implement and use).
 
 ### Risks
 

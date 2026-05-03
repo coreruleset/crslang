@@ -180,6 +180,9 @@ would generate all SecLang initialization output — no hand-authored 901 rules,
 two-file split. The deployer would copy `setup.crs.example` and edit it, replacing the
 current `crs-setup.conf.example` workflow.
 
+@theseion: this last sentence is confusing to me. Todays workflow is to copy `crs-setup.conf.example` and edit it. So how does that differ from the new workflow?
+I my mind, users would get a complete config file as output from a potentially parameterized run of the transpiler.
+
 See [ADR-0009: Language Base Evaluation](adr/0009-language-base-evaluation.md),
 [ADR-0008: Separation of Configuration](adr/0008-configuration-directives.md),
 [ADR-0010: Multi-Target Compilation](adr/0010-multi-target-compilation.md), and

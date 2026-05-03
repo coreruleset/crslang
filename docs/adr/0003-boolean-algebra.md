@@ -56,6 +56,10 @@ chainedRule:
 5. **No grouping** — you cannot express `(A AND B) OR (C AND D)` in SecLang. CRS works
    around this with separate rules and anomaly scoring.
 
+@theseion: also:
+- some actions must be specified in the starter rule, others in the terminating chain, which is very confusing.
+- variable can change unexpectedly in a chain, e.g. when evaluating multiple targets, or using `capture`
+
 ## Decision
 
 Replace chains with **explicit boolean algebra**: `and`, `or`, `not`, with parenthesized
@@ -164,6 +168,14 @@ when request.headers["Range"] |> capture("(\\d+)-(\\d+)")
  and request.method |> eq("GET")
 then block { tx.inbound_anomaly_score_pl1 += tx.critical_anomaly_score }
 ```
+@theseion: as I commented in ADR-0002, side-effects could maybe be made explicit in the action block. E.g.:
+```
+when request.headers["Range"] |> matches("(\\d+)-(\\d+)")
+ and request.method |> eq("GET") |> useSideEffect()
+capture()
+then block { tx.inbound_anomaly_score_pl1 += tx.critical_anomaly_score }
+```
+
 
 The `capture()` function both tests the regex and stores the match groups. It is a
 predicate with a side-effect — similar to how `matches()` works, but additionally
@@ -270,6 +282,9 @@ rule 901320 (phase: request) {
   }
 }
 ```
+
+@theseion: this actually matches quite well with my idea of `useSideEffect` but is much cleaner. In addition, if we support multiple `let` per rule, we can
+could potentially merge some rules, where one rule sets a variable on `tx` that is later read by another rule.
 
 - Separates data flow from conditions cleanly.
 - `let` bindings are evaluated eagerly, before the `when` clause.
@@ -396,6 +411,15 @@ default is first-match semantics.
 
 `multiMatch` is rarely used in CRS, so Option A is sufficient for the foreseeable
 future. Options B/C can be revisited if use cases emerge.
+
+@theseion: the example shows logging as a good example of something that is distinct from scoring. Users could potentially add a rule for auditing only, that
+does not change the score but only logs matches.
+
+I also think the `each()` wrapper is misleading. If I don't know the language, I might presume that I need to use `each()` to iterate over a collection, in general.
+I would prefer a more expressive approach. For CRS maintainers, the complexity in reading / explaining rules consumes a lot of time. Making the rules more expressive and
+unumbiguous would be preferrable from that point of view.
+
+@theseion: BTW, why do we use functions for everything but make an exception for increment / decrement / assignment? Might remove some complexity from the parser.
 
 ### String Interpolation
 

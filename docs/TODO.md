@@ -30,6 +30,8 @@ Design questions:
 
 Cross-references: ADR-0004 (effects/expire), ADR-0016 (reload policies).
 
+@theseion: depending on the complexity, ISO 8601 offers a well established syntax.
+
 ### 2. Versioning and Lifecycle Annotations — Open
 Proposed: ADR-0018
 
@@ -46,6 +48,12 @@ Design questions:
 
 Cross-references: ADR-0006 (rule management), ADR-0013 (documentation), ADR-0014
 (package versioning).
+
+@thesesion:
+- deprecation might depend on something, e.g., a platform or framemwork; we might need a way to declare such dependencies
+- migration trail: we could take a hint from git and give rules a parent - child relationship. We migth also want to consider
+  sibling relationships (similar rule at different PL) and family relationships (same group, e.g. RCE) (though families will
+  probably already be covered by another mechanism, e.g., grouping)
 
 ### 3. Function Signatures and Type System — Partially covered
 Proposed: ADR-0019
@@ -81,6 +89,9 @@ Design questions:
 Cross-references: ADR-0013 (documentation), ADR-0014 (package distribution — tests
 ship with the package).
 
+@theseion: we also have test overrides and platform overrides. At least when transpiling, the result should contain the tests with the platform
+overrides applied for the selected platform. Where would platform overrides live in the future?
+
 ### 5. Persistent Collections (IP, GLOBAL, SESSION, USER) — Partially covered
 Proposed: ADR-0021
 
@@ -101,6 +112,9 @@ Design questions:
 
 Cross-references: ADR-0001 (field namespace), ADR-0003 (boolean algebra has a
 901320 example using initcol), ADR-0010 (multi-target portability).
+
+@theseion: sounds like we need some form of abstraction for these. Even more so, as these things are engine-specific and shouldn't
+be part of CRS (not in this form at least), if possible.
 
 ### 6. Capture Groups and Pattern Bindings — Partially covered
 Proposed: ADR-0022
@@ -173,6 +187,37 @@ scoring (ADR-0011), is undecided.
 
 Likely resolution: extend ADR-0011's scoring table to allow custom severities with
 declared point values.
+
+### 14. Rule reuse – Open
+
+@theseion
+
+When I thinking about conditional effects (9), I thought it might be interesting for longer cunjunctive logical chains. For example, imagine a chain of 4 conditions that increasingly narrow the scope of detection,
+e.g.,:
+- matches `wp-admin.php`
+- has a suspect user agent string
+- has a suspect IP
+- uses suspect encoding
+
+We could bail out after each condition and set an increasing scoring value. However, that is basically how CRS already works, only that rules stand for themselves.
+
+Thinking on this further, a rule like "has suspect IP match" here could be reused in other contexts, even as a standalone rule. But we wouldn't want to duplicate the rule.
+Instead, it would be nice if we could reference the rule and use it multiple times with a single definition. In the future, engines could cache the result of reused rules.
+For the example above, if the first two conditions match, the IP rule would be run and the result would be cached (the reference could maybe use it's on scoring,
+as it may differ for the reference case; the standalone rule might use +5, the chained rule might use +1 as part of the chain). The same IP rule later, standalone, would 
+then run with the cached result (no second evaluation necessary).
+
+Pros:
+- rule reuse
+- detection composition
+- more precise detection (?)
+- better "fuzzy" matching, i.e., composition of weak signals is easier because they can be grouped together
+- Changing the rule definition affects all references
+
+Cons:
+- increased complexity in rule writing, reading, transpilation, and for engines
+- the volume of rules to choose from makes it hard to choose a rule to reuse
+- Changing the rule definition affects all references
 
 ## Cross-Cutting Notes
 

@@ -76,6 +76,8 @@ exclude rules where severity == critical
 exclude rules where tag == "OWASP_CRS/SQL_INJECTION" and phase == request
 ```
 
+@theseion: `==` is not an operator, `eq()` is though: `exclude rules where severeity |> eq("critical")`?
+
 ### Target-Level Exclusions (Shorthand)
 
 The most common CRS user customization is "disable rule X for argument Y" — a
@@ -122,7 +124,22 @@ update rule 920170 {
 update rules where tag == "OWASP_CRS/SQL_INJECTION" {
   remove target request.args["search_query"]
 }
+
 ```
+
+@theseion: rule exclusion plugins could profit from additional control. For example, there's often a need to remove the same targets from a bunch of rules.
+It would be nice if the `update` block would support that scenario, e.g.:
+```
+update {
+  123456
+  123457
+  ...(30 more rules)
+} do {
+  remove targets request.headers["X-Custom"], ...(10 more targets)
+}
+```
+It would be helpful if rule IDs and targets could be put on individual lines for improved readability.
+
 
 ### Update Actions
 
