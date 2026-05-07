@@ -160,6 +160,9 @@ correctly: D is loaded once.
 | Local name shadows imported name | Compile-time warning; local wins |
 | Two unaliased imports define the same name | Compile-time error |
 
+
+@theseion: duplicate aliases should raise a compile time error, right?
+
 Conflicts are never silent. Authors must either rename, alias, or use the rule-management
 directives (ADR-0006) to express override intent explicitly.
 
@@ -195,6 +198,8 @@ group "myorg.custom_payment_protection" {
 
 The `exclude` and `update` directives in `main.crs` reference imported names by
 fully-qualified path. The upstream package files are never modified.
+
+@theseion: I don't understand this sentence. Where is the "fully-qualified path" in the example above?
 
 ### Distribution Model
 
@@ -232,7 +237,15 @@ import "setup.crs"          # deployer-edited config
 
 # Optional deployer-specific rules
 import "custom/payment.crs"
+
 ```
+
+@theseion: shouldn't we then ship a `main.crs.example` as well?
+That being said, we could generate both `setup.crs` and `main.crs` directly as transpiler output instead.
+
+I think I might be confused by how this package concept relates to the current structure of CRS. If I understand correctly, `main.crs` and `setup.crs` would be
+inputs for the transpiler, correct? Based on the imports, the generated SecLang representations may, for example, only include some of the `9xx-REQUEST-xx.conf` files.
+I think an example that explains how the package relates to the generated SecLang representation would be very helpful here.
 
 ### Compilation Output
 

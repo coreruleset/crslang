@@ -372,6 +372,10 @@ rule 942100 (severity: critical) {
 The structured fields still appear (references, false_positives) but as top-level
 metadata or alongside metadata, not inside a separate `doc {}` block.
 
+@theseion: I prefer such a structured approach. With the banner comment the rule ID is below the comment, but I feel it should be before the comment to
+make it clear that the comment belongs to a rule and to force authors to consider the comment when reading / editing a rule.
+The banner comment also feels like something "tacked on" to CRSLang because we couldn't figure out a better way. Why is this the only unstructured thing?
+
 ### D: Comments as data (parse SecLang `#` comments and surface them)
 
 Treat existing `#` comments as the documentation source; no new constructs.
@@ -432,3 +436,11 @@ Reuse the existing `tags:` array for everything: `tag:cwe/89`, `tag:fp/admin-ui`
 - **Schema growth** — structured fields (`references`, `false_positives`, `cwe`,
   `owasp`, etc.) will accumulate over time. The IR's `Fields map[string]Value` keeps
   this open-ended; the spec documents which fields are recognized by core tooling.
+
+
+@theseion:
+- I would like to have some support for the regex-assembly comment that we currently put on every rule that uses regex-assembly.
+  Or would we only reference assembly files in CRSLang and omit the assembly files from the target? Then we don't need the comment at all.
+- (sibling / parent relationships - should be made explicit)
+- (IMO, docs should be mandatory, with some fields being mandatory as well (e.g., `siblings`, should be mandatory, even if empty).)
+- I just realized, that sibling relationships can be handled by groups. If siblings differ in PL, the transpiler will take care of positioning.

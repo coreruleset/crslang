@@ -174,6 +174,8 @@ Three source forms:
    at every fetch; a failed verification keeps the previously loaded copy in place
    and emits a runtime error log.
 
+   @theseion: tool support for computing the SHA-256 of a new URL would be nice
+
 ### Format Hints
 
 The `format` keyword tells the compiler how to parse the source. Defaults are inferred
@@ -266,6 +268,8 @@ Parse errors fail the compilation with file:line context.
 
 Static data with small inline values may compile to inline regex/pattern literals for
 performance; the compiler picks based on size thresholds.
+
+@theseion: `@rxFromFile` is not a SecLang operator (at least not in ModSecurity)
 
 ### Compilation to Other Targets
 
@@ -401,3 +405,7 @@ Look for `*.txt`, `*.ra`, `*.mmdb` files in conventional directories and auto-im
 - **Large static data** — a 10MB IP list compiled into a SecLang `@ipMatchFromFile`
   is fine, but if the compiler tries to inline it as a regex literal, performance
   craters. Size thresholds for inline-vs-file decisions are needed.
+
+
+@theseion: I can also imagine URL + checksum URL + reload interval / on_change. I don't know whether we can assume that every URL that needs refreshing also supplies
+a signature. They may update their hash list though. Same goes for signatures: the signature may live at a URL different to the convention.

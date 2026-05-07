@@ -126,6 +126,8 @@ config {
   }
 }
 ```
+@theseion: HTTP versions should use an enum, not strings. Otherwise, we'll have issues with things like `HTTP/2` vs `HTTP/2.0`
+@theseion: would be nice to be able to use units for bytes, like in K8s resources. Good for reading and writing, the transpiler can take care of the target value.
 
 The fields inside `config {}` are defined by the CRS ruleset, not by the CRSLang
 language. The language specifies the block syntax and semantics; CRS defines which
@@ -237,6 +239,8 @@ crs/
 `setup.crs` ships as `setup.crs.example` with commented-out defaults. The deployer
 copies and edits it. If no `setup.crs` is provided, the compiler uses the defaults
 declared in the config schema.
+@theseion: In my mind, we wanted to avoid manual editing entirely and instead parameterize the transpilation, such that the transpiled output can be
+deployed directly.
 
 The analogy to the current `crs-setup.conf.example` is intentional — the workflow is
 familiar, but the mechanism is now compile-time rather than runtime.

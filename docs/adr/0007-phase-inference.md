@@ -96,6 +96,9 @@ This is also an error in SecLang (you cannot inspect response body in phase 1), 
 SecLang does not detect it — it silently produces wrong results. CRSLang catches it
 at compile time.
 
+@theseion: I don't understand. In SecLang, this rule would be evaluated in phase 4. Why would that be an error? And from the logic above, the example rule would
+also run in phase 4. The way this section is phrased, a rule would never be able to inspect headers and body at the same time because they belong to different phases.
+
 ### Mixed Phase-Specific and Cross-Phase Fields
 
 When a rule mixes phase-specific and cross-phase fields, the phase-specific field wins:
@@ -144,12 +147,17 @@ CRSLang uses descriptive phase names instead of numbers:
 | `response_body` | 4 |
 | `logging` | 5 |
 
+@theseion nginx has more phases: https://nginx.org/en/docs/dev/development_guide.html#http_phases and https://nginx.org/en/docs/stream/stream_processing.html.
+We might want to document the corresponding phases in nginx here, maybe even consider what this list could look like in the future.
+
 The text syntax also accepts short forms for ergonomics:
 
 | Short form | Full name |
 |---|---|
 | `request` | `request_headers` (most common request phase) |
 | `response` | `response_headers` (most common response phase) |
+
+@theseion: I feel like these shor forms will create more confusion than be helpful...
 
 ### Compilation to SecLang
 
@@ -194,6 +202,8 @@ CRSLang resolves this:
 - `request.args.post` → unambiguously phase 2 (POST body only)
 - `request.args` (combined) → inferred as phase 2 (the latest phase needed to have
   complete data)
+
+@theseion: I would consider getting rid of `ARGS` entirely for CRSLang. I don't understand the value of having the combined collection.
 
 This matches CRS best practice: rules that inspect `ARGS` should run in phase 2 to
 ensure POST parameters are available.
