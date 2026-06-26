@@ -1,0 +1,50 @@
+name: Validate ModSecurity Rules with Apache
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  modsecurity-syntax:
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux:9
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          dnf -y install epel-release
+          dnf -y install httpd mod_security
+          dnf -y install golang
+          dnf -y install git
+
+      - name: Clone OWASP CRS Project
+        run: |
+          git clone https://github.com/coreruleset/coreruleset.git crs
+          cd crs
+          git checkout 8edc58f3ef4d664577e14e5132072559ff30cb34
+
+      - name: Generate rules
+        run: |
+          go run . -o output crs/rules/
+          go run . -s -o /etc/httpd/modsecurity.d/activated_rules output.yaml
+          cp crs/rules/*.data /etc/httpd/modsecurity.d/activated_rules/
+
+      - name: Configure ModSecurity
+        run: |
+          cat <<EOF > /etc/httpd/conf.d/mod_security.conf
+          <IfModule security2_module>
+              SecRuleEngine On
+              SecDataDir /tmp
+              Include /etc/httpd/modsecurity.d/activated_rules/*.conf
+          </IfModule>
+          EOF
+
+      - name: Validate config with httpd -t
+        run: |
+          httpd -t

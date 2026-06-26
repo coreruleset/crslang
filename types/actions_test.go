@@ -239,3 +239,140 @@ func TestActionStringMethods(t *testing.T) {
 		assert.Equal(t, "unknown", NonDisruptiveUnknown.String())
 	})
 }
+
+func TestActionToStringMethods(t *testing.T) {
+	t.Run("ActionOnly ToString for all action keys", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			action   ActionOnly
+			expected string
+		}{
+			{name: "disruptive allow", action: ActionOnly(Allow.String()), expected: Allow.String()},
+			{name: "disruptive block", action: ActionOnly(Block.String()), expected: Block.String()},
+			{name: "disruptive deny", action: ActionOnly(Deny.String()), expected: Deny.String()},
+			{name: "disruptive drop", action: ActionOnly(Drop.String()), expected: Drop.String()},
+			{name: "disruptive pass", action: ActionOnly(Pass.String()), expected: Pass.String()},
+			{name: "disruptive pause", action: ActionOnly(Pause.String()), expected: Pause.String()},
+			{name: "flow chain", action: ActionOnly(Chain.String()), expected: Chain.String()},
+			{name: "non disruptive auditlog", action: ActionOnly(AuditLog.String()), expected: AuditLog.String()},
+			{name: "non disruptive capture", action: ActionOnly(Capture.String()), expected: Capture.String()},
+			{name: "non disruptive log", action: ActionOnly(Log.String()), expected: Log.String()},
+			{name: "non disruptive multiMatch", action: ActionOnly(MultiMatch.String()), expected: MultiMatch.String()},
+			{name: "non disruptive noauditlog", action: ActionOnly(NoAuditLog.String()), expected: NoAuditLog.String()},
+			{name: "non disruptive nolog", action: ActionOnly(NoLog.String()), expected: NoLog.String()},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.expected, tt.action.ToString())
+			})
+		}
+	})
+
+	t.Run("ActionWithParam ToString for all action keys", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			action   ActionWithParam
+			expected string
+		}{
+			{name: "proxy", action: ActionWithParam{Proxy.String(): "value"}, expected: "proxy:'value'"},
+			{name: "redirect", action: ActionWithParam{Redirect.String(): "value"}, expected: "redirect:'value'"},
+			{name: "skip", action: ActionWithParam{Skip.String(): "value"}, expected: "skip:'value'"},
+			{name: "skipAfter", action: ActionWithParam{SkipAfter.String(): "value"}, expected: "skipAfter:'value'"},
+			{name: "status", action: ActionWithParam{Status.String(): "500"}, expected: "status:'500'"},
+			{name: "xmlns", action: ActionWithParam{XLMNS.String(): "ns"}, expected: "xmlns:'ns'"},
+			{name: "append", action: ActionWithParam{Append.String(): "value"}, expected: "append:'value'"},
+			{name: "ctl", action: ActionWithParam{Ctl.String(): "ruleEngine=Off"}, expected: "ctl:ruleEngine=Off"},
+			{name: "deprecatevar", action: ActionWithParam{DeprecateVar.String(): "value"}, expected: "deprecatevar:'value'"},
+			{name: "exec", action: ActionWithParam{Exec.String(): "value"}, expected: "exec:'value'"},
+			{name: "expirevar", action: ActionWithParam{ExpireVar.String(): "value"}, expected: "expirevar:'value'"},
+			{name: "initcol", action: ActionWithParam{InitCol.String(): "value"}, expected: "initcol:'value'"},
+			{name: "logdata", action: ActionWithParam{LogData.String(): "value"}, expected: "logdata:'value'"},
+			{name: "prepend", action: ActionWithParam{Prepend.String(): "value"}, expected: "prepend:'value'"},
+			{name: "sanitiseArg", action: ActionWithParam{SanitiseArg.String(): "value"}, expected: "sanitiseArg:'value'"},
+			{name: "sanitiseMatched", action: ActionWithParam{SanitiseMatched.String(): "value"}, expected: "sanitiseMatched:'value'"},
+			{name: "sanitiseMatchedBytes", action: ActionWithParam{SanitiseMatchedBytes.String(): "value"}, expected: "sanitiseMatchedBytes:'value'"},
+			{name: "sanitiseRequestHeader", action: ActionWithParam{SanitiseRequestHeader.String(): "value"}, expected: "sanitiseRequestHeader:'value'"},
+			{name: "sanitiseResponseHeader", action: ActionWithParam{SanitiseResponseHeader.String(): "value"}, expected: "sanitiseResponseHeader:'value'"},
+			{name: "setuid", action: ActionWithParam{SetUid.String(): "value"}, expected: "setuid:'value'"},
+			{name: "setrsc", action: ActionWithParam{SetRsc.String(): "value"}, expected: "setrsc:'value'"},
+			{name: "setsid", action: ActionWithParam{SetSid.String(): "value"}, expected: "setsid:'value'"},
+			{name: "setenv", action: ActionWithParam{SetEnv.String(): "value"}, expected: "setenv:'value'"},
+			{name: "setvar", action: ActionWithParam{SetVar.String(): "tx.flag=on"}, expected: "setvar:'tx.flag=on'"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.expected, tt.action.ToString())
+			})
+		}
+	})
+
+	t.Run("SetvarAction ToString cases", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			action   SetvarAction
+			expected string
+		}{
+			{
+				name: "with string assignments",
+				action: SetvarAction{
+					Collection: TX,
+					Operation:  Assign,
+					Assignments: []VarAssignment{
+						{Variable: "test", Value: "critical"},
+						{Variable: "test2", Value: "payload with spaces"},
+					},
+				},
+				expected: "setvar:'TX.test=critical',setvar:'TX.test2=payload with spaces'",
+			},
+			{
+				name: "numeric assignments",
+				action: SetvarAction{
+					Collection: TX,
+					Operation:  Assign,
+					Assignments: []VarAssignment{
+						{Variable: "counter", Value: "1"},
+						{Variable: "score", Value: "5"},
+					},
+				},
+				expected: "setvar:'TX.counter=1',setvar:'TX.score=5'",
+			},
+			{
+				name: "numeric assignments with increment operation",
+				action: SetvarAction{
+					Collection: TX,
+					Operation:  Increment,
+					Assignments: []VarAssignment{
+						{Variable: "counter", Value: "1"},
+						{Variable: "score", Value: "5"},
+					},
+				},
+				expected: "setvar:'TX.counter=+1',setvar:'TX.score=+5'",
+			},
+			{
+				name: "numeric assignments with decrement operation",
+				action: SetvarAction{
+					Collection: TX,
+					Operation:  Decrement,
+					Assignments: []VarAssignment{
+						{Variable: "counter", Value: "1"},
+						{Variable: "score", Value: "5"},
+					},
+				},
+				expected: "setvar:'TX.counter=-1',setvar:'TX.score=-5'",
+			},
+			{
+				name:     "without assignments",
+				action:   SetvarAction{Collection: TX, Operation: Assign},
+				expected: "",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.expected, tt.action.ToString())
+			})
+		}
+	})
+}
