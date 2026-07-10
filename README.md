@@ -244,7 +244,7 @@ For detailed information about the project structure and API, check out the sour
       - logdata: "%{MATCHED_VAR}"
     flow:
       - chain
-  chained-rule:
+  chainedRule:
     kind: rule
     conditions:
       - collections:
@@ -275,7 +275,7 @@ For detailed information about the project structure and API, check out the sour
       - OWASP_CRS
     version: OWASP_CRS/4.0.1-dev
   conditions:
-    - alwaysMatch: true
+    - always-match: true
       transformations:
         - none
   actions:
