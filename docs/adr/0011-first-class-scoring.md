@@ -84,7 +84,7 @@ a rule belongs to:
 
 ```
 group "sql_injection" {
-  category = "sqli"
+  category = "sql_injection"
 
   rule 942100 (severity: critical) {
     when request.args |> detect_sqli()
@@ -98,8 +98,12 @@ group "sql_injection" {
 }
 ```
 
-Rules in this group automatically increment both `anomaly_score` and `sqli_score` by the
-severity-derived value. No `setvar` needed.
+Rules in this group automatically increment both `anomaly_score` and
+`sql_injection_score` by the severity-derived value. No `setvar` needed.
+
+The category name is the TX variable stem: `category = "<name>"` increments
+`tx.<name>_score`. Category names therefore match CRS's existing variables
+(`sql_injection`, `xss`, `rce`, `lfi`, `protocol`, ...).
 
 ### Explicit Score Override
 
@@ -114,6 +118,12 @@ rule 920170 (severity: warning) {
   }
 }
 ```
+
+`score()` **replaces** the severity-derived scores for that rule; it is never added on top
+of them. Direct assignment to a scoring variable (`tx.anomaly_score += 5`,
+`tx.<category>_score += 5`) in a rule that declares a severity is a **compile-time
+error**, because it would count the score twice. Direct TX assignment remains available
+for custom, non-scoring state.
 
 ### Paranoia Levels
 
@@ -168,9 +178,13 @@ The compiler expands first-class scoring to SecLang `setvar` actions:
 
 ```
 # CRSLang
-rule 942100 (severity: critical, paranoia: 1) {
-  when request.args |> detect_sqli()
-  then block
+group "sql_injection" {
+  category = "sql_injection"
+
+  rule 942100 (severity: critical, paranoia: 1) {
+    when request.args |> detect_sqli()
+    then block
+  }
 }
 
 # Compiled SecLang
@@ -178,8 +192,6 @@ SecRule ARGS "@detectSQLi" \
     "id:942100,\
     phase:2,\
     block,\
-    capture,\
-    t:none,\
     severity:'CRITICAL',\
     setvar:'tx.sql_injection_score=+%{tx.critical_anomaly_score}',\
     setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}'"
@@ -236,7 +248,7 @@ Leave `setvar` in effect blocks, just make the syntax nicer:
 ```
 then block {
   tx.anomaly_score += 5
-  tx.sqli_score += 5
+  tx.sql_injection_score += 5
 }
 ```
 

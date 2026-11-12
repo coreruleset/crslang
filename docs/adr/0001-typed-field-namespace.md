@@ -167,7 +167,6 @@ count(tx.crs_setup_version)    # returns Int
    type Target struct {
        Field     FieldRef   // parsed field reference
        KeyAccess *string    // bracket key, if any
-       Excluded  []string   // excluded keys
    }
    ```
 
@@ -175,8 +174,9 @@ count(tx.crs_setup_version)    # returns Int
    - `REQUEST_HEADERS:Content-Type` -> `request.headers["Content-Type"]`
    - `&TX:score` -> `count(tx.score)`
    - `!ARGS:foo` -> target exclusion via ADR-0006: `exclude rule ... target request.args["foo"]`
+     (key exclusions are not part of the IR's `Target`)
 
-4. **YAML v2 syntax** (intermediate, before Phase 5 text syntax):
+4. **YAML v2 syntax** (intermediate, before Phase 4 text syntax):
 
    ```yaml
    when:

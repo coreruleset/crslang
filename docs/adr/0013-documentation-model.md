@@ -103,7 +103,7 @@ hierarchical cohesion — not for crossing orthogonal axes (paranoia, severity, 
 ///   - Search forms with SQL keywords in the query
 ///   - JSON APIs that include SQL-like strings as data values
 group "sql_injection" {
-  category = "sqli"
+  category = "sql_injection"
 
   references     = ["CWE-89", "OWASP A1:2021"]
   false_positives = [
@@ -169,12 +169,12 @@ exclusion without an explanation is a maintenance hazard:
 /// Admin UI legitimately accepts SQL fragments in the "query" field of the
 /// query builder at /admin/query-builder. Reviewed by security team 2026-04-12.
 exclude rule 942100 target request.args.post["query"]
-  where request.uri |> starts_with("/admin/query-builder")
+  when request.uri |> begins_with("/admin/query-builder")
 
-/// Bumped severity for our payment endpoints — SQLi here is an immediate
-/// PCI-DSS incident, not just a CRS event.
-update rule 942100 {
-  severity = critical_payment
+/// Raised from warning to critical: our API never accepts a body on GET or
+/// HEAD, so this is always an attack, not a protocol quirk.
+update rule 920170 {
+  set severity critical
 }
 ```
 

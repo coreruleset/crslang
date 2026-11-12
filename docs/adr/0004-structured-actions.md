@@ -150,8 +150,10 @@ group "xss_detection" {
 
 Scoring is automatic: `severity: critical` + `category: xss` contribute to
 `anomaly_score` and `xss_score` based on the globals scoring table. `capture()` replaces
-the separate `@rx` + `capture` action. For rules that need manual score manipulation,
-use the `score()` override or direct TX assignment:
+the separate `@rx` + `capture` action. For rules that need non-standard scoring, use
+the `score()` override, which replaces the severity-derived scores (ADR-0011). Direct
+assignment to a scoring variable in a rule with a severity is a compile error, since it
+would count the score twice:
 
 ```
 rule 941100 (severity: critical) {

@@ -124,13 +124,11 @@ client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 | `lt(value)` | Int -> Bool | `@lt` |
 | `le(value)` | Int -> Bool | `@le` |
 | `contains(value)` | String -> Bool | `@contains` |
-| `contains_word(values...)` | String -> Bool | `@pm` |
-| `contains_word_from_file(path)` | String -> Bool | `@pmFromFile` (external word lists) |
+| `contains_word(values... \| string_set)` | String -> Bool | `@pm`, or `@pmFromFile` for a file-backed `data` source (ADR-0016) |
 | `begins_with(value)` | String -> Bool | `@beginsWith` |
 | `ends_with(value)` | String -> Bool | `@endsWith` |
 | `within(value)` | String -> Bool | `@within` |
-| `ip_in_range(ranges...)` | IP -> Bool | `@ipMatch` |
-| `ip_in_range_from_file(path)` | IP -> Bool | `@ipMatchFromFile` (external IP lists) |
+| `ip_in_range(ranges... \| ip_list)` | IP -> Bool | `@ipMatch`, or `@ipMatchFromFile` for a file-backed `data` source (ADR-0016) |
 | `detect_sqli()` | String -> Bool | `@detectSQLi` |
 | `detect_xss()` | String -> Bool | `@detectXSS` |
 | `validate_byte_range(range)` | Bytes -> Bool | `@validateByteRange` |
@@ -138,7 +136,6 @@ client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 | `validate_utf8()` | String -> Bool | `@validateUtf8Encoding` |
 | `verify_cc(pattern)` | String -> Bool | `@verifyCC` |
 | `rbl(server)` | IP -> Bool | `@rbl` |
-| `geo_lookup()` | IP -> Bool | `@geoLookup` |
 
 ### Type Checking
 
@@ -197,7 +194,7 @@ when:
 matches(lowercase(url_decode(request.headers["User-Agent"])), "pattern")
 ```
 
-**Viable with macros (see ADR-0009).** The original concern about deep nesting dissolves
+**Viable with macros (see ADR-0015).** The original concern about deep nesting dissolves
 when named composition functions keep calls at 1-2 levels:
 
 ```
@@ -268,14 +265,19 @@ request.uri | lowercase | matches("pattern")
 
 ### Notes on File-Based Functions and Regex Assembly
 
-**Regex patterns** from `crs-toolchain` regex assembly (`.ra` files) are **inlined** at
-build time. The toolchain compiles them into optimized patterns before CRSLang sees them.
-There is no `matches_from_file()` — the final regex is embedded in the rule.
+External data — regex assemblies, word lists, IP lists and geo databases — is declared
+with `data` (ADR-0016) and passed to the functions above by name, e.g.
+`client.ip |> ip_in_range(blocked_ips)`. There are no `*_from_file(path)` functions.
+
+**Regex patterns** from `crs-toolchain` regex assembly (`.ra` files) are `regex_set` data
+sources. With the default `reload static` they are assembled at build time and the
+final regex is **inlined** in the rule; only a dynamically reloaded set compiles to
+`@rxFromFile`.
 
 **Pattern match word lists** (`@pmFromFile`) and **IP range lists** (`@ipMatchFromFile`)
-remain as external file references via `contains_word_from_file(path)` and
-`ip_in_range_from_file(path)`. These lists can be thousands of entries and are data, not
-logic — inlining them would make rules unreadable.
+can be thousands of entries and are data, not logic — inlining them would make rules
+unreadable, so file-backed `data` sources compile to the file-based operators. Geo
+lookups (`geo_country()` and friends) are also defined by ADR-0016.
 
 ### The `t:none` Convention
 

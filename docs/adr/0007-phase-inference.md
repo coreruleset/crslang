@@ -73,32 +73,47 @@ when needed.**
 
 ### Inference Rules
 
-1. If a rule references any **request-headers-phase** field → phase is `request_headers`
-2. If a rule references any **request-body-phase** field → phase is `request_body`
-3. If a rule references any **response-headers-phase** field → phase is `response_headers`
-4. If a rule references any **response-body-phase** field → phase is `response_body`
-5. If a rule references only **cross-phase** fields → phase must be declared explicitly
+Data from an earlier phase stays available in every later phase (request headers can
+still be read while the response body is inspected). A rule therefore runs in the
+**latest** phase among the phase-specific fields it references:
+
+1. Collect the phase of every phase-specific field the rule references
+2. The rule's phase is the latest of those phases, in the order `request_headers` <
+   `request_body` < `response_headers` < `response_body`
+3. Cross-phase fields (`tx.*`, `client.ip`, ...) do not affect inference
+4. If a rule references only **cross-phase** fields → phase must be declared explicitly
+
+```
+# Phase is inferred as request_body: request.uri is phase 1, request.body is phase 2,
+# and request.uri is still available in phase 2
+rule 9100100 {
+  when request.uri |> begins_with("/payment")
+   and request.body |> contains("sql_keyword")
+  then block
+}
+```
 
 ### Conflict Detection
 
-If a rule references fields from multiple phases, that is a **compile-time error**:
+A conflict exists only when a rule **declares** a phase that is earlier than a field it
+references. That is a **compile-time error**:
 
 ```
-# ERROR: request.method is phase 1, response.body is phase 4
-rule 999999 {
+# ERROR: declared request_headers (phase 1), but response.body is phase 4
+rule 999999 (phase: request_headers) {
   when request.method |> eq("GET")
    and response.body |> contains("error")
   then block
 }
 ```
 
-This is also an error in SecLang (you cannot inspect response body in phase 1), but
-SecLang does not detect it — it silently produces wrong results. CRSLang catches it
-at compile time.
+SecLang accepts the equivalent rule and silently never matches (the response body is
+not available in phase 1). CRSLang catches it at compile time. Declaring a phase that is
+*later* than the inferred one is allowed — it is how authors deliberately delay a rule.
 
 ### Mixed Phase-Specific and Cross-Phase Fields
 
-When a rule mixes phase-specific and cross-phase fields, the phase-specific field wins:
+When a rule mixes phase-specific and cross-phase fields, the phase-specific fields decide:
 
 ```
 # Phase is inferred as request_headers (from request.method)

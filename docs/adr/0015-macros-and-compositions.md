@@ -108,9 +108,7 @@ Macros live at three scope levels:
    package's namespace (per ADR-0014).
 
 ```
-# package.crs (CRS distribution)
-package "owasp_crs" version "4.18.0"
-
+# rules/_common.crs (CRS distribution, package "owasp_crs")
 # Exported — visible to importers as crs.deep_normalize
 export macro deep_normalize(input: string) = input
   |> utf8_to_unicode()
@@ -118,6 +116,8 @@ export macro deep_normalize(input: string) = input
   ...
 
 # rules/sql_injection.crs
+import "_common.crs"   # in-package use needs an explicit import (ADR-0014)
+
 group "sql_injection" {
   # Group-scoped macro (visible only inside this group, not to importers)
   macro args_are_sqli() = request.args |> detect_sqli()
@@ -127,7 +127,7 @@ group "sql_injection" {
 
   rule 942100 (severity: critical) {
     when args_are_sqli()           # local macro
-       or deep_normalize(request.body) |> contains("union")  # package macro
+       or deep_normalize(request.uri) |> contains("union")   # imported macro
     then block
   }
 }

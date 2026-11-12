@@ -63,6 +63,9 @@ grouping.
 
 ### Syntax
 
+Examples here use the pipeline (ADR-0002) and action block (ADR-0004) syntax for
+readability. The boolean structure this ADR adds to the IR does not depend on either.
+
 ```
 rule 920170 (phase: request) {
   when request.method |> matches("^(?:GET|HEAD)$")
@@ -375,7 +378,7 @@ when request.args |> detect_sqli()
 # With each(): all values tested, effects fire per match
 when each(request.args) |> detect_sqli()
 then block {
-  tx.sqli_score += 5     # incremented per matching argument
+  tx.sql_injection_score += 5  # incremented per matching argument
   log(data: matched.var)  # logged per matching argument
 }
 ```
@@ -415,15 +418,15 @@ Boolean algebra enables patterns that are impossible or awkward in SecLang:
 
 ```
 # OR conditions (currently requires separate rules + scoring)
-rule 100001 (phase: request) {
+rule 100001 {
   when request.uri |> matches("/admin")
    and (client.ip |> ip_in_range("10.0.0.0/8")
         or request.headers["X-Internal"] |> eq("true"))
   then pass
 }
 
-# Complex grouping
-rule 100002 (phase: request) {
+# Complex grouping (phase inferred as request_body from request.body, ADR-0007)
+rule 100002 {
   when (request.method |> eq("POST") or request.method |> eq("PUT"))
    and not(request.headers["Content-Type"] |> contains("application/json"))
    and request.body |> length() |> gt(0)
