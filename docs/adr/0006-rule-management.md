@@ -80,7 +80,7 @@ exclude rules where tag == "OWASP_CRS/SQL_INJECTION" and phase == request
 
 The most common CRS user customization is "disable rule X for argument Y" — a
 target-level exclusion. This is the equivalent of SecLang's
-`ctl:ruleTargetRemoveById=942100;ARGS:passwd`. A shorthand syntax avoids the verbosity
+`ctl:ruleRemoveTargetById=942100;ARGS:passwd`. A shorthand syntax avoids the verbosity
 of a full `update` block for this common case:
 
 ```
@@ -101,6 +101,26 @@ SecRule ... "ctl:ruleRemoveTargetById=942100;ARGS:passwd"
 # Or in a REQUEST-900 exclusion file:
 SecRuleUpdateTargetById 942100 "!ARGS:passwd"
 ```
+
+### Conditional Exclusions
+
+`where` always selects rules by their metadata. To apply an exclusion only to some
+requests, add a `when` clause with a request condition, using the same expression
+syntax as a rule's `when`:
+
+```
+exclude rule 942100 target request.args.post["query"]
+  when request.uri |> begins_with("/admin/query-builder")
+
+exclude group crs.sql_injection
+  when request.uri |> begins_with("/admin")
+```
+
+An exclusion without `when` is applied at configuration time (`SecRuleRemoveById`,
+`SecRuleUpdateTargetById`). An exclusion with `when` compiles to a runtime rule that
+tests the condition and applies `ctl:ruleRemoveById`, `ctl:ruleRemoveByTag` or
+`ctl:ruleRemoveTargetById`, the pattern CRS uses for runtime exclusions today. It must
+run before the excluded rules, so the compiler places it ahead of them.
 
 The shorthand covers the vast majority of CRS user customization. For more complex
 modifications, the full `update` block syntax is available.
@@ -211,10 +231,9 @@ SecRule ... "id:941120,..."
 SecMarker "END-xss-pl2"
 ```
 
-**Compiler-generated rule IDs:** Guard rules need unique SecLang IDs. The compiler
-derives these deterministically from the group name and the lowest enclosed rule ID
-(e.g., `941120` → guard rule `941119` or a reserved offset range). The exact policy is
-an implementation concern; it must produce stable IDs across compilations so that CRS
+**Compiler-generated rule IDs:** Guard rules need unique SecLang IDs. They come from the
+reserved range for compiler-generated rules defined in ADR-0012, allocated
+deterministically from the group name, so they are stable across compilations and CRS
 users can reference them in exclusions.
 
 This replaces `skip_to()`, `goto`, and `label` entirely. CRSLang expresses the intent

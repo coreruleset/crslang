@@ -76,15 +76,14 @@ Path imports resolve relative to the importing file's directory. No `..` travers
 allowed past the ruleset root, defined as the directory containing the entry-point
 file (typically `main.crs`).
 
-Package imports resolve via a search path defined in `config {}` (ADR-0012):
+Package imports resolve via a search path given to the compiler, not in the language:
+`config {}` (ADR-0012) holds ruleset-defined detection policy and is itself loaded after
+the packages it would have to locate.
 
 ```
-config {
-  package_path = [
-    "./vendor",
-    "/usr/share/crslang/packages",
-  ]
-}
+crslang compile main.crs \
+  --package-path ./vendor \
+  --package-path /usr/share/crslang/packages
 ```
 
 The first matching path wins. Package versions are encoded in the package name
@@ -104,7 +103,7 @@ declared in. The fully-qualified name uses dot notation:
 ```
 # in owasp_crs/rules/sql_injection.crs
 group "sql_injection" {
-  macro detect() = request.args |> detect_sqli()
+  export macro detect() = request.args |> detect_sqli()
   rule 942100 { ... }
 }
 
@@ -176,17 +175,17 @@ import package "owasp_crs/4.18" as crs
 exclude rule 942100
 
 # Change a rule's severity
-update rule 942100 {
-  severity = critical_payment
+update rule 920170 {
+  set severity critical
 }
 
 # Disable an entire group
-exclude group crs.sql_injection where request.uri |> starts_with("/admin")
+exclude group crs.sql_injection when request.uri |> begins_with("/admin")
 
 # Add custom rules in a deployer-owned namespace
 group "myorg.custom_payment_protection" {
   rule 9100100 (severity: critical) {
-    when request.uri |> starts_with("/payment")
+    when request.uri |> begins_with("/payment")
      and request.body |> contains("sql_keyword")
     then block
   }
@@ -208,7 +207,7 @@ owasp_crs/4.18/
 │   ├── sql_injection.crs
 │   ├── xss.crs
 │   └── ...
-└── tests/                   # FTW test cases (per ADR-0013)
+└── tests/                   # FTW test cases (format not yet specified by an ADR)
 ```
 
 `package.crs` declares the package and re-exports the rule files:

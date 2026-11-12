@@ -103,10 +103,8 @@ group "sql_injection" {
     action    = "block"
 
     effects {
-      tx_sqli_score    = "+=5"
-      tx_anomaly_score = "+=5"
-      capture          = true
-      log_audit        = true
+      capture   = true
+      log_audit = true
     }
   }
 }
@@ -208,9 +206,6 @@ rule "920170" {
   condition = "request.method.matches('^(?:GET|HEAD)$') && !request.headers['Content-Length'].matches('^0?$')"
 
   action = "block"
-  effects {
-    tx_anomaly_score = "+=5"
-  }
 }
 ```
 
@@ -319,9 +314,8 @@ globals {
   tags    = ["OWASP_CRS"]
 }
 
-macro normalize(field) {
+macro normalize(field: string) =
   field |> url_decode() |> lowercase() |> compress_whitespace()
-}
 
 group "sql_injection" {
   tags = ["OWASP_CRS/SQL_INJECTION", "attack-sqli"]
@@ -330,8 +324,6 @@ group "sql_injection" {
     when detect_sqli(normalize(request.args))
       or detect_sqli(normalize(request.body))
     then block {
-      tx.sqli_score += 5
-      tx.anomaly_score += 5
       capture()
       log(audit: true)
     }
@@ -387,9 +379,7 @@ group "sql_injection" {
     action = "block"
 
     effects {
-      tx_sqli_score    = "+=5"
-      tx_anomaly_score = "+=5"
-      capture          = true
+      capture = true
     }
   }
 }

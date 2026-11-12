@@ -37,8 +37,15 @@ A hand-written parser provides:
 ### Grammar
 
 ```ebnf
-(* Top-level *)
-file           = { rule | globals | defaults | comment } ;
+(* Top-level. Constructs marked * are specified in the ADR named next to them;
+   their productions are added when that ADR is accepted. *)
+file           = { rule | globals | defaults | comment
+                 | group        (* ADR-0006, ADR-0011 *)
+                 | exclude | update   (* ADR-0006 *)
+                 | config       (* ADR-0012 *)
+                 | import       (* ADR-0014 *)
+                 | macro        (* ADR-0015 *)
+                 | data         (* ADR-0016 *) } ;
 
 (* Rules *)
 rule           = "rule" INTEGER metadata? "{" when_clause then_clause "}" ;
@@ -55,10 +62,10 @@ unary_expr     = "not" unary_expr
                | pipeline ;
 
 (* Pipelines *)
-pipeline       = pipeline_source { "|>" func_call } ;
+pipeline       = pipeline_source { "|>" func_call } [ ( "in" | "not_in" ) IDENT ] ;
 pipeline_source= field_ref | func_call | literal | "(" expr ")" ;
 field_ref      = IDENT { "." IDENT } [ "[" selector "]" ] ;
-selector       = STRING | "!" STRING ;
+selector       = STRING ;   (* key exclusions are rule management, ADR-0006 *)
 func_call      = IDENT "(" [ arg { "," arg } ] ")" ;
 literal        = STRING | INTEGER | "true" | "false" ;
 
@@ -185,7 +192,6 @@ rule 920170 (phase: request, severity: warning) {
   when request.method |> matches("^(?:GET|HEAD)$")
    and request.headers["Content-Length"] |> not(matches("^0?$"))
   then block {
-    tx.anomaly_score += 5
     log(audit: true)
   }
 }

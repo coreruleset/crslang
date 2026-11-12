@@ -134,8 +134,8 @@ parameters it supports. A ruleset can declare a schema for its `config {}` param
 
 #### Relationship to ADR-0011
 
-ADR-0011 introduced `scoring_threshold {}` as a top-level block. That block is deployment
-policy (different deployments set different thresholds) and belongs in `config {}`. The
+Scoring thresholds are deployment policy (different deployments set different
+thresholds), so they belong in `config { scoring {} }`, as ADR-0011 specifies. The
 `globals { scoring {} }` block from ADR-0011 remains as-is — it is a ruleset constant,
 not tunable per deployment.
 
@@ -178,9 +178,10 @@ Rule 901001 detects that `crs-setup.conf` was not included. This check is needed
 SecLang because the rule engine cannot know at load time whether an include happened.
 
 In CRSLang, the `config {}` block is part of the ruleset itself (or an explicitly
-imported file). The compiler can enforce at compile time that a `config {}` block exists
-and that all required parameters have values. If the deployer forgets to configure, the
-compile fails — no runtime surprise.
+imported file). Every config parameter has a value at compile time: the deployer's value if set,
+otherwise the default declared in the config schema. A parameter the schema marks as
+required and gives no default must be set by the deployer, or the compile fails. Either
+way the problem is caught before deployment — no runtime surprise.
 
 For SecLang output, the compiler can emit a version marker in the generated init block
 and omit the runtime sanity check entirely, since correctness is guaranteed before
@@ -218,7 +219,10 @@ SecAction \
 ```
 
 The generated IDs occupy a reserved range (e.g., 9000001–9000999) that does not conflict
-with authored rule IDs. Generated comments make the source of the init block clear.
+with authored rule IDs. The same range serves every compiler-generated rule: this init
+block, guard rules for guarded groups (ADR-0006), and branch rules for `or`
+(ADR-0010). IDs are allocated deterministically from the source so they are stable
+across compilations. Generated comments make the source of the init block clear.
 
 ### Workflow: The `setup.crs` Convention
 
@@ -312,7 +316,7 @@ group "protocol_enforcement" (allowed_methods: ["GET", "POST"]) {
 
 - Existing CRS users must migrate from `crs-setup.conf` to `setup.crs` (automated migration tool can handle most cases)
 - The config parameter set is defined by the ruleset (CRS), not the language — if CRS adds a new parameter, it must be documented in the schema
-- Generated rule IDs for the init block consume a range that must be reserved and documented
+- Generated rule IDs (init block, guard rules, `or` branches) consume a range that must be reserved and documented
 
 ### Risks
 

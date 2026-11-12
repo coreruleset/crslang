@@ -14,8 +14,9 @@ references but does not contain inline:
 - **Geo databases** — MaxMind GeoLite2 country/city/ASN lookups
 - **Regex assemblies** — CRS's `regex-assembly` files compile multi-pattern regexes from
   structured `.ra` files
-- **String sets** — allowed methods, allowed content types, restricted extensions
-  (currently flattened into space-separated TX variables)
+- **String sets** — word lists and extension lists shipped with the ruleset or loaded
+  from files (deployer-tunable lists such as allowed methods stay in `config {}`,
+  per ADR-0012)
 - **Key-value maps** — sometimes used for header→action mappings
 - **Pre-computed indices** — pattern-matching tables for `@pm`-style multi-pattern
   matching
@@ -26,9 +27,9 @@ In SecLang, these are accessed via specialized operators:
 - `@pmFromFile /path/to/patterns.txt`
 - `@rxFromFile /path/to/regex.txt`
 
-CRSLang has no story for any of this. Rules in current ADRs implicitly assume data is
-available (`client.ip in blocked_ips`, `request.uri |> matches_any(restricted_paths)`)
-without specifying where `blocked_ips` or `restricted_paths` come from.
+CRSLang has no story for any of this. ADR-0002 only sketched ad-hoc file functions
+(`ip_in_range_from_file(path)`), with no typing, validation or reload model, and nothing
+covers geo databases or regex-assembly sources.
 
 ### What external data needs
 
@@ -111,16 +112,22 @@ data malware_signatures
 
 | Type | Lookup operations | Example file format |
 |---|---|---|
-| `ip_list` | `in`, `not_in`, `contains_ip()` | `192.168.0.0/16\n10.0.0.0/8\n...` |
-| `string_set` | `in`, `not_in`, `contains()` | `application/json\ntext/xml\n...` |
+| `ip_list` | `in`, `not_in`, `ip_in_range()` | `192.168.0.0/16\n10.0.0.0/8\n...` |
+| `string_set` | `in`, `not_in`, `contains_word()`, `ends_with_any()` | `application/json\ntext/xml\n...` |
 | `regex_set` | `matches_any()`, `matches_assembly()` | `.ra` file or `pattern\n...` |
 | `kv_map` | `lookup(key)`, `has_key(key)` | `key=value\n...` (or JSON) |
 | `geo_db` | `geo_country(ip)`, `geo_asn(ip)`, `geo_city(ip)` | MaxMind `.mmdb` |
 | `pattern_table` | `pattern_match()` (Aho-Corasick) | `pattern\n...` |
 
 The standard library's matching functions are typed: `matches_any` accepts a `regex_set`
-and a `string`, `contains_ip` accepts an `ip_list` and an `ip`. Wrong-type arguments
-are compile errors.
+and a `string`, `ip_in_range` accepts an `ip_list` and an `ip`. Wrong-type arguments
+are compile errors. `ip_in_range` and `contains_word` are the ADR-0002 functions; they
+take either literal values or a `data` source of the matching type. `x in <set>` is
+shorthand for the type's membership test.
+
+Lists a deployer tunes per deployment (allowed methods, restricted extensions) are
+`config {}` parameters (ADR-0012), not `data` declarations. `data` is for lists that
+ship with the ruleset or are loaded from files or URLs.
 
 ### Source Forms
 
@@ -221,10 +228,10 @@ rule 902100 (severity: warning) {
 Or via typed operators:
 
 ```
-data restricted_extensions from "data/restricted.txt" type string_set
+data backup_extensions from "data/backup-extensions.txt" type string_set
 
 rule 920360 (severity: warning) {
-  when request.uri.basename |> ends_with_any(restricted_extensions)
+  when request.basename |> ends_with_any(backup_extensions)
   then block
 }
 ```
@@ -258,7 +265,7 @@ Parse errors fail the compilation with file:line context.
 | CRSLang | SecLang output |
 |---|---|
 | `client.ip in <ip_list>` | `@ipMatchFromFile path` (file emitted alongside `.conf`) |
-| `field \|> matches_any(<regex_set>)` | `@rxFromFile path` |
+| `field \|> matches_any(<regex_set>)` | `reload static`: assembled and inlined as `@rx`; otherwise `@rxFromFile path` |
 | `field in <string_set>` | `@pmFromFile path` |
 | `geo_country(client.ip)` | `@geoLookup` + reference to `GEO:COUNTRY_CODE` |
 | Inline `values [...]` (small) | Expanded to a regex literal |
@@ -389,8 +396,9 @@ Look for `*.txt`, `*.ra`, `*.mmdb` files in conventional directories and auto-im
 - **Format proliferation** — every team has a slightly different data format. The
   language must support extension (custom format parsers) without becoming a parser
   zoo. Deferred extension-points ADR will address this.
-- **Hot-reload semantics across targets** — `reload on_change` works for Coraza
-  (file watch) but not Cloud Armor (requires API push). Compiler reports unsupported
+- **Hot-reload semantics across targets** — `reload on_change` and `interval` are not
+  supported by SecLang engines (ModSecurity and Coraza load data at startup) or by
+  Cloud Armor (requires API push). Compiler reports unsupported
   policies per target; deployer handles target-specific provisioning.
 - **Source authenticity** — pulling data from URLs requires integrity verification
   to prevent supply-chain attacks. The language enforces this by requiring at least

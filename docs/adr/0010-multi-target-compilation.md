@@ -93,21 +93,31 @@ existing backends or the language itself.
 Because SecLang is the primary target and has the most constraints, the compiler must
 handle several CRSLang features that SecLang cannot express directly:
 
-**Boolean OR** — CRSLang's `A or B` has no SecLang equivalent. The compiler decomposes
-it into separate rules with shared scoring:
+**Boolean OR** — CRSLang's `A or B` has no SecLang equivalent. Emitting one rule per
+branch, each with the rule's effects, would apply the effects twice when both branches
+match. The compiler instead emits one flag-setting rule per branch and keeps the
+original rule ID on a single rule that tests the flag and applies the action and effects
+once:
 
 ```
 # CRSLang
 rule 100001 {
   when condition_a or condition_b
-  then block { tx.anomaly_score += 5 }
+  then block { tx.custom_score += 5 }
 }
 
-# Compiled SecLang: two rules, same score target
-# Rule IDs must be integers; the compiler allocates adjacent IDs deterministically.
-SecRule ... "id:1000011,...,setvar:'tx.anomaly_score=+5'"
-SecRule ... "id:1000012,...,setvar:'tx.anomaly_score=+5'"
+# Compiled SecLang: branches only set a flag; the effects run once
+SecRule <condition_a> "id:9000101,phase:2,pass,nolog,setvar:'tx.or_100001=1'"
+SecRule <condition_b> "id:9000102,phase:2,pass,nolog,setvar:'tx.or_100001=1'"
+SecRule TX:or_100001 "@eq 1" \
+    "id:100001,phase:2,block,setvar:'tx.custom_score=+5'"
 ```
+
+Branch rules take IDs from the reserved range for compiler-generated rules (ADR-0012), so
+the authored ID still identifies the rule in logs and exclusions. Branch rules copy
+`MATCHED_VAR` and `MATCHED_VAR_NAME` into TX so the acting rule can log what matched.
+Mixed expressions such as `x and (y or z)` compile the same way: the `or` sub-expression
+becomes a flag, and the acting rule chains `x` with the flag test.
 
 **Macros / named compositions** — expanded inline during compilation. The compiled
 SecLang contains the full transformation chain.
