@@ -93,7 +93,6 @@ rule 920170 (severity: warning) {
   when request.method |> matches("^(?:GET|HEAD)$")
    and request.headers["Content-Length"] |> not(matches("^0?$"))
   then block {
-    tx.anomaly_score += 5
     log()
   }
 }
@@ -204,9 +203,10 @@ Work:
 
 A key benefit of typed fields: **phase becomes inferable**. Since each field belongs to a
 known processing phase (`request.headers` → phase 1, `response.body` → phase 4), the
-compiler can derive the phase automatically and catch phase/field mismatches at compile
-time. Phase is only required as explicit metadata for rules that use exclusively
-cross-phase fields (e.g., `tx.*`).
+compiler can derive the phase automatically: a rule runs in the latest phase among the
+fields it reads, since earlier data stays available later. Declaring a phase earlier than
+a referenced field is a compile-time error. Phase is only required as explicit metadata
+for rules that use exclusively cross-phase fields (e.g., `tx.*`).
 
 Phase 1 also introduces a structured **documentation model** spanning four tiers
 (ruleset, group, rule, rule-management directive), with doc-comments for narrative
@@ -237,7 +237,9 @@ Work:
 
 This is the second core IR change. It does not depend on how functions or actions are
 surfaced syntactically — boolean composition is a structural change to the condition
-model.
+model. When compiling to SecLang, which has no OR, each `or` branch becomes a rule that
+sets a flag, and one rule with the authored ID tests the flag and applies the action and
+effects once ([ADR-0010](adr/0010-multi-target-compilation.md)).
 
 See [ADR-0003: Boolean Algebra Replacing Chains](adr/0003-boolean-algebra.md).
 
@@ -261,12 +263,15 @@ operations.
 
 Additionally, **anomaly scoring becomes first-class**: severity-derived scoring
 eliminates the `setvar` boilerplate from every attack detection rule. A rule just declares
-its severity, and the scoring model (defined in globals) handles the rest.
+its severity, and the scoring model (defined in globals) handles the rest. Adding to a
+score variable by hand in a rule that declares a severity is a compile-time error, since
+it would count the score twice.
 
 | Current | New |
 |---|---|
 | `disruptive: block` + `setvar: "tx.score=+10"` | `severity: critical` (score auto-derived) |
-| Manual `setvar` per category | Category derived from group membership |
+| Manual `setvar` per category | Category derived from group membership (`category = "sql_injection"` → `tx.sql_injection_score`) |
+| Non-standard score `setvar`s | `score(anomaly: 5, protocol: 3)` replaces the severity-derived score |
 | Complex phase-5 evaluation rules | `config { scoring { inbound_threshold = 5 } }` |
 
 Work:
@@ -323,7 +328,14 @@ exclude rule 920170
 update rule 920170 {
   remove target request.args["foo"]
 }
+
+# Only for some requests
+exclude rule 942100 target request.args.post["query"]
+  when request.uri |> begins_with("/admin/query-builder")
 ```
+
+`where` selects rules by their metadata (`exclude rules where tag == "..."`); `when` limits
+an exclusion to matching requests and compiles to SecLang `ctl:` runtime exclusions.
 
 Work:
 - First-class exclusion syntax
