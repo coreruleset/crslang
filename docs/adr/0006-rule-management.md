@@ -179,9 +179,9 @@ Named groups replace `SecMarker` and provide both a scope for batch operations a
 
 ```
 group sql_injection_checks {
-  rule 942100 (...) { ... }
-  rule 942110 (...) { ... }
-  rule 942120 (...) { ... }
+  rule 942100 { ... }
+  rule 942110 { ... }
+  rule 942120 { ... }
 }
 
 # Exclude the entire group
@@ -200,13 +200,13 @@ the group only evaluate when the guard is true:
 ```
 # Paranoia level gating (the primary use case for skip/marker in CRS)
 group "xss_pl1" (requires: paranoia >= 1) {
-  rule 941100 (severity: critical) { ... }
-  rule 941110 (severity: critical) { ... }
+  rule 941100 { metadata { severity = critical } ... }
+  rule 941110 { metadata { severity = critical } ... }
 }
 
 group "xss_pl2" (requires: paranoia >= 2) {
-  rule 941120 (severity: critical) { ... }
-  rule 941130 (severity: critical) { ... }
+  rule 941120 { metadata { severity = critical } ... }
+  rule 941130 { metadata { severity = critical } ... }
 }
 
 # Custom guard (rare, replaces ad-hoc skip patterns)
@@ -352,7 +352,7 @@ type RemoveEffect struct {
   selector:
     where:
       tag: "OWASP_CRS/SQL_INJECTION"
-      phase: request
+      phase: request_headers
 
 - kind: update
   selector:

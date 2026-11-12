@@ -188,7 +188,10 @@ The pretty-printer enforces consistent style:
 
 ```
 # One condition per line, aligned
-rule 920170 (phase: request, severity: warning) {
+rule 920170 {
+  metadata {
+    severity = warning
+  }
   when request.method |> matches("^(?:GET|HEAD)$")
    and request.headers["Content-Length"] |> not(matches("^0?$"))
   then block {
@@ -196,14 +199,15 @@ rule 920170 (phase: request, severity: warning) {
   }
 }
 
-# Short rules on fewer lines
-rule 900100 (phase: request) {
+# Short rules on fewer lines; a single metadata property may share a line
+rule 900100 {
+  metadata { phase = request_headers }
   when true
   then pass { tx.paranoia_level = 1 }
 }
 ```
 
-Indentation: 2 spaces. Line width guide: 100 characters. `and`/`or` align under `when`.
+`metadata {}` comes first in the rule body. Indentation: 2 spaces. Line width guide: 100 characters. `and`/`or` align under `when`.
 
 ## Alternatives Considered
 

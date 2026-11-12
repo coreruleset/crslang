@@ -89,7 +89,10 @@ the HCL approach expresses the same semantics with named composition functions �
 Phase 3 and [ADR-0009](adr/0009-language-base-evaluation.md)):
 
 ```
-rule 920170 (severity: warning) {
+rule 920170 {
+  metadata {
+    severity = warning
+  }
   when request.method |> matches("^(?:GET|HEAD)$")
    and request.headers["Content-Length"] |> not(matches("^0?$"))
   then block {
@@ -105,7 +108,11 @@ the compiler emits `phase:1` automatically.
 Rules that use only cross-phase fields (e.g., `tx.*`) must declare the phase explicitly:
 
 ```
-rule 949110 (phase: logging, severity: critical) {
+rule 949110 {
+  metadata {
+    phase = logging
+    severity = critical
+  }
   when tx.inbound_anomaly_score |> gt(tx.inbound_anomaly_score_threshold)
   then deny(status: 403)
 }
@@ -114,9 +121,12 @@ rule 949110 (phase: logging, severity: critical) {
 Key properties:
 - **Typed fields** with dot-notation and bracket access for maps
 - **Phase inference** from field types — no redundant phase metadata
+- **A `metadata {}` block** for rule properties (`phase`, `severity`, `paranoia`,
+  `multi_match`, `backends`, ...) instead of arguments after the rule ID
 - **Composable functions** for chaining transformations and terminal predicates (pipeline
   operator `|>` if custom parser; named macros if HCL — decided in Phase 0)
-- **Boolean algebra** (`and`, `or`, `not`, parentheses) replacing chains
+- **Boolean algebra** (`and`, `or`, `not`, parentheses) replacing chains, with `let` to
+  name conditions
 - **Structured action blocks** replacing the action bag
 - **Compile-time validation** — phase/field mismatches caught before deployment
 - **Concise** but readable by security engineers

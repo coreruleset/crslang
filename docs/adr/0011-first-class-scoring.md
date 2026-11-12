@@ -55,7 +55,10 @@ and category, with explicit override capability.
 When a rule declares a severity, scoring happens automatically:
 
 ```
-rule 942100 (severity: critical) {
+rule 942100 {
+  metadata {
+    severity = critical
+  }
   when request.args |> detect_sqli()
   then block
 }
@@ -75,7 +78,7 @@ globals {
 ```
 
 This rule automatically contributes `5` to the anomaly score because it has
-`severity: critical` and the scoring table maps critical to 5.
+`severity = critical` and the scoring table maps critical to 5.
 
 ### Category Scoring via Groups
 
@@ -86,12 +89,18 @@ a rule belongs to:
 group "sql_injection" {
   category = "sql_injection"
 
-  rule 942100 (severity: critical) {
+  rule 942100 {
+    metadata {
+      severity = critical
+    }
     when request.args |> detect_sqli()
     then block
   }
 
-  rule 942110 (severity: critical) {
+  rule 942110 {
+    metadata {
+      severity = critical
+    }
     when request.args |> detect_sqli()
     then block
   }
@@ -110,7 +119,10 @@ The category name is the TX variable stem: `category = "<name>"` increments
 For rules that need non-standard scoring, an explicit `score()` function is available:
 
 ```
-rule 920170 (severity: warning) {
+rule 920170 {
+  metadata {
+    severity = warning
+  }
   when request.method |> matches("^(?:GET|HEAD)$")
    and request.headers["Content-Length"] |> not(matches("^0?$"))
   then block {
@@ -132,12 +144,20 @@ they contribute to (`tx.inbound_anomaly_score_pl1` through `pl4`). In the new mo
 paranoia level is a rule attribute:
 
 ```
-rule 942100 (severity: critical, paranoia: 1) {
+rule 942100 {
+  metadata {
+    severity = critical
+    paranoia = 1
+  }
   when request.args |> detect_sqli()
   then block
 }
 
-rule 942101 (severity: critical, paranoia: 2) {
+rule 942101 {
+  metadata {
+    severity = critical
+    paranoia = 2
+  }
   when request.args |> url_decode() |> detect_sqli()
   then block
 }
@@ -181,7 +201,11 @@ The compiler expands first-class scoring to SecLang `setvar` actions:
 group "sql_injection" {
   category = "sql_injection"
 
-  rule 942100 (severity: critical, paranoia: 1) {
+  rule 942100 {
+    metadata {
+      severity = critical
+      paranoia = 1
+    }
     when request.args |> detect_sqli()
     then block
   }
@@ -275,7 +299,11 @@ then block {
 ### C: Score as rule metadata only (no explicit override)
 
 ```
-rule 942100 (severity: critical, category: sqli) {
+rule 942100 {
+  metadata {
+    severity = critical
+    category = "sql_injection"
+  }
   when ...
   then block  # scoring is 100% automatic
 }

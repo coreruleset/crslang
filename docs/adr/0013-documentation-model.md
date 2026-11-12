@@ -113,14 +113,26 @@ group "sql_injection" {
 
   /// libinjection-based detection. Uses detectSQLi() on URL-decoded args.
   group "libinjection_based" {
-    rule 942100 (paranoia: 1, severity: critical) { ... }
-    rule 942110 (paranoia: 2, severity: critical) { ... }
+    rule 942100 {
+      metadata {
+        paranoia = 1
+        severity = critical
+      }
+      ...
+    }
+    rule 942110 {
+      metadata {
+        paranoia = 2
+        severity = critical
+      }
+      ...
+    }
   }
 
   /// Pattern-based detection. Catches patterns libinjection misses (UNION-based,
   /// time-based blind, comment injection).
   group "pattern_based" {
-    rule 942120 (paranoia: 2) { ... }
+    rule 942120 { metadata { paranoia = 2 } ... }
   }
 }
 ```
@@ -147,17 +159,18 @@ Per-rule documentation with both narrative and structured fields:
 ///
 /// Known false positives:
 ///   - Search queries containing SQL keywords (use exclusion on the search field)
-rule 942100 (
-  severity:   critical,
-  paranoia:   1,
-  references: ["CWE-89"],
-) {
+rule 942100 {
+  metadata {
+    severity   = critical
+    paranoia   = 1
+    references = ["CWE-89"]
+  }
   when request.args |> detect_sqli()
   then block
 }
 ```
 
-Doc-comments carry prose; the `references:` metadata field carries a machine-readable
+Doc-comments carry prose; the `references` metadata field carries a machine-readable
 list. Tooling can render the prose, link the references, and emit both in audit logs.
 
 ### Tier 4: Rule-Management Directives
@@ -354,7 +367,10 @@ augment it with sidecar markdown for content that doesn't fit per-rule.)
 ### C: Dedicated `doc {}` block inside each rule
 
 ```
-rule 942100 (severity: critical) {
+rule 942100 {
+  metadata {
+    severity = critical
+  }
   doc {
     description = "..."
     references  = [...]

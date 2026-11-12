@@ -46,11 +46,14 @@ and reports clear errors for unsupported features.
    ModSecurity/Coraza today), not a language constraint.
 
 3. **Graceful degradation** — when a CRSLang feature has no equivalent in a target:
-   - If there's a workaround (e.g., OR → multiple rules with scoring for SecLang),
+   - If there's a workaround (e.g., OR → flag-setting rules for SecLang, see below),
      the compiler applies it automatically.
    - If there's no workaround, the compiler emits a clear error: "Feature X is not
      supported by target Y."
    - Rules that use unsupported features are flagged, not silently dropped.
+   - A rule can declare the targets it is meant for with the `backends` metadata
+     property (see below). The compiler skips the rule for any other target and lists
+     it in the compile report as excluded by `backends`, not as an error.
 
 4. **Target capability profiles** — each backend declares what it supports. Tooling can
    validate a ruleset against a target before compilation.
@@ -76,7 +79,7 @@ existing backends or the language itself.
 | Feature | SecLang | Cloud Armor | AWS WAF | Cloudflare |
 |---------|---------|-------------|---------|------------|
 | Boolean AND | chain (workaround) | native | native | native |
-| Boolean OR | separate rules (workaround) | native | native | native |
+| Boolean OR | flag-setting rules (workaround) | native | native | native |
 | Regex matching | native | native | native | native |
 | String transforms | native (40+) | limited | very limited | limited |
 | IP matching | native | native | native | native |
@@ -119,6 +122,24 @@ the authored ID still identifies the rule in logs and exclusions. Branch rules c
 Mixed expressions such as `x and (y or z)` compile the same way: the `or` sub-expression
 becomes a flag, and the acting rule chains `x` with the flag test.
 
+When the branches share the same operator and transformations and differ only in the
+field, the compiler can skip the flags and emit one rule with the targets joined by `|`
+(SecLang's target separator), as long as this does not change how many times the
+rule's effects run. SecLang runs non-disruptive actions for each matching target value,
+so the merge is safe for a rule with no counted effects (like the one below) and not for
+one that adds to a score:
+
+```
+# CRSLang
+rule 100003 {
+  when request.args |> matches("evil") or request.cookies |> matches("evil")
+  then block
+}
+
+# Compiled SecLang: one rule, no flag
+SecRule ARGS|REQUEST_COOKIES "@rx evil" "id:100003,phase:2,block"
+```
+
 **Macros / named compositions** — expanded inline during compilation. The compiled
 SecLang contains the full transformation chain.
 
@@ -127,6 +148,27 @@ SecLang contains the full transformation chain.
 **Typed fields** — mapped back to SecLang variable/collection names.
 
 **First-class scoring** — expanded to `setvar` actions in SecLang.
+
+### Restricting Rules to Targets: `backends`
+
+By default the compiler tries to compile every rule for the selected target. A rule
+that only makes sense for some targets can say so in its metadata:
+
+```
+rule 9100200 {
+  metadata {
+    backends = ["seclang"]
+  }
+  when response.body |> contains("ORA-00933")
+  then block
+}
+```
+
+For any target not in the list, the compiler skips the rule and lists it in the compile
+report, so users can see which rules their target will not run. A rule without
+`backends` is compiled for every target, and unsupported features in it are errors as
+described above. CRS rules must not exclude `seclang`, since the whole ruleset must
+compile to SecLang (principle 2).
 
 ### File Organization Metadata
 
@@ -209,8 +251,8 @@ Define subsets of CRSLang for each target (e.g., "CRSLang-SecLang", "CRSLang-CEL
 
 ### Risks
 
-- **SecLang workaround correctness** — decomposing OR into multiple rules changes
-  evaluation semantics (each rule is independent, not short-circuited). Must validate
+- **SecLang workaround correctness** — decomposing OR into flag-setting rules changes
+  evaluation semantics (every branch rule runs; nothing is short-circuited). Must validate
   that the decomposed output is semantically equivalent.
 - **Target drift** — cloud WAF targets change their expression languages over time.
   Compilation backends must be maintained per-target.

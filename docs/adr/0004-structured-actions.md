@@ -61,7 +61,7 @@ Each disruptive action can take named parameters:
 
 ```
 then deny(status: 403)
-then block(status: 403)
+then block
 then redirect(url: "https://example.com/blocked")
 then drop
 then pass
@@ -139,7 +139,10 @@ configure(request_body_processor: XML)
 group "xss_detection" {
   category = "xss"
 
-  rule 941100 (severity: critical) {
+  rule 941100 {
+    metadata {
+      severity = critical
+    }
     when request.args |> js_decode() |> capture("xss-pattern")
     then block {
       log(audit: true, data: matched.var)
@@ -148,7 +151,7 @@ group "xss_detection" {
 }
 ```
 
-Scoring is automatic: `severity: critical` + `category: xss` contribute to
+Scoring is automatic: `severity = critical` + `category = "xss"` contribute to
 `anomaly_score` and `xss_score` based on the globals scoring table. `capture()` replaces
 the separate `@rx` + `capture` action. For rules that need non-standard scoring, use
 the `score()` override, which replaces the severity-derived scores (ADR-0011). Direct
@@ -156,7 +159,10 @@ assignment to a scoring variable in a rule with a severity is a compile error, s
 would count the score twice:
 
 ```
-rule 941100 (severity: critical) {
+rule 941100 {
+  metadata {
+    severity = critical
+  }
   when request.args |> detect_xss()
   then block {
     score(anomaly: 5, xss: 5)   # explicit override
@@ -171,7 +177,10 @@ table is in `globals { scoring {} }`, and per ADR-0012 the deployment thresholds
 paranoia level are in the `config {}` block. The example below is kept to show direct
 TX assignment syntax for genuine custom-state rules, not as a template for setup):
 ```
-rule 900100 (phase: request_headers) {
+rule 900100 {
+  metadata {
+    phase = request_headers
+  }
   when true
   then pass {
     tx.custom_flag = 1
@@ -184,7 +193,11 @@ rule 900100 (phase: request_headers) {
 compiler-generated per ADR-0012, but the pattern still applies to user-authored
 TX-only rules):
 ```
-rule 901001 (phase: request_headers, severity: critical) {
+rule 901001 {
+  metadata {
+    phase = request_headers
+    severity = critical
+  }
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500) {
     log(audit: true)
@@ -257,8 +270,8 @@ then:
   #      SecMarker "END-941"
 
   group "xss_pl2" (requires: paranoia >= 2) {
-    rule 941120 (severity: critical) { ... }
-    rule 941130 (severity: critical) { ... }
+    rule 941120 { metadata { severity = critical } ... }
+    rule 941130 { metadata { severity = critical } ... }
   }
   ```
 
@@ -343,3 +356,10 @@ rule 920170 {
   engine-specific effects.
 - **Ordering semantics** — do effects execute in order? In parallel? Define this
   explicitly (recommendation: ordered, top-to-bottom, matching SecLang behavior).
+- **Two ways to remove rules at runtime (open question)** — `configure(rule_remove_by_id:
+  ...)` and `configure(rule_remove_by_tag: ...)` overlap with `exclude ... when`
+  (ADR-0006), which compiles to the same `ctl:ruleRemove*` actions. Dropping the
+  rule-removal settings from `configure {}` would leave one way to express it, with
+  `configure {}` kept for per-request engine settings such as the JSON body processor
+  (ADR-0008). Chained uses such as 905111 (ADR-0003, Category 2) would need to be
+  rewritten as exclusions first.

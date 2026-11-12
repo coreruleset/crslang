@@ -114,7 +114,10 @@ import package "owasp_crs/4.18" as crs
 exclude group crs.sql_injection target request.args.post["query"]
 
 # crs.sql_injection.detect references the macro
-rule 999100 (severity: critical) {
+rule 999100 {
+  metadata {
+    severity = critical
+  }
   when crs.sql_injection.detect()
   then block
 }
@@ -184,7 +187,10 @@ exclude group crs.sql_injection when request.uri |> begins_with("/admin")
 
 # Add custom rules in a deployer-owned namespace
 group "myorg.custom_payment_protection" {
-  rule 9100100 (severity: critical) {
+  rule 9100100 {
+    metadata {
+      severity = critical
+    }
     when request.uri |> begins_with("/payment")
      and request.body |> contains("sql_keyword")
     then block

@@ -160,9 +160,10 @@ Default actions apply to all subsequent rules in the file that do not override t
 transformations.** Each rule explicitly states its own transforms via pipelines or named
 macros. This eliminates the need for SecLang's `t:none` workaround (see ADR-0002).
 
-**Syntax convention** — `=` is used for assignments inside block bodies (`action =
-pass`, `version = "..."`) and `:` is used for metadata arguments in parentheses (`(phase:
-request_headers, severity: critical)`).
+**Syntax convention** — `=` is used for assignments inside block bodies, including a
+rule's `metadata {}` block (`action = pass`, `version = "..."`, `severity = critical`),
+and `:` is used for arguments in parentheses (`deny(status: 403)`, `defaults (phase:
+request_headers)`).
 
 **3. Markers → guarded groups (ADR-0006)**
 

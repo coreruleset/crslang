@@ -67,7 +67,7 @@ Examples here use the pipeline (ADR-0002) and action block (ADR-0004) syntax for
 readability. The boolean structure this ADR adds to the IR does not depend on either.
 
 ```
-rule 920170 (phase: request) {
+rule 920170 {
   when request.method |> matches("^(?:GET|HEAD)$")
    and request.headers["Content-Length"] |> not(matches("^0?$"))
   then block {
@@ -75,6 +75,30 @@ rule 920170 (phase: request) {
   }
 }
 ```
+
+### Naming Conditions with `let`
+
+Long pipelines inside a boolean expression are hard to read: the reader has to find
+where each pipeline ends and the next operator begins. `let` names a predicate so the
+`when` clause shows only the boolean structure:
+
+```
+rule 920170 {
+  let is_get_or_head  = request.method |> matches("^(?:GET|HEAD)$")
+  let has_body_length = request.headers["Content-Length"] |> not(matches("^0?$"))
+  when is_get_or_head and has_body_length
+  then block {
+    tx.anomaly_score += 5
+  }
+}
+```
+
+`let` is syntactic sugar. The parser inlines each binding into the `Expr` tree where it
+is used, so it needs no IR node and no YAML v2 form, and short-circuit evaluation is
+unchanged. Pipelines are pure, so inlining a binding gives the same result as evaluating
+it first. The exception is `capture()`, which sets capture groups as a side-effect
+(Category 1 below): a binding that uses `capture()` may be referenced only once. The
+same mechanism covers value bindings for data-flow dependencies (Option C below).
 
 ### Operator Precedence
 
@@ -219,7 +243,7 @@ All setvar/log/ctl actions move to the `then` block and execute only when the fu
 expression matches.
 
 ```
-rule 920190 (phase: request) {
+rule 920190 {
   when request.headers["Range"] |> matches("(\\d+)-(\\d+)")
    and request.method |> eq("GET")
   then block {
@@ -241,7 +265,7 @@ rule 920190 (phase: request) {
 Allow inline effect blocks on individual predicates:
 
 ```
-rule 905111 (phase: request) {
+rule 905111 {
   when client.ip |> ip_in_range("127.0.0.1", "::1")
    and request.headers["User-Agent"] |> ends_with("(internal dummy connection)") {
          configure(rule_remove_by_tag: "TEST_CHAIN")
@@ -263,7 +287,7 @@ rule 905111 (phase: request) {
 Introduce variable bindings to handle Category 3 without inline side-effects:
 
 ```
-rule 901320 (phase: request) {
+rule 901320 {
   let ua_hash = request.headers["User-Agent"] |> sha1() |> hex_encode()
   when count(tx.enable_default_collections) |> eq(1)
    and tx.enable_default_collections |> eq(1)
@@ -275,7 +299,7 @@ rule 901320 (phase: request) {
 ```
 
 - Separates data flow from conditions cleanly.
-- `let` bindings are evaluated eagerly, before the `when` clause.
+- `let` bindings are inlined where they are used (see Naming Conditions with `let`).
 - Handles Category 3 without inline side-effects.
 - Does not address Category 2 (`ctl` on intermediate links).
 
@@ -287,8 +311,9 @@ Use a **layered approach**:
    vast majority of CRS rules. Chain links without intermediate side-effects are already
    flattened by the existing normalizer, so this is the natural starting point.
 
-2. **Phase 2b** — add `let` bindings (Option C) for data-flow dependencies. This
-   cleanly handles Category 3 without complicating the boolean expression model.
+2. **Phase 2b** — add `let` bindings for naming conditions and for data-flow
+   dependencies (Option C). This cleanly handles Category 3 without complicating the
+   boolean expression model.
 
 3. **Phase 2c** — if Category 2 (`ctl` on intermediate links) proves common enough to
    warrant language support, add conditional side-effects (Option B) as an extension.
@@ -362,43 +387,53 @@ when count(tx.enable) |> eq(1) ...
 then pass { init_collection(ip: client.ip + "_" + ua_hash) }
 ```
 
-### Collection Quantifier: `each()`
+### Multi-Stage Matching: `multi_match`
 
-SecLang's `multiMatch` action changes how a collection-targeting condition evaluates —
-instead of stopping at the first match, it iterates all values and fires side-effects
-per match. This is currently modeled as a non-disruptive action, but it is semantically
-a condition quantifier.
+SecLang's `multiMatch` action changes how the operator sees a target that has
+transformations. Without it, the operator runs once, on the fully transformed value.
+With it, the operator runs on the original value and again after each transformation
+that changes the value, and every stage that matches counts as a match. This is
+currently modeled as a non-disruptive action, but it changes how the condition
+evaluates, not what happens after it matches.
 
-**Recommendation: `each()` as a condition-level quantifier (Option A).**
+**Recommendation: `multi_match` as rule metadata.**
 
 ```
-# Without each(): first match wins, effects fire once
-when request.args |> detect_sqli()
+# Without multi_match: the operator tests only the final transformed value
+rule 942100 {
+  when request.args |> utf8_to_unicode() |> url_decode_uni() |> detect_sqli()
+  then block
+}
 
-# With each(): all values tested, effects fire per match
-when each(request.args) |> detect_sqli()
-then block {
-  tx.sql_injection_score += 5  # incremented per matching argument
-  log(data: matched.var)  # logged per matching argument
+# With multi_match: the operator tests the original value and the value after
+# each transformation
+rule 942100 {
+  metadata {
+    multi_match = true
+  }
+  when request.args |> utf8_to_unicode() |> url_decode_uni() |> detect_sqli()
+  then block
 }
 ```
 
-`each()` wraps a map-typed field and signals "iterate all values." Without it, the
-default is first-match semantics.
+The flag applies to every predicate in the rule. In SecLang, `multiMatch` is set per
+chain link, so a rule-level flag is lossy only for a chain where some links use it and
+others transform their input without it. CRS has no such chain: in the one chained rule
+that uses `multiMatch` (942131), the other link has no transformations, and multi-stage
+matching has no effect without them. The CRS ruleset therefore still compiles to SecLang
+losslessly (ADR-0010).
 
 **Alternatives documented:**
 
-- **Option B: Effect-level modifier** — `then block (per_match: true) { ... }`. Simpler
-  to parse but misleading: the reader assumes first-match from the condition until
-  they notice the modifier.
-- **Option C: Separate iteration block** — `for each match { per-match effects } then
-  block { once-only effects }`. Most expressive (supports both per-match and once-only
-  effects) but adds a new block type.
-- **Option D: Drop it** — if scoring becomes first-class (ADR-0011), per-match scoring
-  may be handled at the scoring level rather than as a language construct.
+- **Option B: Predicate-level wrapper** — `multi_match(request.args |> utf8_to_unicode()
+  |> detect_sqli())`. Exact per-predicate control and lossless for any chain, but it adds
+  a construct to the pipeline syntax for a rarely used feature.
+- **Option C: Drop it** — always test only the final value. Changes the behavior of
+  the eight CRS rules that use `multiMatch`.
 
-`multiMatch` is rarely used in CRS, so Option A is sufficient for the foreseeable
-future. Options B/C can be revisited if use cases emerge.
+`multiMatch` is rarely used in CRS, so the metadata flag is sufficient for the
+foreseeable future. Option B can be revisited if a rule needs different settings per
+predicate.
 
 ### String Interpolation
 
@@ -440,7 +475,7 @@ rule 100002 {
 kind: rule
 metadata:
   id: 920170
-  phase: request
+  phase: request_headers
 when:
   and:
     - pipeline:
