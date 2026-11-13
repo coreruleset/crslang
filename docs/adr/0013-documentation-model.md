@@ -432,3 +432,21 @@ Reuse the existing `tags:` array for everything: `tag:cwe/89`, `tag:fp/admin-ui`
 - **Schema growth** — structured fields (`references`, `false_positives`, `cwe`,
   `owasp`, etc.) will accumulate over time. The IR's `Fields map[string]Value` keeps
   this open-ended; the spec documents which fields are recognized by core tooling.
+
+## Open Questions
+
+- **Plain `#` comments** — ADR-0005's grammar allows `#` comments, but this ADR only
+  defines `///` doc-comments. Does the IR keep plain comments, so that parsing and
+  pretty-printing a file preserves them, or are they dropped? If dropped, the formatter
+  (ADR-0005) would erase every ordinary comment in a file it reformats.
+- **Migrating existing CRS comments** — Alternative D rejects SecLang `#` comments as the
+  source of documentation, but most of CRS's current documentation lives in them. How
+  does the SecLang importer carry that text into CRSLang: as `///` doc-comments on the
+  next rule, as plain comments, or with tooling that extracts references and false
+  positives into structured fields? File banner comments raise the same question for
+  group doc-comments.
+- **Where a rule's `msg:` comes from** — compilation to SecLang takes `msg:` from the
+  first line of the rule's doc-comment, and no ADR defines a separate message property.
+  Is the doc-comment the only source, or does a rule need its own message (for example
+  in its metadata) when the log line should differ from the first line of the
+  description? What does the compiler emit for a rule with no doc-comment?
