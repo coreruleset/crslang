@@ -1,6 +1,6 @@
 # ADR-0009: Language Base Evaluation — HCL, CEL, Expr, or Custom Parser
 
-- **Status:** Proposed
+- **Status:** Accepted (Option D, custom parser)
 - **Date:** 2026-04-13
 - **Phase:** 0 (foundational — must decide before IR design in Phases 1-3)
 
@@ -490,8 +490,9 @@ of Go, comparable to a medium-sized package.
 
 ## Decision
 
-**Deferred.** This ADR presents the analysis; the decision depends on the team's
-priorities:
+**Custom parser (Option D).** CRSLang builds its own small parser (ADR-0005) instead of
+adopting HCL, CEL or Expr. The criteria below were the trade-off; the team weighed them in
+favor of Option D:
 
 **Choose HCL (Option A) if:**
 - Minimizing parser maintenance is the top priority
@@ -525,18 +526,7 @@ Some design elements are constant across all options:
 
 ## Consequences
 
-### If HCL Is Chosen
-
-- ADR-0005 is superseded; no custom parser needed
-- Pipeline operator (ADR-0002) is dropped from the text syntax; macros replace it
-- Effects (ADR-0004) must be redesigned for HCL's declarative attribute model
-- The function registry becomes the primary extension point
-- Sprig and other Go function libraries can be integrated directly
-- Editor support comes largely for free (HCL plugins exist)
-
-### If Custom Parser Is Chosen
-
-- ADR-0005 stands as designed
+- ADR-0005 (still proposed) describes how to build the parser
 - Pipeline, macros, effects all work as proposed in earlier ADRs
 - Must build editor support (Tree-sitter grammar, LSP)
 - Function library must be built from scratch (no Sprig shortcut)

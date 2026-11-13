@@ -1,6 +1,6 @@
 # ADR-0008: Separation of Configuration Directives from Rule Language
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-04-13
 - **Phase:** 0 (foundational — scoping decision for the language)
 
