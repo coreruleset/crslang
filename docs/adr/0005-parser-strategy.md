@@ -1,6 +1,6 @@
 # ADR-0005: Parser Strategy
 
-- **Status:** Proposed (see also [ADR-0009](0009-language-base-evaluation.md) for broader evaluation including HCL, CEL, and Expr)
+- **Status:** Proposed ([ADR-0009](0009-language-base-evaluation.md) chose the custom parser; this ADR covers how to build it)
 - **Date:** 2026-04-13
 - **Phase:** 4 (implementation of ADR-0009 decision)
 

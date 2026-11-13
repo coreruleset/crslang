@@ -252,25 +252,9 @@ narrative.
 
 ### Surface Syntax
 
-Doc-comments shown above use `///` as the marker. The exact marker depends on the
-Phase 0 language base decision (see ADR-0009):
-
-- **Custom parser:** `///` doc-comments that attach to the next AST node, plus
-  structured fields in the metadata clause. Native, lightweight.
-- **HCL:** HCL does not have node-attached doc-comments. The same content goes into
-  multi-line `description` and structured-field attributes:
-  ```hcl
-  rule "942100" {
-    severity = "critical"
-    description = <<-EOT
-      SQL injection via libinjection...
-    EOT
-    references = ["CWE-89"]
-  }
-  ```
-
-The IR is identical regardless of surface syntax. The compiler/parser populates the
-`Documentation` struct from whichever surface form it sees.
+ADR-0009 chose the custom parser, so doc-comments use `///` and attach to the next AST
+node, with structured fields in the rule's metadata. The parser populates the
+`Documentation` struct from them.
 
 ### YAML Round-Trip
 
@@ -446,9 +430,24 @@ Reuse the existing `tags:` array for everything: `tag:cwe/89`, `tag:fp/admin-ui`
   documentation. Authors editing in CRSLang must understand that exporting to SecLang
   loses nested group docs and structured fields beyond `tag:`. The migration tooling
   should print a clear summary of what was preserved.
-- **HCL surface complexity** — if HCL is chosen as the language base, doc-comments
-  become structured `description` attributes, which is verbose for small docs. The
-  trade-off is part of the Phase 0 language base decision (ADR-0009).
 - **Schema growth** — structured fields (`references`, `false_positives`, `cwe`,
   `owasp`, etc.) will accumulate over time. The IR's `Fields map[string]Value` keeps
   this open-ended; the spec documents which fields are recognized by core tooling.
+
+## Open Questions
+
+- **Plain `#` comments** — ADR-0005's grammar allows `#` comments, but this ADR only
+  defines `///` doc-comments. Does the IR keep plain comments, so that parsing and
+  pretty-printing a file preserves them, or are they dropped? If dropped, the formatter
+  (ADR-0005) would erase every ordinary comment in a file it reformats.
+- **Migrating existing CRS comments** — Alternative D rejects SecLang `#` comments as the
+  source of documentation, but most of CRS's current documentation lives in them. How
+  does the SecLang importer carry that text into CRSLang: as `///` doc-comments on the
+  next rule, as plain comments, or with tooling that extracts references and false
+  positives into structured fields? File banner comments raise the same question for
+  group doc-comments.
+- **Where a rule's `msg:` comes from** — compilation to SecLang takes `msg:` from the
+  first line of the rule's doc-comment, and no ADR defines a separate message property.
+  Is the doc-comment the only source, or does a rule need its own message (for example
+  in its metadata) when the log line should differ from the first line of the
+  description? What does the compiler emit for a rule with no doc-comment?

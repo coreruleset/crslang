@@ -11,16 +11,16 @@ ecosystem.
 
 ## Status
 
-This document and all linked ADRs describe a **proposed** design. No decisions have been
-ratified yet. Every ADR is in `Status: Proposed`. The framing throughout is "the design
-proposes X" rather than "X is decided" — even where the proposed direction reads
-declaratively for clarity.
+This document and the linked ADRs describe a design that is mostly still **proposed**.
+Two Phase 0 decisions are accepted: CRSLang uses a **custom parser** as its language base
+([ADR-0009](adr/0009-language-base-evaluation.md), Option D), and engine configuration is
+out of the language's scope ([ADR-0008](adr/0008-configuration-directives.md)). Every
+other ADR is in `Status: Proposed`. For those, the framing is "the design proposes X"
+rather than "X is decided" — even where the proposed direction reads declaratively for
+clarity.
 
-The most contested open decision is the **language base** (custom parser vs HCL — see
-[ADR-0009](adr/0009-language-base-evaluation.md)), which shapes how Phases 2–4 are
-expressed syntactically. The other Phase 0 ADRs (scope separation, multi-target
-compilation, ruleset initialization) are proposals with reasonable consensus but are
-still subject to revision.
+The remaining Phase 0 ADRs (multi-target compilation, ruleset initialization) are
+proposals with reasonable consensus but are still subject to revision.
 
 ## Current State
 
@@ -84,9 +84,7 @@ actions:
 
 ## Target State
 
-A rule in the new CRSLang should look like (syntax shown uses the custom parser approach;
-the HCL approach expresses the same semantics with named composition functions — see
-Phase 3 and [ADR-0009](adr/0009-language-base-evaluation.md)):
+A rule in the new CRSLang should look like:
 
 ```
 rule 920170 {
@@ -123,8 +121,8 @@ Key properties:
 - **Phase inference** from field types — no redundant phase metadata
 - **A `metadata {}` block** for rule properties (`phase`, `severity`, `paranoia`,
   `multi_match`, `backends`, ...) instead of arguments after the rule ID
-- **Composable functions** for chaining transformations and terminal predicates (pipeline
-  operator `|>` if custom parser; named macros if HCL — decided in Phase 0)
+- **Composable functions** for chaining transformations and terminal predicates, joined
+  with the pipeline operator `|>` and reusable as named macros
 - **Boolean algebra** (`and`, `or`, `not`, parentheses) replacing chains, with `let` to
   name conditions
 - **Structured action blocks** replacing the action bag
@@ -160,20 +158,19 @@ Key properties:
 ### Phase 0: Foundational Decisions
 
 Four foundational topics need to be settled before IR or syntax work begins, because
-they shape everything downstream. The first is genuinely open; the other three have
+they shape everything downstream. The first two are decided; the other two have
 proposed directions that are still subject to revision.
 
-**Language base (open):** Should CRSLang adopt an existing language (HCL, with its
-Terraform ecosystem, Sprig function library, and zero parser maintenance) or build a
-custom parser (with pipeline operator, language-level macros, and full control)? Both
-approaches support globals, groups, named function compositions, and boolean conditions.
-The key trade-off is maintenance cost vs syntactic control — and the answer determines
-how Phases 2-4 are designed. ADR-0009 lays out the comparison without picking a winner.
+**Language base (accepted):** CRSLang builds a custom parser (ADR-0009, Option D) instead
+of adopting HCL, CEL or Expr. It gets the pipeline operator, macros defined in the
+language, native `when`/`then` structure with imperative effects, and full control over
+how the language evolves. The cost is maintaining a small parser and building editor
+support and the function library from scratch.
 
-**Scope (proposed):** CRSLang would describe *what to detect*, not *how to run the
-engine*. The ~60 SecLang configuration directives (body limits, PCRE tuning, log paths,
-etc.) would move out of scope; only rule-adjacent metadata (component signature, default
-actions, markers, app ID) would stay in the language.
+**Scope (accepted):** CRSLang describes *what to detect*, not *how to run the engine*.
+The ~60 SecLang configuration directives (body limits, PCRE tuning, log paths, etc.)
+move out of scope; only rule-adjacent metadata (component signature, default actions,
+markers, app ID) stays in the language.
 
 **Multi-target compilation (proposed):** CRSLang would not be constrained by any single
 compilation target. Today it compiles to SecLang (ModSecurity/Coraza); the proposed
@@ -255,21 +252,16 @@ See [ADR-0003: Boolean Algebra Replacing Chains](adr/0003-boolean-algebra.md).
 
 ### Phase 3: Function Composition and Structured Actions
 
-How functions and actions are expressed depends on the Phase 0 language base decision.
+**Function composition** — transformations and operators become composable functions,
+chained left-to-right with the pipeline operator (`|>`). Reusable transform chains are
+defined once as macros and invoked by name.
 
-**Function composition** — transformations and operators become composable functions.
-If the custom parser is chosen, a pipeline operator (`|>`) chains them left-to-right.
-If HCL is chosen, named composition functions (macros) keep nesting shallow. Either way,
-reusable transform chains are defined once and invoked by name.
-
-| Current | New (custom) | New (HCL) |
-|---|---|---|
-| `transformations: [lowercase, urlDecode]` + `operator: {name: rx, ...}` | `field \|> url_decode() \|> lowercase() \|> matches("...")` | `matches(normalize(field), "...")` |
+| Current | New |
+|---|---|
+| `transformations: [lowercase, urlDecode]` + `operator: {name: rx, ...}` | `field \|> url_decode() \|> lowercase() \|> matches("...")` |
 
 **Structured actions and scoring** — the action bag is replaced with a structured model.
-If the custom parser is chosen, `then block { tx.score += 5 }` uses native assignment
-operators. If HCL is chosen, effects use structured sub-blocks or string-encoded
-operations.
+Effects use native assignment operators, as in `then block { tx.score += 5 }`.
 
 Additionally, **anomaly scoring becomes first-class**: severity-derived scoring
 eliminates the `setvar` boilerplate from every attack detection rule. A rule just declares
@@ -286,8 +278,7 @@ it would count the score twice.
 
 Work:
 - Define a `Function` type with signature: name, args, return type
-- If custom: implement pipeline operator, language-level macros
-- If HCL: register function library (including Sprig), define macro blocks
+- Implement the pipeline operator and language-level macros
 - Redesign actions as structured model (disruptive + effects)
 - `ctl:` directives become `configure {}` blocks
 
@@ -295,7 +286,7 @@ Phase 3 also introduces **macros** for reusable expression compositions (elimina
 copy-pasted normalization chains and predicate patterns) and **external data sources**
 as first-class typed declarations (IP lists, regex sets, geo databases, regex assemblies).
 
-See [ADR-0002: Pipeline Operator](adr/0002-pipeline-operator.md) (custom parser path),
+See [ADR-0002: Pipeline Operator](adr/0002-pipeline-operator.md),
 [ADR-0004: Structured Action Model](adr/0004-structured-actions.md),
 [ADR-0011: First-Class Scoring](adr/0011-first-class-scoring.md),
 [ADR-0015: Macros and Named Compositions](adr/0015-macros-and-compositions.md),
@@ -304,17 +295,15 @@ See [ADR-0002: Pipeline Operator](adr/0002-pipeline-operator.md) (custom parser 
 
 ### Phase 4: Text Syntax and Parser
 
-Implement the text syntax based on the Phase 0 decision.
-
-Both approaches support the core structural requirements:
+Implement the custom parser chosen in Phase 0 (ADR-0009). The syntax supports the core
+structural requirements:
 - **Globals block** for version, common tags — inherited by all rules
 - **Group blocks** for file-level metadata — tags shared within a logical grouping
 - **Named function compositions** (macros) — reusable transform chains
 - **Boolean conditions** with custom functions for matching
 
 Work:
-- If HCL: define schema, register function library, design effects model
-- If custom: write lexer + recursive-descent parser, build function library
+- Write the lexer and recursive-descent parser, build the function library
 - YAML becomes one serialization of the IR, not the canonical form
 - SecLang import stays via existing ANTLR parser (read-only)
 - Update WASM/playground for the new syntax
@@ -357,11 +346,11 @@ See [ADR-0006: Rule Management Directives](adr/0006-rule-management.md).
 ## Migration Strategy
 
 ```
-Phase 0      Settle the four foundational topics: language base (HCL vs custom),
-             scope separation (engine config out of language), multi-target
-             compilation model, and ruleset initialization (config {} block
-             replacing crs-setup.conf + 901 rules). These decisions gate all
-             subsequent work.
+Phase 0      Settle the four foundational topics: language base (decided:
+             custom parser), scope separation (decided: engine config out of
+             the language), multi-target compilation model, and ruleset
+             initialization (config {} block replacing crs-setup.conf + 901
+             rules). These decisions gate all subsequent work.
 
 Phase 1      Internal IR changes: typed fields, phase inference.
              YAML syntax updated but backward-compatible.
@@ -372,7 +361,7 @@ Phase 2      Semantic model change: boolean expressions replace chains.
              Automated migration tool: v1 YAML -> v2 YAML.
 
 Phase 3      Function composition and action model redesign.
-             Shape determined by Phase 0 decision.
+             Pipeline operator, macros, structured effects.
 
 Phase 4      Text syntax as primary authoring format.
              Three importers: SecLang -> IR, YAML -> IR, CRSLang text -> IR.
@@ -392,20 +381,20 @@ At every phase:
 
 | ADR | Phase | Title | Status |
 |-----|-------|-------|--------|
-| [0009](adr/0009-language-base-evaluation.md) | 0 | Language Base — HCL, CEL, Expr, or Custom | Proposed |
-| [0008](adr/0008-configuration-directives.md) | 0 | Separation of Configuration from Rule Language | Proposed |
+| [0009](adr/0009-language-base-evaluation.md) | 0 | Language Base — HCL, CEL, Expr, or Custom | Accepted (custom parser) |
+| [0008](adr/0008-configuration-directives.md) | 0 | Separation of Configuration from Rule Language | Accepted |
 | [0010](adr/0010-multi-target-compilation.md) | 0 | Multi-Target Compilation Model | Proposed |
 | [0012](adr/0012-ruleset-initialization.md) | 0 | Ruleset Initialization and Deployment Configuration | Proposed |
 | [0001](adr/0001-typed-field-namespace.md) | 1 | Typed Field Namespace | Proposed |
 | [0007](adr/0007-phase-inference.md) | 1 | Phase Inference from Field Types | Proposed |
 | [0013](adr/0013-documentation-model.md) | 1 | Documentation Model for Rules, Groups, and Rulesets | Proposed |
 | [0003](adr/0003-boolean-algebra.md) | 2 | Boolean Algebra Replacing Chains | Proposed |
-| [0002](adr/0002-pipeline-operator.md) | 3 | Pipeline Operator for Composition (conditional on 0009) | Proposed |
+| [0002](adr/0002-pipeline-operator.md) | 3 | Pipeline Operator for Composition | Proposed |
 | [0004](adr/0004-structured-actions.md) | 3 | Structured Action Model | Proposed |
 | [0011](adr/0011-first-class-scoring.md) | 3 | First-Class Scoring Model | Proposed |
 | [0015](adr/0015-macros-and-compositions.md) | 3 | Macros and Named Compositions | Proposed |
 | [0016](adr/0016-external-data-sources.md) | 3 | External Data Sources | Proposed |
-| [0005](adr/0005-parser-strategy.md) | 4 | Parser Strategy (see 0009 for decision) | Proposed |
+| [0005](adr/0005-parser-strategy.md) | 4 | Parser Strategy | Proposed |
 | [0014](adr/0014-imports-and-modularity.md) | 4 | Imports and Modularity | Proposed |
 | [0006](adr/0006-rule-management.md) | 5 | Rule Management Directives | Proposed |
 

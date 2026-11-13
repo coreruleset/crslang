@@ -2,7 +2,7 @@
 
 - **Status:** Proposed
 - **Date:** 2026-04-25
-- **Phase:** 3 (function composition era; partially shapes Phase 0 language base decision)
+- **Phase:** 3 (function composition era)
 
 ## Context
 
@@ -11,9 +11,8 @@ compositions") without specifying how they're defined or scoped:
 
 - ADR-0002 (pipeline operator): "reusable transform chains are defined once and invoked
   by name"
-- ADR-0009 (language base evaluation): HCL vs custom decision partially hinges on
-  what macros look like — HCL doesn't have parameterized expression macros natively,
-  custom can have whatever shape the parser supports
+- ADR-0009 (language base evaluation): chose the custom parser, in part because it can
+  define parameterized expression macros in the language; HCL has no native form
 - README Phase 3: "named function compositions (macros) keep nesting shallow"
 - ADR-0014 (imports): macros are namespaced like groups and external data
 
@@ -214,21 +213,6 @@ Re-exports go through the same conflict-resolution rules as ordinary declaration
 (ADR-0014). Two `export` declarations producing the same fully-qualified name across
 files of the same package are a compile-time error.
 
-#### HCL surface
-
-In the HCL surface (per ADR-0009), the equivalent is a `visibility` attribute on the
-macro block:
-
-```hcl
-macro "deep_normalize" {
-  visibility = "public"
-  param "input" { type = string }
-  body  = "..."
-}
-```
-
-The IR is identical: both surfaces produce a `MacroDecl` with `Exported = true`.
-
 ### Pure Expression Constraint
 
 Macro bodies are pure expressions. They cannot:
@@ -244,7 +228,7 @@ They can:
 - Call any function in the standard library
 - Call other macros (acyclically — recursion is a compile error)
 - Use boolean operators (`and`, `or`, `not`) per ADR-0003
-- Use the pipeline operator (custom parser) or nested calls (HCL)
+- Use the pipeline operator (ADR-0002)
 
 This constraint keeps macros tractable: a macro call is always replaceable by its
 body. Tooling can inline macros without changing semantics.
@@ -278,12 +262,9 @@ SecRule ARGS "@detectSQLi" "id:942100,phase:2,block,..."
 
 The compiled output has no notion of "macro" — only the expanded expressions.
 
-### HCL vs Custom Surface
+### Surface Syntax
 
-The macro concept is the same in both language bases (Phase 0 / ADR-0009), but the
-surface differs:
-
-**Custom parser:**
+ADR-0009 chose the custom parser, so macros are declared in `.crs` files:
 
 ```
 macro deep_normalize(input: string) = input
@@ -292,32 +273,7 @@ macro deep_normalize(input: string) = input
   |> remove_nulls()
 ```
 
-**HCL:**
-
-HCL doesn't have first-class parameterized macros. Two options:
-
-- Use `locals` with no parameters (function-call equivalents):
-
-  ```hcl
-  locals {
-    safe_methods_pattern = "^(?:GET|HEAD|OPTIONS)$"
-  }
-  ```
-
-- Add a custom `macro` block via HCL extension (the project already extends HCL with
-  custom block types):
-
-  ```hcl
-  macro "deep_normalize" {
-    param "input" { type = string }
-    body  = "url_decode(html_entity_decode(remove_nulls(input)))"
-  }
-  ```
-
-  HCL's `templatefile()` and `function()` extension mechanisms make this feasible.
-
-The IR is identical regardless of surface — both forms produce the same
-`MacroDecl` and `MacroCall` AST nodes.
+The parser produces `MacroDecl` and `MacroCall` AST nodes.
 
 ### Macro vs Function Distinction
 
@@ -426,8 +382,6 @@ Allow self-referential macros for tree-walking patterns.
 - Authors learn a second naming layer (functions vs macros) and where each scope lives
 - Group-scoped macros mean the same name can resolve to different things in different
   contexts; mitigated by IDE tooling and clear error messages
-- HCL surface for macros is awkward without language extension; pushes weight onto the
-  Phase 0 decision
 
 ### Risks
 
