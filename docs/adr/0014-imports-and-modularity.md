@@ -111,7 +111,7 @@ group "sql_injection" {
 import package "owasp_crs/4.18" as crs
 
 # crs.sql_injection refers to the imported group
-exclude group crs.sql_injection target request.args.post["query"]
+exclude group crs.sql_injection target request.body.args["query"]
 
 # crs.sql_injection.detect references the macro
 rule 999100 {

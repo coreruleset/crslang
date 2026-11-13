@@ -185,7 +185,7 @@ exclusion without an explanation is a maintenance hazard:
 ```
 /// Admin UI legitimately accepts SQL fragments in the "query" field of the
 /// query builder at /admin/query-builder. Reviewed by security team 2026-04-12.
-exclude rule 942100 target request.args.post["query"]
+exclude rule 942100 target request.body.args["query"]
   when request.uri |> begins_with("/admin/query-builder")
 
 /// Raised from warning to critical: our API never accepts a body on GET or

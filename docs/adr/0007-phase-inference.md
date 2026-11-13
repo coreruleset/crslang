@@ -36,8 +36,8 @@ With the typed field namespace from ADR-0001:
 |---|---|---|
 | `request.method`, `request.uri`, `request.protocol`, `request.line` | request_headers | 1 |
 | `request.headers[*]`, `request.cookies[*]` | request_headers | 1 |
-| `request.args.get[*]`, `request.args.get.keys` | request_headers | 1 |
-| `request.body`, `request.args.post[*]`, `request.args[*]` | request_body | 2 |
+| `request.query`, `request.query.args[*]`, `request.query.args.keys` | request_headers | 1 |
+| `request.body`, `request.body.args[*]`, `request.args[*]` | request_body | 2 |
 | `multipart.*`, `files.*` | request_body | 2 |
 | `response.status`, `response.protocol` | response_headers | 3 |
 | `response.headers[*]` | response_headers | 3 |
@@ -206,14 +206,14 @@ SecRule &TX:crs_setup_version "@eq 0" \
 
 ### Sub-Phase Ambiguity: `request.args`
 
-One field requires special handling: `request.args` (all arguments, GET + POST combined).
+One field requires special handling: `request.args` (query and body arguments combined).
 In SecLang, `ARGS` includes both query string and POST body parameters. It is technically
 available in phase 1, but POST parameters are only populated after phase 2 processes the
 body.
 
 CRSLang resolves this:
-- `request.args.get` → unambiguously phase 1 (query string only)
-- `request.args.post` → unambiguously phase 2 (POST body only)
+- `request.query.args` → unambiguously phase 1 (query string only)
+- `request.body.args` → unambiguously phase 2 (request body only)
 - `request.args` (combined) → inferred as phase 2 (the latest phase needed to have
   complete data)
 
@@ -222,7 +222,7 @@ ensure POST parameters are available.
 
 **Trade-off:** This choice prevents inspecting `request.args` at phase 1 for GET-only
 requests (where no POST body exists). Authors who need phase-1 inspection of query
-string arguments should use `request.args.get` explicitly. The alternative — inferring
+string arguments should use `request.query.args` explicitly. The alternative — inferring
 phase 1 and silently missing POST parameters — is a worse failure mode because it
 would produce false negatives on POST-based attacks.
 

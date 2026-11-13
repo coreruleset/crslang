@@ -340,7 +340,7 @@ update rule 920170 {
 }
 
 # Only for some requests
-exclude rule 942100 target request.args.post["query"]
+exclude rule 942100 target request.body.args["query"]
   when request.uri |> begins_with("/admin/query-builder")
 ```
 
