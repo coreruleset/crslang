@@ -2,7 +2,7 @@
 
 - **Status:** Proposed
 - **Date:** 2026-04-13
-- **Phase:** 3 (conditional — applies only if ADR-0009 chooses custom parser)
+- **Phase:** 3 (applies: ADR-0009 chose the custom parser)
 
 ## Context
 
@@ -205,9 +205,9 @@ matches(lowercase(url_decode(js_decode(request.args))), "pattern")
 detect_sqli(normalize(request.args))
 ```
 
-If HCL is chosen as the language base (ADR-0009 Option A), nested function calls are the
-only available syntax — HCL's grammar cannot be extended with `|>`. In that path, macros
-are essential to keep conditions readable.
+Under HCL (ADR-0009 Option A), nested function calls would have been the only available
+syntax, since HCL's grammar cannot be extended with `|>`. ADR-0009 chose the custom
+parser instead.
 
 **Trade-offs vs pipeline:**
 - Reads inside-out for ad-hoc chains (without macros), which is opposite to CRS authors'
