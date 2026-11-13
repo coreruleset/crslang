@@ -155,10 +155,7 @@ By default the compiler tries to compile every rule for the selected target. A r
 that only makes sense for some targets can say so in its metadata:
 
 ```
-rule 9100200 {
-  metadata {
-    backends = ["seclang"]
-  }
+rule 9100200 (backends: ["seclang"]) {
   when response.body |> contains("ORA-00933")
   then block
 }

@@ -179,9 +179,9 @@ Named groups replace `SecMarker` and provide both a scope for batch operations a
 
 ```
 group sql_injection_checks {
-  rule 942100 { ... }
-  rule 942110 { ... }
-  rule 942120 { ... }
+  rule 942100 (...) { ... }
+  rule 942110 (...) { ... }
+  rule 942120 (...) { ... }
 }
 
 # Exclude the entire group
@@ -202,15 +202,15 @@ property (ADR-0011). A group can set it as the default for its rules:
 ```
 group "xss" {
   category = "xss"
-  rule 941100 { metadata { severity = critical } ... }    # PL1 (the default)
-  rule 941110 { metadata { severity = critical } ... }
+  rule 941100 (severity: critical) { ... }    # PL1 (the default)
+  rule 941110 (severity: critical) { ... }
 }
 
 group "xss_pl2" {
   category = "xss"
   paranoia = 2
-  rule 941120 { metadata { severity = critical } ... }
-  rule 941130 { metadata { severity = critical } ... }
+  rule 941120 (severity: critical) { ... }
+  rule 941130 (severity: critical) { ... }
 }
 ```
 

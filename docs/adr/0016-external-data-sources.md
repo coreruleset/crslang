@@ -219,10 +219,7 @@ External data is referenced as a value in expressions:
 ```
 data blocked_ips from "data/ips.txt" type ip_list
 
-rule 902100 {
-  metadata {
-    severity = warning
-  }
+rule 902100 (severity: warning) {
   when client.ip in blocked_ips
   then block
 }
@@ -233,10 +230,7 @@ Or via typed operators:
 ```
 data backup_extensions from "data/backup-extensions.txt" type string_set
 
-rule 920360 {
-  metadata {
-    severity = warning
-  }
+rule 920360 (severity: warning) {
   when request.basename |> ends_with_any(backup_extensions)
   then block
 }
@@ -247,10 +241,7 @@ For multi-pattern data:
 ```
 data sqli_patterns from "data/sqli.ra" type regex_set format regex_assembly
 
-rule 942100 {
-  metadata {
-    severity = critical
-  }
+rule 942100 (severity: critical) {
   when request.args |> matches_any(sqli_patterns)
   then block
 }
