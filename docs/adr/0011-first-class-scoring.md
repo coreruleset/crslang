@@ -55,7 +55,10 @@ and category, with explicit override capability.
 When a rule declares a severity, scoring happens automatically:
 
 ```
-rule 942100 (severity: critical) {
+rule 942100 {
+  metadata {
+    severity = critical
+  }
   when request.args |> detect_sqli()
   then block
 }
@@ -75,7 +78,7 @@ globals {
 ```
 
 This rule automatically contributes `5` to the anomaly score because it has
-`severity: critical` and the scoring table maps critical to 5.
+`severity = critical` and the scoring table maps critical to 5.
 
 ### Category Scoring via Groups
 
@@ -86,12 +89,18 @@ a rule belongs to:
 group "sql_injection" {
   category = "sql_injection"
 
-  rule 942100 (severity: critical) {
+  rule 942100 {
+    metadata {
+      severity = critical
+    }
     when request.args |> detect_sqli()
     then block
   }
 
-  rule 942110 (severity: critical) {
+  rule 942110 {
+    metadata {
+      severity = critical
+    }
     when request.args |> detect_sqli()
     then block
   }
@@ -110,7 +119,10 @@ The category name is the TX variable stem: `category = "<name>"` increments
 For rules that need non-standard scoring, an explicit `score()` function is available:
 
 ```
-rule 920170 (severity: warning) {
+rule 920170 {
+  metadata {
+    severity = warning
+  }
   when request.method |> matches("^(?:GET|HEAD)$")
    and request.headers["Content-Length"] |> not(matches("^0?$"))
   then block {
@@ -127,26 +139,74 @@ for custom, non-scoring state.
 
 ### Paranoia Levels
 
-CRS paranoia levels (PL1-PL4) control which rules are active and which score bucket
-they contribute to (`tx.inbound_anomaly_score_pl1` through `pl4`). In the new model,
-paranoia level is a rule attribute:
+CRS paranoia levels (PL1-PL4) control which rules run and which score bucket they add
+to (`tx.inbound_anomaly_score_pl1` through `pl4`, and the `outbound_` equivalents). In
+the new model, `paranoia` is a first-class rule property: an integer from 1 to 4. A
+group can set it as the default for its rules, the same way it sets `category`, and a
+rule's own value overrides the group's. A rule with no `paranoia` from either source is
+PL1.
 
 ```
-rule 942100 (severity: critical, paranoia: 1) {
-  when request.args |> detect_sqli()
-  then block
+group "sql_injection" {
+  category = "sql_injection"
+
+  rule 942100 {
+    metadata {
+      severity = critical
+      paranoia = 1
+    }
+    when request.args |> detect_sqli()
+    then block
+  }
 }
 
-rule 942101 (severity: critical, paranoia: 2) {
-  when request.args |> url_decode() |> detect_sqli()
-  then block
+group "sql_injection_pl2" {
+  category = "sql_injection"
+  paranoia = 2                    # default for every rule in the group
+
+  rule 942101 {
+    metadata {
+      severity = critical
+    }
+    when request.args |> url_decode() |> detect_sqli()
+    then block
+  }
 }
 ```
 
-The compiler uses the paranoia attribute to:
-1. Determine which PL score bucket to increment (for SecLang output)
-2. Determine whether the rule is active at a given paranoia level
-3. Generate the appropriate skip/marker logic for SecLang
+The compiler uses the paranoia property to:
+1. Pick the score bucket: a PL2 rule adds its severity score to
+   `tx.inbound_anomaly_score_pl2` (`outbound_anomaly_score_pl2` for response rules), in
+   addition to its category score
+2. Decide whether the rule runs: only when its level is at most the deployment's
+   `detection_paranoia_level` (ADR-0012)
+3. Generate the SecLang skip/marker rules that CRS writes by hand today (the
+   `9xx011`–`9xx018` rules at the top of each file)
+
+Paranoia is not expressed with `requires:` guards (ADR-0006); those remain for other
+activation conditions. One property drives both running and scoring, so the two cannot
+disagree.
+
+#### Blocking and Detection Levels
+
+Two `config {}` settings (ADR-0012) apply paranoia at deployment, matching CRS 4:
+
+- `paranoia_level` — the **blocking** level. Buckets `pl1` up to this level are summed
+  into the blocking score, which is compared against the threshold.
+- `detection_paranoia_level` — optional, defaults to `paranoia_level`, and must not be
+  lower (a compile error otherwise). Rules up to this level run. Buckets `pl1` up to
+  this level are summed into a detection score that is logged but never blocks.
+
+This lets a deployer try a higher level before enforcing it. With `paranoia_level = 1`
+and `detection_paranoia_level = 2`, a request that matches only the PL2 rule 942101
+(critical, 5 points) gets:
+
+| Score | Buckets summed | Value | Blocks at threshold 5? |
+|---|---|---|---|
+| Blocking | `pl1` | 0 | No |
+| Detection | `pl1` + `pl2` | 5 | Never (logged only) |
+
+Inbound and outbound scores are summed separately, each with its own threshold.
 
 ### Scoring Evaluation
 
@@ -170,7 +230,8 @@ it maps severity levels to point values and is not deployer-tunable. Only the
 thresholds and evaluation action belong in `config {}`.
 
 This replaces the complex phase-5 evaluation rules in CRS that manually compare
-accumulated scores against thresholds.
+accumulated scores against thresholds. The generated evaluation sums the paranoia
+buckets as described in Blocking and Detection Levels above.
 
 ### Compilation to SecLang
 
@@ -181,7 +242,11 @@ The compiler expands first-class scoring to SecLang `setvar` actions:
 group "sql_injection" {
   category = "sql_injection"
 
-  rule 942100 (severity: critical, paranoia: 1) {
+  rule 942100 {
+    metadata {
+      severity = critical
+      paranoia = 1
+    }
     when request.args |> detect_sqli()
     then block
   }
@@ -228,7 +293,7 @@ type ScoringThreshold struct {
 type RuleMetadata struct {
     ID       int
     Severity Severity        // critical, warning, notice
-    Paranoia int             // 1-4
+    Paranoia int             // 1-4: the rule's value, else its group's, else 1
     Category string          // "sqli", "xss", "rce", etc. (from group)
     // ... other metadata
 }
@@ -275,7 +340,11 @@ then block {
 ### C: Score as rule metadata only (no explicit override)
 
 ```
-rule 942100 (severity: critical, category: sqli) {
+rule 942100 {
+  metadata {
+    severity = critical
+    category = "sql_injection"
+  }
   when ...
   then block  # scoring is 100% automatic
 }
@@ -294,7 +363,8 @@ rule 942100 (severity: critical, category: sqli) {
 - Severity-to-score mapping is a single configuration, not scattered across hundreds of
   rules
 - Category scoring is automatic from group membership
-- Paranoia levels become a typed attribute, not a naming convention
+- Paranoia levels become a typed property, not a naming convention, and one value
+  drives both rule activation and the score bucket
 - Scoring analysis becomes trivial (query the IR for severity/category/paranoia)
 - Score threshold configuration is a single declaration, not a complex evaluation rule
 - Compile-time validation: severity is required on attack rules, preventing missing scores

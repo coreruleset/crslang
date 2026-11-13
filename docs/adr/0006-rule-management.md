@@ -109,7 +109,7 @@ requests, add a `when` clause with a request condition, using the same expressio
 syntax as a rule's `when`:
 
 ```
-exclude rule 942100 target request.args.post["query"]
+exclude rule 942100 target request.body.args["query"]
   when request.uri |> begins_with("/admin/query-builder")
 
 exclude group crs.sql_injection
@@ -179,9 +179,9 @@ Named groups replace `SecMarker` and provide both a scope for batch operations a
 
 ```
 group sql_injection_checks {
-  rule 942100 (...) { ... }
-  rule 942110 (...) { ... }
-  rule 942120 (...) { ... }
+  rule 942100 { ... }
+  rule 942110 { ... }
+  rule 942120 { ... }
 }
 
 # Exclude the entire group
@@ -193,22 +193,31 @@ update group sql_injection_checks {
 }
 ```
 
-**Guarded groups** — replace `skip`/`skipAfter`/`SecMarker` with conditional activation.
-The `requires` clause is a boolean expression over rule metadata or TX fields. Rules in
-the group only evaluate when the guard is true:
+**Paranoia levels and guarded groups** — replace `skip`/`skipAfter`/`SecMarker` with
+conditional activation.
+
+Paranoia gating, the primary use of skip/marker in CRS, comes from the `paranoia`
+property (ADR-0011). A group can set it as the default for its rules:
 
 ```
-# Paranoia level gating (the primary use case for skip/marker in CRS)
-group "xss_pl1" (requires: paranoia >= 1) {
-  rule 941100 (severity: critical) { ... }
-  rule 941110 (severity: critical) { ... }
+group "xss" {
+  category = "xss"
+  rule 941100 { metadata { severity = critical } ... }    # PL1 (the default)
+  rule 941110 { metadata { severity = critical } ... }
 }
 
-group "xss_pl2" (requires: paranoia >= 2) {
-  rule 941120 (severity: critical) { ... }
-  rule 941130 (severity: critical) { ... }
+group "xss_pl2" {
+  category = "xss"
+  paranoia = 2
+  rule 941120 { metadata { severity = critical } ... }
+  rule 941130 { metadata { severity = critical } ... }
 }
+```
 
+For any other condition, a guarded group uses a `requires` clause: a boolean expression
+over config or TX fields. Rules in the group only evaluate when the guard is true:
+
+```
 # Custom guard (rare, replaces ad-hoc skip patterns)
 group "custom_checks" (requires: tx.enable_custom_checks |> eq(1)) {
   rule 100001 { ... }
@@ -216,11 +225,14 @@ group "custom_checks" (requires: tx.enable_custom_checks |> eq(1)) {
 }
 ```
 
-Guarded groups compile to SecLang as `skipAfter`/`SecMarker` pairs:
+Both compile to SecLang as `skipAfter`/`SecMarker` pairs. For paranoia, the compiler
+emits one pair around each run of consecutive rules with the same level, without
+reordering rules:
 
 ```
 # CRSLang
-group "xss_pl2" (requires: paranoia >= 2) {
+group "xss_pl2" {
+  paranoia = 2
   rule 941120 ...
 }
 
@@ -237,8 +249,8 @@ deterministically from the group name, so they are stable across compilations an
 users can reference them in exclusions.
 
 This replaces `skip_to()`, `goto`, and `label` entirely. CRSLang expresses the intent
-(conditional activation), not the mechanism (skip/marker). See also ADR-0004 and
-ADR-0011 where paranoia levels as rule attributes enable automatic guard generation.
+(conditional activation), not the mechanism (skip/marker). See also ADR-0004, and
+ADR-0011 for how the `paranoia` property also selects the score bucket.
 
 ### Unified Selector System
 
@@ -352,7 +364,7 @@ type RemoveEffect struct {
   selector:
     where:
       tag: "OWASP_CRS/SQL_INJECTION"
-      phase: request
+      phase: request_headers
 
 - kind: update
   selector:

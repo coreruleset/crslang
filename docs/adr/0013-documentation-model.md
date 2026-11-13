@@ -113,25 +113,41 @@ group "sql_injection" {
 
   /// libinjection-based detection. Uses detectSQLi() on URL-decoded args.
   group "libinjection_based" {
-    rule 942100 (paranoia: 1, severity: critical) { ... }
-    rule 942110 (paranoia: 2, severity: critical) { ... }
+    rule 942100 {
+      metadata {
+        paranoia = 1
+        severity = critical
+      }
+      ...
+    }
+    rule 942110 {
+      metadata {
+        paranoia = 2
+        severity = critical
+      }
+      ...
+    }
   }
 
   /// Pattern-based detection. Catches patterns libinjection misses (UNION-based,
   /// time-based blind, comment injection).
   group "pattern_based" {
-    rule 942120 (paranoia: 2) { ... }
+    rule 942120 { metadata { paranoia = 2 } ... }
   }
 }
 ```
 
 #### Nesting Semantics
 
-- Inner groups **inherit** outer group's structured fields (`category`, guards from
-  `requires:`, default action). Inner can add or override.
+- Inner groups **inherit** outer group's structured fields (`category`, `paranoia`,
+  guards from `requires:`, default action). Inner can add or override, and a rule's own
+  metadata overrides its group's.
 - Doc-comments do **not** inherit — each group has its own narrative.
-- Guards **compose** via conjunction: outer `(requires: paranoia >= 1)` + inner
-  `(requires: paranoia >= 2)` = effective `paranoia >= 2`.
+- Guards **compose** via conjunction: outer `(requires: A)` + inner `(requires: B)` =
+  effective `A and B`.
+- Paranoia levels are a property, not a nesting level: put rules of different levels
+  side by side (each with its own `paranoia`) or in sibling groups that set it, rather
+  than in a `pl1`…`pl4` sub-group under every attack group (ADR-0011).
 - Nesting depth is unlimited but expected to stay shallow (1-2 levels in practice).
 
 ### Tier 3: Rule
@@ -147,17 +163,18 @@ Per-rule documentation with both narrative and structured fields:
 ///
 /// Known false positives:
 ///   - Search queries containing SQL keywords (use exclusion on the search field)
-rule 942100 (
-  severity:   critical,
-  paranoia:   1,
-  references: ["CWE-89"],
-) {
+rule 942100 {
+  metadata {
+    severity   = critical
+    paranoia   = 1
+    references = ["CWE-89"]
+  }
   when request.args |> detect_sqli()
   then block
 }
 ```
 
-Doc-comments carry prose; the `references:` metadata field carries a machine-readable
+Doc-comments carry prose; the `references` metadata field carries a machine-readable
 list. Tooling can render the prose, link the references, and emit both in audit logs.
 
 ### Tier 4: Rule-Management Directives
@@ -168,7 +185,7 @@ exclusion without an explanation is a maintenance hazard:
 ```
 /// Admin UI legitimately accepts SQL fragments in the "query" field of the
 /// query builder at /admin/query-builder. Reviewed by security team 2026-04-12.
-exclude rule 942100 target request.args.post["query"]
+exclude rule 942100 target request.body.args["query"]
   when request.uri |> begins_with("/admin/query-builder")
 
 /// Raised from warning to critical: our API never accepts a body on GET or
@@ -338,7 +355,10 @@ augment it with sidecar markdown for content that doesn't fit per-rule.)
 ### C: Dedicated `doc {}` block inside each rule
 
 ```
-rule 942100 (severity: critical) {
+rule 942100 {
+  metadata {
+    severity = critical
+  }
   doc {
     description = "..."
     references  = [...]

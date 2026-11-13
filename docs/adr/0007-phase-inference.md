@@ -36,8 +36,8 @@ With the typed field namespace from ADR-0001:
 |---|---|---|
 | `request.method`, `request.uri`, `request.protocol`, `request.line` | request_headers | 1 |
 | `request.headers[*]`, `request.cookies[*]` | request_headers | 1 |
-| `request.args.get[*]`, `request.args.get.names` | request_headers | 1 |
-| `request.body`, `request.args.post[*]`, `request.args[*]` | request_body | 2 |
+| `request.query`, `request.query.args[*]`, `request.query.args.keys` | request_headers | 1 |
+| `request.body`, `request.body.args[*]`, `request.args[*]` | request_body | 2 |
 | `multipart.*`, `files.*` | request_body | 2 |
 | `response.status`, `response.protocol` | response_headers | 3 |
 | `response.headers[*]` | response_headers | 3 |
@@ -100,7 +100,10 @@ references. That is a **compile-time error**:
 
 ```
 # ERROR: declared request_headers (phase 1), but response.body is phase 4
-rule 999999 (phase: request_headers) {
+rule 999999 {
+  metadata {
+    phase = request_headers
+  }
   when request.method |> eq("GET")
    and response.body |> contains("error")
   then block
@@ -134,16 +137,20 @@ per ADR-0012, and explicit phase declaration applies to user-authored TX-only ru
 
 ```
 # Must declare phase — only TX fields used
-rule 901001 (phase: request_headers) {
+rule 901001 {
+  metadata {
+    phase = request_headers
+  }
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500)
 }
 
-# Paranoia gating — replaced by guarded groups (ADR-0006)
+# Paranoia gating — generated from the paranoia property (ADR-0011)
 # Instead of skip rules duplicated across phases:
-group "method_enforcement_pl1" (requires: paranoia >= 1) {
-  rule 911100 (phase: request_headers) { ... }
-  rule 911101 (phase: request_body) { ... }
+group "method_enforcement_pl2" {
+  paranoia = 2
+  rule 911100 { metadata { phase = request_headers } ... }
+  rule 911101 { metadata { phase = request_body } ... }
 }
 ```
 
@@ -159,12 +166,9 @@ CRSLang uses descriptive phase names instead of numbers:
 | `response_body` | 4 |
 | `logging` | 5 |
 
-The text syntax also accepts short forms for ergonomics:
-
-| Short form | Full name |
-|---|---|
-| `request` | `request_headers` (most common request phase) |
-| `response` | `response_headers` (most common response phase) |
+There are no short forms. `request` would be ambiguous: an HTTP request includes both
+its headers and its body, so a reader could take it for `request_body` as easily as for
+`request_headers`. The same holds for `response`.
 
 ### Compilation to SecLang
 
@@ -187,7 +191,10 @@ For rules with explicit phase:
 
 ```
 # CRSLang
-rule 901001 (phase: request_headers) {
+rule 901001 {
+  metadata {
+    phase = request_headers
+  }
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500)
 }
@@ -199,14 +206,14 @@ SecRule &TX:crs_setup_version "@eq 0" \
 
 ### Sub-Phase Ambiguity: `request.args`
 
-One field requires special handling: `request.args` (all arguments, GET + POST combined).
+One field requires special handling: `request.args` (query and body arguments combined).
 In SecLang, `ARGS` includes both query string and POST body parameters. It is technically
 available in phase 1, but POST parameters are only populated after phase 2 processes the
 body.
 
 CRSLang resolves this:
-- `request.args.get` → unambiguously phase 1 (query string only)
-- `request.args.post` → unambiguously phase 2 (POST body only)
+- `request.query.args` → unambiguously phase 1 (query string only)
+- `request.body.args` → unambiguously phase 2 (request body only)
 - `request.args` (combined) → inferred as phase 2 (the latest phase needed to have
   complete data)
 
@@ -215,7 +222,7 @@ ensure POST parameters are available.
 
 **Trade-off:** This choice prevents inspecting `request.args` at phase 1 for GET-only
 requests (where no POST body exists). Authors who need phase-1 inspection of query
-string arguments should use `request.args.get` explicitly. The alternative — inferring
+string arguments should use `request.query.args` explicitly. The alternative — inferring
 phase 1 and silently missing POST parameters — is a worse failure mode because it
 would produce false negatives on POST-based attacks.
 
@@ -271,8 +278,6 @@ rule 901001 { ... }
 - TX-only rules require explicit phase, creating two code paths
 - The `request.args` sub-phase resolution (→ phase 2) is a convention that must be
   documented and understood
-- Short forms (`request` → `request_headers`) could cause confusion if someone means
-  `request_body`
 
 ### Risks
 
@@ -284,6 +289,6 @@ rule 901001 { ... }
   the field-to-phase mapping must be extended. The registry design from ADR-0001
   accommodates this.
 - **Paranoia skip pattern** — the CRS pattern of duplicating TX-only skip rules across
-  phases is eliminated entirely by guarded groups (ADR-0006). Instead of per-phase skip
-  rules, a guarded group with `requires: paranoia >= N` handles conditional activation.
+  phases is eliminated entirely by the `paranoia` property (ADR-0011). Instead of
+  per-phase skip rules, a rule or group with `paranoia = N` handles conditional activation.
   The compiler generates the appropriate per-phase skip/marker pairs for SecLang output.

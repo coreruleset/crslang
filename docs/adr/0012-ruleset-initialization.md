@@ -73,7 +73,7 @@ Four distinct concepts that were previously conflated:
 | `globals {}` | Ruleset authors | Nobody — read-only | Scoring severity table, component version |
 | `config {}` | Ruleset authors (defaults) | Deployers (overrides) | Paranoia level, allowed methods, thresholds |
 | `defaults {}` | Ruleset authors | Deployers (rarely) | Default action, default log behavior |
-| Rule metadata | Rule authors | Nobody after authoring | `severity:`, `paranoia:`, `phase:` |
+| Rule metadata | Rule authors | Nobody after authoring | `severity`, `paranoia`, `phase` |
 
 `globals {}` is ruleset policy — it defines the scoring model and is the same for every
 deployment. `config {}` is deployment policy — it is the tunable surface the deployer
@@ -83,8 +83,13 @@ is expected to edit.
 
 ```
 config {
-  # Which rules are active (ADR-0011: paranoia: N attribute on rules uses this)
+  # Blocking paranoia level: scores from rules up to this level can block
+  # (ADR-0011: the paranoia property on rules and groups is compared against it)
   paranoia_level = 1
+
+  # Optional: run rules up to this level and log their scores without blocking.
+  # Defaults to paranoia_level; must not be lower.
+  # detection_paranoia_level = 2
 
   # Anomaly mode: accumulate scores and evaluate at end of phase.
   # immediate: each rule blocks independently (no scoring evaluation needed).
@@ -169,7 +174,7 @@ The hand-authored 901 rules disappear. Each category of init work is handled dif
 | Score threshold init (`tx.inbound_anomaly_score_threshold = 5`) | Compiler-generated from `config { scoring {} }` |
 | Detection policy init (`tx.allowed_methods = [...]`) | Compiler-generated from `config {}` |
 | Sanity check (`count(tx.crs_setup_version) eq 0 → deny`) | Loader/compiler guarantee (see below) |
-| Paranoia skip propagation | Compiler-generated marker pairs from guarded groups (ADR-0006) |
+| Paranoia skip propagation | Compiler-generated marker pairs from the `paranoia` property (ADR-0011) |
 | Default init for unset variables | Defaults declared in the config schema; compiler emits defaults |
 
 ### Sanity Check Replaced by Loader Guarantee
@@ -210,6 +215,7 @@ SecAction \
     phase:1,\
     nolog,\
     pass,\
+    setvar:tx.blocking_paranoia_level=1,\
     setvar:tx.detection_paranoia_level=1,\
     setvar:tx.allowed_methods=GET HEAD POST OPTIONS,\
     setvar:tx.critical_anomaly_score=5,\
@@ -252,7 +258,10 @@ familiar, but the mechanism is now compile-time rather than runtime.
 Translate 901 rules from SecLang to CRSLang syntax but keep them as explicit rules:
 
 ```
-rule 901001 (phase: request_headers) {
+rule 901001 {
+  metadata {
+    phase = request_headers
+  }
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500)
 }

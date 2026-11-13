@@ -124,7 +124,10 @@ group "sql_injection" {
   # Exported group-scope macro — visible to importers as crs.sql_injection.detect
   export macro detect() = request.args |> detect_sqli()
 
-  rule 942100 (severity: critical) {
+  rule 942100 {
+    metadata {
+      severity = critical
+    }
     when args_are_sqli()           # local macro
        or deep_normalize(request.uri) |> contains("union")   # imported macro
     then block

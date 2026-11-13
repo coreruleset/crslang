@@ -40,20 +40,21 @@ Fields use a hierarchical dot-separated namespace:
 ```
 request.method          # was: REQUEST_METHOD
 request.uri             # was: REQUEST_URI (full URI including query string)
-request.uri_raw         # was: REQUEST_URI_RAW (uri before normalization)
+request.uri.raw         # was: REQUEST_URI_RAW (uri before normalization)
 request.filename        # was: REQUEST_FILENAME (path without query string)
 request.basename        # was: REQUEST_BASENAME (last path component)
 request.line            # was: REQUEST_LINE (raw request line)
 request.protocol        # was: REQUEST_PROTOCOL
+request.query           # was: QUERY_STRING
+request.query.args      # was: ARGS_GET (query string arguments)
 request.body            # was: REQUEST_BODY
 request.body.length     # was: REQUEST_BODY_LENGTH
+request.body.args       # was: ARGS_POST (arguments parsed from the body)
 request.headers         # was: REQUEST_HEADERS (entire map)
 request.headers["Host"] # was: REQUEST_HEADERS:Host
 request.cookies         # was: REQUEST_COOKIES (entire map)
 request.cookies["sid"]  # was: REQUEST_COOKIES:sid
-request.args            # was: ARGS (all arguments)
-request.args.get        # was: ARGS_GET
-request.args.post       # was: ARGS_POST
+request.args            # was: ARGS (query and body arguments combined)
 request.args["id"]      # was: ARGS:id
 
 response.status         # was: RESPONSE_STATUS
@@ -104,23 +105,41 @@ Each field has a declared type:
 | `IP` | IP address (v4/v6) | `client.ip`, `server.ip` |
 | `Bytes` | Raw byte sequence | `request.body`, `response.body` |
 | `Map[String]` | String-keyed map of strings | `request.headers`, `request.args` |
-| `List[String]` | Ordered list of strings | `request.headers.names`, `request.args.names` |
+| `List[String]` | Ordered list of strings | `request.headers.keys`, `request.args.keys` |
 | `Bool` | Boolean | (future: computed fields) |
+
+Two naming conventions apply across the namespace:
+
+- **Arguments live under their source.** `request.query.args` holds the query string
+  arguments and `request.body.args` the arguments parsed from the body; `request.args`
+  is the two combined. Each name says where the data comes from, unlike SecLang's
+  `ARGS_GET`/`ARGS_POST` (a POST can carry query arguments, and a PUT fills `ARGS_POST`).
+  Body processors (urlencoded, multipart, JSON) fill `request.body.args` whether or not
+  `request.body` holds the raw body.
+- **`.raw` is the unnormalized value.** Every field that SecLang has in a `_RAW` variant
+  gets a `.raw` child: `request.uri.raw` for `REQUEST_URI_RAW`.
+
+A field keeps its own type when it has child fields: `request.uri` is a `String`,
+`request.body` is `Bytes`, and `request.uri.raw` and `request.body.args` are fields of
+their own.
 
 ### Map Access
 
 Map-typed fields support:
 - **Full map** — `request.headers` (iterates all values)
 - **Key access** — `request.headers["Content-Type"]` (single value, type `String`)
-- **Names** — `request.headers.names` (list of key names)
+- **Keys** — `request.headers.keys` (list of key names)
 
-**Key exclusions** (SecLang's `!ARGS:foo` — "iterate all keys except foo") are not part
-of the field syntax. Instead, target exclusions are handled by the rule management system
-(ADR-0006):
+**Key exclusions** (SecLang's `!ARGS:foo` — "remove foo from the ARGS targets listed
+earlier in the rule") are not part of the field syntax. Instead, target exclusions are
+handled by the rule management system (ADR-0006):
 
 ```
 # The rule targets all args
-rule 942100 (severity: critical) {
+rule 942100 {
+  metadata {
+    severity = critical
+  }
   when request.args |> detect_sqli()
   then block
 }

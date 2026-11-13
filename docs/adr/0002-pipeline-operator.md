@@ -225,7 +225,7 @@ request.headers["User-Agent"].urlDecode().lowercase().matches("pattern")
 **Considered viable but:**
 - Requires fields to be objects with methods, complicating the type system
 - Dot already used for field hierarchy (ADR-0001), adding method calls on the same
-  syntax creates ambiguity: is `request.headers.names` a field or a method?
+  syntax creates ambiguity: is `request.headers.keys` a field or a method?
 - Less visually distinct between "accessing data" and "transforming data"
 
 ### C: Unix Pipe (`|`)
