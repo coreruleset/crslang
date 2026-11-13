@@ -139,11 +139,15 @@ group "sql_injection" {
 
 #### Nesting Semantics
 
-- Inner groups **inherit** outer group's structured fields (`category`, guards from
-  `requires:`, default action). Inner can add or override.
+- Inner groups **inherit** outer group's structured fields (`category`, `paranoia`,
+  guards from `requires:`, default action). Inner can add or override, and a rule's own
+  metadata overrides its group's.
 - Doc-comments do **not** inherit — each group has its own narrative.
-- Guards **compose** via conjunction: outer `(requires: paranoia >= 1)` + inner
-  `(requires: paranoia >= 2)` = effective `paranoia >= 2`.
+- Guards **compose** via conjunction: outer `(requires: A)` + inner `(requires: B)` =
+  effective `A and B`.
+- Paranoia levels are a property, not a nesting level: put rules of different levels
+  side by side (each with its own `paranoia`) or in sibling groups that set it, rather
+  than in a `pl1`…`pl4` sub-group under every attack group (ADR-0011).
 - Nesting depth is unlimited but expected to stay shallow (1-2 levels in practice).
 
 ### Tier 3: Rule

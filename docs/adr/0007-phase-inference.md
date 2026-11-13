@@ -145,9 +145,10 @@ rule 901001 {
   then deny(status: 500)
 }
 
-# Paranoia gating — replaced by guarded groups (ADR-0006)
+# Paranoia gating — generated from the paranoia property (ADR-0011)
 # Instead of skip rules duplicated across phases:
-group "method_enforcement_pl1" (requires: paranoia >= 1) {
+group "method_enforcement_pl2" {
+  paranoia = 2
   rule 911100 { metadata { phase = request_headers } ... }
   rule 911101 { metadata { phase = request_body } ... }
 }
@@ -288,6 +289,6 @@ rule 901001 { ... }
   the field-to-phase mapping must be extended. The registry design from ADR-0001
   accommodates this.
 - **Paranoia skip pattern** — the CRS pattern of duplicating TX-only skip rules across
-  phases is eliminated entirely by guarded groups (ADR-0006). Instead of per-phase skip
-  rules, a guarded group with `requires: paranoia >= N` handles conditional activation.
+  phases is eliminated entirely by the `paranoia` property (ADR-0011). Instead of
+  per-phase skip rules, a rule or group with `paranoia = N` handles conditional activation.
   The compiler generates the appropriate per-phase skip/marker pairs for SecLang output.
