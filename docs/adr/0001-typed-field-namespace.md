@@ -46,7 +46,6 @@ request.basename        # was: REQUEST_BASENAME (last path component)
 request.line            # was: REQUEST_LINE (raw request line)
 request.protocol        # was: REQUEST_PROTOCOL
 request.body            # was: REQUEST_BODY
-request.body.length     # was: REQUEST_BODY_LENGTH
 request.headers         # was: REQUEST_HEADERS (entire map)
 request.headers["Host"] # was: REQUEST_HEADERS:Host
 request.cookies         # was: REQUEST_COOKIES (entire map)
@@ -92,6 +91,12 @@ time.year               # was: TIME_YEAR
 
 rule.id                 # was: RULE:id (inside RULE collection)
 ```
+
+Values derived from a field are not fields of their own. The body length is
+`request.body |> length()` (ADR-0002), not a separate `request.body.length` field. The
+SecLang importer maps `REQUEST_BODY_LENGTH` to that pipeline, and the SecLang compiler
+emits `REQUEST_BODY_LENGTH` for it, so it still measures the received body when no body
+processor fills `REQUEST_BODY` (CRS rule 920640 relies on this).
 
 ### Type System
 

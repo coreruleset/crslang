@@ -107,7 +107,7 @@ client.ip |> ip_in_range("10.0.0.0/8", "172.16.0.0/12")
 | `sql_hex_decode()` | String -> String | `t:sqlHexDecode` |
 | `escape_seq_decode()` | String -> String | `t:escapeSeqDecode` |
 | `trim()` | String -> String | `t:trim` |
-| `length()` | String -> Int | `t:length` |
+| `length()` | String or Bytes -> Int | `t:length` |
 | `md5()` | String -> String | `t:md5` |
 | `sha1()` | String -> String | `t:sha1` |
 
