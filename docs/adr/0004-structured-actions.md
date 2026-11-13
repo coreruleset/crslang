@@ -262,22 +262,23 @@ then:
   implementation detail of ModSecurity's sequential evaluation model. The actual intent
   is **conditional rule activation** — "only run these rules if condition X holds."
 
-  This is now expressed as **guarded groups** (ADR-0006):
+  This is now expressed with the `paranoia` property (ADR-0011) and, for other
+  conditions, guarded groups (ADR-0006):
 
   ```
   # was: SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 2" "skipAfter:END-941"
   #      ... rules ...
   #      SecMarker "END-941"
 
-  group "xss_pl2" (requires: paranoia >= 2) {
+  group "xss_pl2" {
+    paranoia = 2
     rule 941120 { metadata { severity = critical } ... }
     rule 941130 { metadata { severity = critical } ... }
   }
   ```
 
   The compiler generates the appropriate `skipAfter`/`SecMarker` pairs when compiling
-  to SecLang. For paranoia-level gating specifically, the `paranoia` attribute on rules
-  (ADR-0011) allows the compiler to group and gate rules automatically.
+  to SecLang.
 
   No `skip_to()`, `goto`, or `label` exists in CRSLang. The language expresses intent
   (conditional activation), not mechanism (skip/marker).

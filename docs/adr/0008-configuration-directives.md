@@ -173,7 +173,7 @@ request_headers)`).
 #          SecMarker END_SQL_CHECKS
 
 # CRSLang: express the intent, not the mechanism
-group "sql_checks" (requires: paranoia >= 1) {
+group "sql_checks" (requires: tx.enable_sql_checks |> eq(1)) {
   rule 942100 { ... }
 }
 ```
