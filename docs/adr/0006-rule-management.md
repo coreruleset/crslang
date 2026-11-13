@@ -109,7 +109,7 @@ requests, add a `when` clause with a request condition, using the same expressio
 syntax as a rule's `when`:
 
 ```
-exclude rule 942100 target request.args.post["query"]
+exclude rule 942100 target request.body.args["query"]
   when request.uri |> begins_with("/admin/query-builder")
 
 exclude group crs.sql_injection
