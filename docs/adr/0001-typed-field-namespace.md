@@ -136,10 +136,7 @@ handled by the rule management system (ADR-0006):
 
 ```
 # The rule targets all args
-rule 942100 {
-  metadata {
-    severity = critical
-  }
+rule 942100 (severity: critical) {
   when request.args |> detect_sqli()
   then block
 }

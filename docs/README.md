@@ -87,10 +87,7 @@ actions:
 A rule in the new CRSLang should look like:
 
 ```
-rule 920170 {
-  metadata {
-    severity = warning
-  }
+rule 920170 (severity: warning) {
   when request.method |> matches("^(?:GET|HEAD)$")
    and request.headers["Content-Length"] |> not(matches("^0?$"))
   then block {
@@ -106,11 +103,7 @@ the compiler emits `phase:1` automatically.
 Rules that use only cross-phase fields (e.g., `tx.*`) must declare the phase explicitly:
 
 ```
-rule 949110 {
-  metadata {
-    phase = logging
-    severity = critical
-  }
+rule 949110 (phase: logging, severity: critical) {
   when tx.inbound_anomaly_score |> gt(tx.inbound_anomaly_score_threshold)
   then deny(status: 403)
 }
@@ -119,8 +112,6 @@ rule 949110 {
 Key properties:
 - **Typed fields** with dot-notation and bracket access for maps
 - **Phase inference** from field types — no redundant phase metadata
-- **A `metadata {}` block** for rule properties (`phase`, `severity`, `paranoia`,
-  `multi_match`, `backends`, ...) instead of arguments after the rule ID
 - **Composable functions** for chaining transformations and terminal predicates, joined
   with the pipeline operator `|>` and reusable as named macros
 - **Boolean algebra** (`and`, `or`, `not`, parentheses) replacing chains, with `let` to

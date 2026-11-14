@@ -100,10 +100,7 @@ references. That is a **compile-time error**:
 
 ```
 # ERROR: declared request_headers (phase 1), but response.body is phase 4
-rule 999999 {
-  metadata {
-    phase = request_headers
-  }
+rule 999999 (phase: request_headers) {
   when request.method |> eq("GET")
    and response.body |> contains("error")
   then block
@@ -137,10 +134,7 @@ per ADR-0012, and explicit phase declaration applies to user-authored TX-only ru
 
 ```
 # Must declare phase — only TX fields used
-rule 901001 {
-  metadata {
-    phase = request_headers
-  }
+rule 901001 (phase: request_headers) {
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500)
 }
@@ -149,8 +143,8 @@ rule 901001 {
 # Instead of skip rules duplicated across phases:
 group "method_enforcement_pl2" {
   paranoia = 2
-  rule 911100 { metadata { phase = request_headers } ... }
-  rule 911101 { metadata { phase = request_body } ... }
+  rule 911100 (phase: request_headers) { ... }
+  rule 911101 (phase: request_body) { ... }
 }
 ```
 
@@ -191,10 +185,7 @@ For rules with explicit phase:
 
 ```
 # CRSLang
-rule 901001 {
-  metadata {
-    phase = request_headers
-  }
+rule 901001 (phase: request_headers) {
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500)
 }

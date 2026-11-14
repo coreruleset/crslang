@@ -320,10 +320,7 @@ macro normalize(field: string) =
 group "sql_injection" {
   tags = ["OWASP_CRS/SQL_INJECTION", "attack-sqli"]
 
-  rule 942100 {
-    metadata {
-      severity = critical
-    }
+  rule 942100 (severity: critical) {
     when detect_sqli(normalize(request.args))
       or detect_sqli(normalize(request.body))
     then block {

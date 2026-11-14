@@ -258,10 +258,7 @@ familiar, but the mechanism is now compile-time rather than runtime.
 Translate 901 rules from SecLang to CRSLang syntax but keep them as explicit rules:
 
 ```
-rule 901001 {
-  metadata {
-    phase = request_headers
-  }
+rule 901001 (phase: request_headers) {
   when count(tx.crs_setup_version) |> eq(0)
   then deny(status: 500)
 }

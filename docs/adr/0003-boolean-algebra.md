@@ -407,10 +407,7 @@ rule 942100 {
 
 # With multi_match: the operator tests the original value and the value after
 # each transformation
-rule 942100 {
-  metadata {
-    multi_match = true
-  }
+rule 942100 (multi_match: true) {
   when request.args |> utf8_to_unicode() |> url_decode_uni() |> detect_sqli()
   then block
 }
