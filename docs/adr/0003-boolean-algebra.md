@@ -96,9 +96,9 @@ rule 920170 {
 `let` is syntactic sugar. The parser inlines each binding into the `Expr` tree where it
 is used, so it needs no IR node and no YAML v2 form, and short-circuit evaluation is
 unchanged. Pipelines are pure, so inlining a binding gives the same result as evaluating
-it first. The exception is `capture()`, which sets capture groups as a side-effect
-(Category 1 below): a binding that uses `capture()` may be referenced only once. The
-same mechanism covers value bindings for data-flow dependencies (Option C below).
+it first. A binding can also name a value rather than a predicate (`let referer_host =
+request.headers["Referer"] |> extract(...)`), which is how a rule tests part of a field
+(see Conditions Are Pure).
 
 ### Operator Precedence
 
@@ -150,187 +150,134 @@ type Rule struct {
 }
 ```
 
-### Handling Chain Side-Effects
+### Conditions Are Pure
 
-#### Current Semantics in CRSLang v1
+A `when` expression has no side-effects. Effects (`setvar`, `ctl`, scoring, logging)
+live only in the `then` block and run once, when the whole expression is true. Because
+nothing in a condition can be observed, evaluation order and short-circuiting are not
+part of the language: the compiler may reorder predicates (for example, cheap ones
+first, or the OR lowering in ADR-0010) without changing what a rule means.
 
-The existing normalizer (`types/condition_directives.go:117-128`) reveals how CRSLang
-already handles chains:
+This replaces chain links that carry actions. In CRS those actions only move data from
+one link to the next, so pure value functions can express all of them.
 
-- **Chain links without non-disruptive actions** are **flattened** — their conditions are
-  merged into a single AND group with the next link.
-- **Chain links with non-disruptive actions** (setvar, capture, ctl, etc.) are **kept as
-  separate `ChainedRule` nodes** — preserving the side-effect boundary.
+#### What CRS Chains Do Between Links
 
-This means the IR already distinguishes between "pure condition" chain links and "chain
-links with side-effects." The boolean algebra model must account for both.
+An audit of CRS v4.30.0 (`rules/*.conf`) and 11 CRS plugins (`plugins/*.conf`, mostly
+rule-exclusion plugins) found:
 
-#### Analysis of CRS Chain Patterns
+- 54 chained rules in CRS and 68 in the plugins.
+- In CRS, 24 rules carry actions on a link before the last one. Those actions are only
+  `capture` and `setvar`.
+- No `ctl` on a link before the last one, in CRS or in the plugins. The usual example,
+  905111, is test data (`testdata/test_36_chain.conf`), not a CRS rule. The plugins
+  add 2 `capture`, 1 `setvar`, and 1 `skip` on a chain starter, which applies to the
+  whole chain.
 
-An audit of real CRS rules reveals three categories of intermediate chain side-effects:
+The actions follow three patterns:
 
-**Category 1: `capture` on the first link (used by the final link)**
+| Pattern | CRS rules | What the earlier link does |
+|---|---|---|
+| Filter matched values | 932200, 932206, 932240, 933150, 941310, 942200, 942440, 954130 | A later link tests `MATCHED_VARS`/`MATCHED_VAR`: "of the values that matched A, one also matches B" |
+| Extract, then test | 901320, 920190, 920420, 920440, 920450, 920451, 920480, 922100, 931130, 932205, 932207, 942130, 942131, 942521, 943110 | `capture` (and often `setvar tx.x=%{tx.1}`) pulls out a part of a value (content type, charset, extension, header name, Referer host), and a later link tests `TX:1` or `TX:x` |
+| Keep a value for the log | 932200, 932205, 932206, 932207, 932240, 942130, 942131, 942521, 943110, 943120 | `setvar tx.<id>_matched_var_name=%{matched_var_name}` on the first link, because `logdata` on the last link would otherwise see the last link's match |
 
-CRS rule 920190 (`REQUEST-920-PROTOCOL-ENFORCEMENT.conf`) uses `capture` on the first
-link to extract regex groups, which are then referenced by the chained link's actions:
+#### Collection Semantics
 
-```
-SecRule REQUEST_HEADERS:Range "@rx (\d+)-(\d+)" \
-    "id:920190,phase:1,block,capture,chain"
-    SecRule REQUEST_METHOD "@streq GET" \
-        "setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}'"
-```
+Two rules, matching SecLang, make the patterns expressible:
 
-Here `capture` must execute when the first condition matches (not when the full chain
-matches), because captured groups are consumed downstream. However, the captured values
-are only *useful* if the full chain matches. In the boolean model, `capture()` becomes a
-pipeline function that extracts groups as a side-effect of matching:
+- A transformation applied to a collection (`request.args`, `request.headers`) applies
+  to each value. A pipeline step `not(p)` also applies to each value.
+- A predicate applied to a collection is true when **at least one** value satisfies it.
+  `request.args |> matches(A) and request.args |> matches(B)` is therefore two
+  independent tests; the two values need not be the same.
 
-```
-when request.headers["Range"] |> capture("(\\d+)-(\\d+)")
- and request.method |> eq("GET")
-then block { tx.inbound_anomaly_score_pl1 += tx.critical_anomaly_score }
-```
+#### Filter Matched Values: `filter()`
 
-The `capture()` function both tests the regex and stores the match groups. It is a
-predicate with a side-effect — similar to how `matches()` works, but additionally
-populating the match context.
-
-**Category 2: `ctl` on intermediate links (engine configuration)**
-
-CRS rule 905111 (`testdata/test_36_chain.conf`) uses `ctl:ruleRemoveByTag` on an
-intermediate link in a 3-level chain:
+`filter(p)` keeps the entries of a collection whose value satisfies `p`. A later
+predicate on the result plays the role of `MATCHED_VARS`:
 
 ```
-SecRule REMOTE_ADDR "@ipMatch 127.0.0.1,::1" \
-    "id:905111,phase:1,pass,chain"
-    SecRule REQUEST_HEADERS:User-Agent "@endsWith (internal dummy connection)" \
-        "ctl:ruleRemoveByTag=TEST_CHAIN,chain"
-        SecRule REQUEST_LINE "@rx ^(?:GET /|OPTIONS \*) HTTP/[12]\.[01]$" \
-            "ctl:ruleRemoveByTag=OWASP_CRS,ctl:auditEngine=Off"
-```
-
-The intermediate `ctl` modifies engine state only if that specific link matches. In
-ModSecurity, `ctl` actions on chain links execute per-link, not deferred to full-chain
-match. This is the hardest pattern to model in a pure boolean expression.
-
-**Category 3: `setvar` on the first link (consumed by a later link)**
-
-CRS rule 901320 (`REQUEST-901-INITIALIZATION.conf`) sets a TX variable on the first link,
-then the final link uses that variable in a transformation:
-
-```
-SecRule &TX:ENABLE_DEFAULT_COLLECTIONS "@eq 1" \
-    "id:901320,phase:1,pass,nolog,\
-    setvar:'tx.ua_hash=%{REQUEST_HEADERS.User-Agent}',chain"
-    SecRule TX:ENABLE_DEFAULT_COLLECTIONS "@eq 1" \
-        "chain"
-        SecRule TX:ua_hash "@unconditionalMatch" \
-            "t:none,t:sha1,t:hexEncode,\
-            initcol:global=global,\
-            initcol:ip=%{remote_addr}_%{MATCHED_VAR}"
-```
-
-Here, `setvar` on link 1 creates `tx.ua_hash`, and link 3 reads it. The side-effect
-must execute before the downstream link evaluates. This is fundamentally a **data-flow
-dependency between conditions**, not just a side-effect.
-
-#### Design Options
-
-**Option A: Side-effects only on the rule (move to `then` block)**
-
-All setvar/log/ctl actions move to the `then` block and execute only when the full
-expression matches.
-
-```
-rule 920190 {
-  when request.headers["Range"] |> matches("(\\d+)-(\\d+)")
-   and request.method |> eq("GET")
-  then block {
-    capture()
-    tx.inbound_anomaly_score_pl1 += tx.critical_anomaly_score
-  }
+# 932200: SecLang links  ARGS @rx A  ->  MATCHED_VARS @rx /  ->  MATCHED_VARS @rx \s
+rule 932200 (severity: critical) {
+  let candidates = request.args |> lowercase() |> url_decode_uni() |> filter(matches(A))
+  when candidates |> matches("/")
+   and candidates |> matches("\\s")
+  then block
 }
 ```
 
-- Works for **most** CRS rules (the majority of chains have side-effects only on the
-  final link).
-- **Breaks Category 2** (intermediate `ctl`): if `ctl` is deferred, the engine
-  configuration change happens too late.
-- **Breaks Category 3** (data-flow `setvar`): if `setvar` moves to `then`, the
-  downstream condition cannot read the variable.
+This is exact. ModSecurity v2 and Coraza do not clear `MATCHED_VARS` between links of a
+chain; each link adds its matches. The values a later link adds come from the same
+filtered set, so every `MATCHED_VARS` link tests that set, and the two tests above may
+match different values, just as in SecLang. The compiler lowers a filtered collection
+used by later predicates to a first link on the original targets and later links on
+`MATCHED_VARS`.
 
-**Option B: Conditional side-effects on sub-expressions**
+#### Extract, Then Test: `extract()`
 
-Allow inline effect blocks on individual predicates:
+`extract(pattern, group)` returns a capture group of a value (`group` defaults to 0,
+the whole match). A value that does not match yields nothing, and any predicate on
+nothing is false, so `extract(...) |> not(...)` is false when the pattern does not
+match, as the SecLang chain is.
 
 ```
-rule 905111 {
-  when client.ip |> ip_in_range("127.0.0.1", "::1")
-   and request.headers["User-Agent"] |> ends_with("(internal dummy connection)") {
-         configure(rule_remove_by_tag: "TEST_CHAIN")
-       }
-   and request.line |> matches("^(?:GET /|OPTIONS \\*) HTTP/[12]\\.[01]$") {
-         configure(rule_remove_by_tag: "OWASP_CRS", audit_engine: off)
-       }
-  then pass
+# 920420: REQUEST_HEADERS:Content-Type @rx ^[^;\s]+  (capture, setvar tx.content_type)
+#         -> TX:content_type !@within %{tx.allowed_request_content_type}
+# (simplified: CRS also wraps the value in |...| for @within)
+rule 920420 (severity: critical) {
+  when request.headers["Content-Type"]
+       |> extract("^[^;\\s]+")
+       |> lowercase()
+       |> not(within(tx.allowed_request_content_type))
+  then block
+}
+
+# 943110: the Referer host must not end with the Host header
+rule 943110 (severity: critical) {
+  let referer_host = request.headers["Referer"] |> extract("^(?:ht|f)tps?://(.*?)/", 1)
+  when request.args.keys |> lowercase() |> matches(SESSION_PARAM_NAMES)
+   and referer_host |> not(ends_with(request.headers["Host"]))
+  then block
 }
 ```
 
-- Handles all three categories.
-- Adds complexity: the reader must understand that `{ ... }` after a predicate is a
-  conditional side-effect, not part of the boolean expression.
-- Requires defining execution semantics precisely (see below).
+`extract()` replaces the `capture()` predicate: capture groups are values, not
+transaction state, so a binding that uses them can be referenced any number of times.
+The compiler emits `capture` plus `TX:n` (or a `setvar` to a TX variable) when lowering
+to SecLang.
 
-**Option C: `let` bindings for data-flow dependencies**
+On a collection, `extract()` applies to each value, so the language checks every value.
+SecLang's `TX:n` holds only the groups of the **last** value that matched. 942130 and
+942131 compare two groups of the same value (`TX:1 @streq %{TX.2}`). In CRSLang this
+means "some argument has equal groups 1 and 2", while the compiled SecLang chain, like
+the CRS rule it came from, sees the last matching argument only. That is the one place
+where SecLang output detects less than the CRSLang rule means. Round-tripping CRS through
+CRSLang still produces the same SecLang (ADR-0010).
 
-Introduce variable bindings to handle Category 3 without inline side-effects:
+#### Keep a Value for the Log: `matched.var`
 
-```
-rule 901320 {
-  let ua_hash = request.headers["User-Agent"] |> sha1() |> hex_encode()
-  when count(tx.enable_default_collections) |> eq(1)
-   and tx.enable_default_collections |> eq(1)
-  then pass {
-    init_collection(global: "global")
-    init_collection(ip: client.ip + "_" + ua_hash)
-  }
-}
-```
+In `then`, `msg` and `log(data: ...)`, `matched.var` and `matched.var_name` refer to the
+value matched by the **first predicate** of the condition, in source order. That is the
+value CRS keeps in `tx.<id>_matched_var_name` today. The compiler generates that
+`setvar` when a rule has more than one predicate, so authors do not write it.
 
-- Separates data flow from conditions cleanly.
-- `let` bindings are inlined where they are used (see Naming Conditions with `let`).
-- Handles Category 3 without inline side-effects.
-- Does not address Category 2 (`ctl` on intermediate links).
+#### Chains Outside These Patterns
 
-#### Recommendation
+The SecLang importer recognizes the three patterns. A chain with any other action on a
+link before the last one (for example `ctl`, as in 905111) is not representable: the
+importer reports it and either splits it into separate rules that pass state through a
+TX variable, or keeps it as raw SecLang. No CRS or plugin rule needs this.
 
-Use a **layered approach**:
+#### Open Questions
 
-1. **Phase 2a** — implement Option A (side-effects in `then` only). This handles the
-   vast majority of CRS rules. Chain links without intermediate side-effects are already
-   flattened by the existing normalizer, so this is the natural starting point.
-
-2. **Phase 2b** — add `let` bindings for naming conditions and for data-flow
-   dependencies (Option C). This cleanly handles Category 3 without complicating the
-   boolean expression model.
-
-3. **Phase 2c** — if Category 2 (`ctl` on intermediate links) proves common enough to
-   warrant language support, add conditional side-effects (Option B) as an extension.
-   Before doing so, audit whether these `ctl` patterns can be restructured as separate
-   rules instead.
-
-#### Execution Semantics (if Option B is adopted)
-
-If conditional side-effects are added:
-- Side-effects on a predicate execute **when that predicate evaluates to true** during
-  expression evaluation.
-- Evaluation order is **left-to-right** with **short-circuit**: `A and B` does not
-  evaluate `B` if `A` is false; `A or B` does not evaluate `B` if `A` is true.
-- Side-effects from predicates that are not evaluated (due to short-circuit) do **not**
-  execute.
-- This matches ModSecurity's chain behavior where a chain link's actions only fire if
-  that link matches.
+- **Testing two parts of one value.** 942130/942131 compare two capture groups of the
+  same argument. That needs a way to refer to the value inside a per-value test, such as
+  `request.args |> any(v -> v |> extract(R, 1) |> eq(v |> extract(R, 2)))` or a
+  dedicated `groups_equal(R, 1, 2)`. The syntax is not decided.
+- **Choosing the logged value.** `matched.var` follows the first predicate. Whether a
+  rule can name another predicate's value (for example through a `let` binding) is not
+  decided.
 
 ### Migration from Chains
 
@@ -348,44 +295,33 @@ rule + chain -> (negated operator in chained rule)
 when condition1 and not(condition2)
 ```
 
-For chains with intermediate side-effects, by category:
+For chains with actions on earlier links, by pattern (see Conditions Are Pure):
 
-**Category 1 (`capture`):** Model as a pipeline function. `capture()` replaces both the
-`@rx` operator and the `capture` action — it matches and extracts in one step:
+**Filter matched values:** a later link on `MATCHED_VARS` becomes a predicate on a
+`filter()`ed collection:
 
 ```
 # SecLang:
-SecRule REQUEST_HEADERS:Range "@rx (\d+)-(\d+)" "capture,chain"
+SecRule ARGS "@rx A" "capture,chain"
+    SecRule MATCHED_VARS "@rx /"
 # CRSLang:
-when request.headers["Range"] |> capture("(\\d+)-(\\d+)") and ...
+when request.args |> filter(matches(A)) |> matches("/")
 ```
 
-**Category 2 (`ctl` on intermediate links):** Restructure as separate rules where
-possible. If not possible and Option B is adopted, use conditional side-effects:
-
-```
-# SecLang:
-SecRule REMOTE_ADDR "@ipMatch 127.0.0.1" "chain"
-    SecRule REQUEST_HEADERS:User-Agent "@endsWith foo" "ctl:ruleRemoveByTag=X,chain"
-# CRSLang (Option B):
-when client.ip |> ip_in_range("127.0.0.1")
- and request.headers["User-Agent"] |> ends_with("foo") {
-       configure(rule_remove_by_tag: "X")
-     }
- and ...
-```
-
-**Category 3 (`setvar` consumed downstream):** Use `let` bindings:
+**Extract, then test:** `capture` plus a later `TX:n` (or a `setvar` copy of it)
+becomes `extract()`:
 
 ```
 # SecLang:
-SecRule &TX:ENABLE "@eq 1" "setvar:'tx.ua_hash=%{REQUEST_HEADERS.User-Agent}',chain"
-    SecRule TX:ua_hash "@unconditionalMatch" "t:sha1,t:hexEncode,initcol:ip=..."
+SecRule REQUEST_HEADERS:Content-Type "@rx ^[^;\s]+" "capture,setvar:'tx.content_type=%{tx.0}',chain"
+    SecRule TX:content_type "!@within %{tx.allowed_request_content_type}"
 # CRSLang:
-let ua_hash = request.headers["User-Agent"] |> sha1() |> hex_encode()
-when count(tx.enable) |> eq(1) ...
-then pass { init_collection(ip: client.ip + "_" + ua_hash) }
+when request.headers["Content-Type"] |> extract("^[^;\\s]+")
+     |> not(within(tx.allowed_request_content_type))
 ```
+
+**Keep a value for the log:** `setvar tx.<id>_matched_var_name` is dropped; `matched.var`
+in `then` refers to the first predicate's value.
 
 ### Multi-Stage Matching: `multi_match`
 
@@ -545,36 +481,25 @@ match request {
 - Eliminates chain complexity and positional fragility
 - Rules become self-contained: no hidden dependencies on adjacent rules
 - Enables optimizations: expression tree can be reordered, short-circuited
+- Conditions are pure, so evaluation order is not part of a rule's meaning
 - Closer to how security engineers think about conditions
 
 ### Negative
 
-- Three categories of intermediate side-effects require a layered migration (Phase 2a/b/c)
-  rather than a single clean cutover
-- `let` bindings (Phase 2b) add a new language concept not present in SecLang
-- Conditional side-effects (Phase 2c, if adopted) complicate the expression model and
-  require precise execution semantics
+- `filter()`, `extract()` and `let` add concepts SecLang does not have; authors have to
+  learn that a predicate on a collection means "at least one value"
+- For 942130/942131, SecLang output checks fewer values than the CRSLang rule means
+  (see Extract, Then Test)
+- SecLang chains with other actions on earlier links (such as `ctl`) cannot be imported
+  as single rules
 - Some deeply chained rules may become long single expressions (mitigated by
   line breaks and formatting conventions)
 
 ### Risks
 
-- **Side-effect ordering** — if Option B (conditional side-effects) is adopted, the
-  semantics of short-circuit evaluation must be precisely defined: side-effects on
-  unevaluated predicates do not fire. This matches ModSecurity chain behavior but must
-  be documented and tested.
-- **Engine mapping** — not all WAF engines support full boolean algebra natively. The
-  compiler may need to decompose expressions back into chains for some targets
-  (ModSecurity, Coraza). This is a compiler concern, not a language concern.
-- **Category 2 prevalence** — intermediate `ctl` actions (Category 2) are rare in CRS
-  (found primarily in initialization and internal-traffic rules like 905111). If they
-  prove confined to a small set of rules, they can be handled by restructuring those
-  rules rather than adding Option B to the language. A full CRS audit should quantify
-  this before committing to Phase 2c.
-- **Category 3 data flow** — `let` bindings change CRSLang from a purely declarative
-  rule language to one with local variable scoping. This is a significant conceptual
-  shift. The alternative is to require these patterns to be split into multiple rules
-  with explicit TX variables, which is closer to how CRS already works.
+- **Pattern coverage** — the importer's three patterns cover CRS v4.30.0 and the audited
+  plugins. User rules may use other actions on earlier links; those are reported and
+  split or kept as raw SecLang, not supported by the language.
 - **Migration correctness** — automated chain-to-boolean conversion must be validated
-  against the full CRS test suite. The three categories need separate migration paths
-  in the converter tool.
+  against the full CRS test suite. The three patterns need separate migration paths in the
+  converter tool.
