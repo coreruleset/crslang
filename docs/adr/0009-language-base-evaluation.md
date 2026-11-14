@@ -167,7 +167,7 @@ etc.) for free.
 - Function nesting reads inside-out (mitigated by named compositions)
 - `effects` block uses string values for operations (`"+=5"`) because HCL attributes
   are assignments, not arbitrary statements
-- No `let` bindings in expressions for data-flow dependencies (ADR-0003 Category 3)
+- No `let` bindings in expressions for data-flow dependencies (ADR-0003)
 - HCL itself does not require a `var.` prefix, but Terraform-style variable namespaces
   would need custom handling or a CRSLang-specific naming model
 

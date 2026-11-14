@@ -140,7 +140,7 @@ group "xss_detection" {
   category = "xss"
 
   rule 941100 (severity: critical) {
-    when request.args |> js_decode() |> capture("xss-pattern")
+    when request.args |> js_decode() |> matches("xss-pattern")
     then block {
       log(audit: true, data: matched.var)
     }
@@ -149,11 +149,10 @@ group "xss_detection" {
 ```
 
 Scoring is automatic: `severity = critical` + `category = "xss"` contribute to
-`anomaly_score` and `xss_score` based on the globals scoring table. `capture()` replaces
-the separate `@rx` + `capture` action. For rules that need non-standard scoring, use
-the `score()` override, which replaces the severity-derived scores (ADR-0011). Direct
-assignment to a scoring variable in a rule with a severity is a compile error, since it
-would count the score twice:
+`anomaly_score` and `xss_score` based on the globals scoring table. For rules that need
+non-standard scoring, use the `score()` override, which replaces the severity-derived
+scores (ADR-0011). Direct assignment to a scoring variable in a rule with a severity is
+a compile error, since it would count the score twice:
 
 ```
 rule 941100 (severity: critical) {
@@ -349,5 +348,5 @@ rule 920170 {
   (ADR-0006), which compiles to the same `ctl:ruleRemove*` actions. Dropping the
   rule-removal settings from `configure {}` would leave one way to express it, with
   `configure {}` kept for per-request engine settings such as the JSON body processor
-  (ADR-0008). Chained uses such as 905111 (ADR-0003, Category 2) would need to be
-  rewritten as exclusions first.
+  (ADR-0008). CRS and its plugins have no `ctl` on a chain link before the last one
+  (ADR-0003), so this would not require rewriting any chains.
